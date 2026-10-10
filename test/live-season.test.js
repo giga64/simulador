@@ -85,3 +85,43 @@ test('persisted results from earlier rounds are merged after the live round adva
   assert.ok(merged.seasonData.results.some((item) => item.round === 30
     && item.home === fixture.home && item.homeGoals === 1));
 });
+
+test('a current feed never overwrites a result already present in the versioned snapshot', () => {
+  const existing = season.results[0];
+  const fixture = season.fixtures.find((item) => item.round === existing.round
+    && item.home === existing.home && item.away === existing.away);
+  const feed = makeLiveFeed(30);
+  feed.history = [{
+    round: existing.round,
+    status: 'finished',
+    homeTeam: { shortName: fixture.home, name: season.teams[fixture.home] },
+    awayTeam: { shortName: fixture.away, name: season.teams[fixture.away] },
+    score: { home: existing.homeGoals + 1, away: existing.awayGoals },
+  }];
+
+  const merged = mergeLiveSeason(season, feed);
+  assert.deepEqual(
+    merged.seasonData.results.find((item) => item.round === existing.round
+      && item.home === existing.home && item.away === existing.away),
+    existing,
+  );
+});
+
+test('naive Brazilian kickoff times are interpreted as Brasília time', () => {
+  const fixture = season.fixtures.find((item) => item.status === 'scheduled');
+  const feed = makeLiveFeed(fixture.round);
+  feed.matches = [{
+    round: fixture.round,
+    status: 'scheduled',
+    dateTime: '2026-10-10T18:00',
+    homeTeam: { shortName: fixture.home, name: season.teams[fixture.home] },
+    awayTeam: { shortName: fixture.away, name: season.teams[fixture.away] },
+    score: { home: null, away: null },
+  }];
+
+  const merged = mergeLiveSeason(season, feed);
+  assert.equal(
+    merged.seasonData.fixtures.find((item) => item.id === fixture.id).kickoff,
+    '2026-10-10T18:00-03:00',
+  );
+});

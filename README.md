@@ -57,9 +57,42 @@ Portanto:
   sujeitos ao snapshot local;
 - o resumo histórico detalhado é calculado dos resultados conhecidos, não deve
   ser interpretado como um histórico oficial completo após a data do snapshot;
+- a página compara jogos, vitórias, empates, derrotas e gols conhecidos com os
+  totais da tabela GE. Diferenças são um alerta de cobertura, não uma prova de
+  qual placar está faltando;
 - as probabilidades usam os totais atuais por clube do GE; como o feed não
   informa separação casa/fora, a proporção de gols mandante/visitante é uma
   referência histórica do snapshot.
+
+### Recuperar resultados não observados
+
+O pacote do GE retorna somente a rodada atual. Se a instância ficar fora do ar
+durante jogos, o histórico local pode ficar incompleto. A página compara os
+resultados locais aos totais da classificação GE e aponta possíveis diferenças
+por clube; essa checagem não consegue deduzir placares ausentes. O GE não é uma
+fonte oficial da CBF, e essa comparação não certifica o histórico jogo a jogo.
+
+Para preencher lacunas, confira os placares em uma fonte confiável e autorizada
+quando disponível. Prepare um CSV de siglas e resultados:
+
+```csv
+round,home,away,homeGoals,awayGoals
+30,FLA,PAL,2,1
+```
+
+Importe cada lote com a URL HTTPS e o nome da fonte que você conferiu:
+
+```sh
+npm run import:results -- resultados.csv https://fonte-verificada.example "Nome da fonte"
+```
+
+O importador exige que cada confronto exista no calendário, valida rodada e
+placar, rejeita duplicatas e não sobrescreve resultados divergentes já
+registrados. Ele registra a fonte e a data da importação em
+`data/historical-backfill-2026.json`, que deve ser revisado e publicado junto
+com o site. A validação normal verifica o snapshot mais esse arquivo. O
+importador não autentica a fonte nem confirma o placar por conta própria: não
+importe dados sem conferi-los.
 
 O arquivo [data/season-2026.json](./data/season-2026.json) é o snapshot de
 contingência e registra fonte e instante de atualização. Para mantê-lo:

@@ -94,8 +94,13 @@ export function mergeLiveSeason(snapshot, liveFeed) {
       continue;
     }
 
-    if (match.dateTime && Number.isFinite(Date.parse(match.dateTime))) {
-      fixture.kickoff = match.dateTime;
+    if (fixture.status === 'played') continue;
+
+    const kickoff = typeof match.dateTime === 'string' && !/(?:Z|[+-]\d{2}:\d{2})$/i.test(match.dateTime)
+      ? `${match.dateTime}-03:00`
+      : match.dateTime;
+    if (typeof kickoff === 'string' && Number.isFinite(Date.parse(kickoff))) {
+      fixture.kickoff = kickoff;
     }
     if (match.venue) fixture.stadium = match.venue;
 

@@ -81,7 +81,7 @@ export function normalizeLiveCompetition(competition, fetchedAt = new Date().toI
     return {
       round: round.number,
       status: match.status,
-      dateTime: match.dateTime,
+      dateTime: typeof match.dateTime === 'string' ? match.dateTime : null,
       venue: match.venue,
       homeTeam: { shortName: match.homeTeam.shortName, name: match.homeTeam.name },
       awayTeam: { shortName: match.awayTeam.shortName, name: match.awayTeam.name },

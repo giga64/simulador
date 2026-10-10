@@ -24,6 +24,7 @@ td{padding:5px 7px;text-align:center;border-bottom:1px solid var(--ln);white-spa
 .leg{display:flex;gap:14px;flex-wrap:wrap;font-size:.74rem;color:var(--mu);margin-top:10px}.leg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px}
 .rh{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}.rh b{font-size:.95rem;letter-spacing:.06em}
 .pills{display:flex;gap:5px;overflow-x:auto;padding-bottom:6px;margin-bottom:8px}.pills button{padding:5px 10px;flex:none}.pills button.ok::after{content:"";width:6px;height:6px;border-radius:50%;background:var(--g)}
+.pills button.has-results{border-bottom:2px solid var(--g)}.result-score{font-size:1.15rem;min-width:28px;text-align:center}.result-card .dt{border-top:0;padding-top:2px}
 .grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}.g2{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
 .mc{background:var(--s2);border:1px solid var(--ln);border-radius:12px;padding:9px 10px}.mc.hl{border-color:var(--ac);background:var(--hl)}.mc.au input{border-style:dashed;color:var(--ac)}
 .meta{display:flex;justify-content:space-between;gap:6px;font-size:.62rem;color:var(--mu);letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px}.meta .sd{flex:1;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

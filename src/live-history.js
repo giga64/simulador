@@ -35,6 +35,7 @@ export function createLiveHistoryStore(filePath, logger = console) {
         for (const match of stored.matches) matches.set(matchKey(match), match);
       } catch (error) {
         if (error?.code !== 'ENOENT') {
+          persistent = false;
           warning = `Histórico salvo não pôde ser carregado: ${error.message||String(error)}`;
           logger.error(warning);
         }

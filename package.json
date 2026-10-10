@@ -5,9 +5,10 @@
   "scripts": {
     "test": "node --test",
     "validate:data": "node scripts/validate-season.mjs",
+    "import:results": "node scripts/import-verified-results.mjs",
     "start": "node scripts/serve.mjs"
   },
   "dependencies": {
-    "campeonato-brasileiro-api": "github:ezefranca/campeonato-brasileiro-api#c4080b7c7b2647bea73caf7713103cf48cb71edf"
+    "campeonato-brasileiro-api": "git+https://github.com/ezefranca/campeonato-brasileiro-api.git#c4080b7c7b2647bea73caf7713103cf48cb71edf"
   }
 }
