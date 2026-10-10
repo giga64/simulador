@@ -229,8 +229,9 @@ async function submitAccountForm(event){
  event.preventDefault();
  if(!supabaseClient||authBusy)return;
  const email=$('#account-email').value.trim(),password=$('#account-password')?.value||'';
+ const name=$('#account-name')?.value.trim()||'';
  const confirmation=$('#account-confirm')?.value;
- if(confirmation!=null&&password!==confirmation){authStatus='As senhas não coincidem.';renderAccountDialog();return}
+ if(confirmation!=null&&password!==confirmation){authStatus='As senhas não coincidem.';renderAccountDialog();$('#account-email').value=email;if($('#account-name'))$('#account-name').value=name;return}
  authBusy=true;
  authStatus='';
  renderAccountDialog();
@@ -240,7 +241,6 @@ async function submitAccountForm(event){
    if(error)throw error;
    closeAccountDialog();
   }else if(authMode==='register'){
-   const name=$('#account-name').value.trim();
    if(!name)throw new Error('Informe seu nome.');
    const{data,error}=await supabaseClient.auth.signUp({email,password,options:{data:{display_name:name}}});
    if(error)throw error;
@@ -261,10 +261,9 @@ async function submitAccountForm(event){
  }finally{
   authBusy=false;
   if(!accountDialog.hidden){
-   const emailValue=$('#account-email')?.value||'',nameValue=$('#account-name')?.value||'';
    renderAccountDialog();
-   if($('#account-email'))$('#account-email').value=emailValue;
-   if($('#account-name'))$('#account-name').value=nameValue;
+   if($('#account-email'))$('#account-email').value=email;
+   if($('#account-name'))$('#account-name').value=name;
   }
  }
 }
