@@ -38,10 +38,40 @@ Em produção, o servidor escuta `PORT` e, por padrão, aceita conexões externa
 quando `NODE_ENV=production`. Uma única instância Node com volume persistente é
 a configuração mais simples para manter o histórico observado.
 
-As simulações e preferências ficam no `localStorage` daquele navegador; o
-backup JSON e o link/código transportam o cenário entre navegadores sem
-sincronização de conta. Quando uma partida deixa de ser futura, palpites salvos
-para ela são removidos, preservando os demais palpites e configurações.
+O cenário ativo fica no navegador. Após configurar Supabase, os palpites
+preenchidos e a fotografia do modelo são sincronizados por conta em
+`prediction_snapshots`; sem login, o histórico continua somente neste navegador.
+Quando uma partida é concluída, o palpite arquivado mantém placar, instante,
+semente, parâmetros, probabilidades e revisão dos dados usados. A calibração
+compara essas probabilidades aos resultados reais; previsões antigas sem
+fotografia não são reconstruídas.
+
+O projeto de login anexado era uma demonstração que guardava a senha em texto
+claro no `localStorage`, portanto não foi reutilizado como autenticação. O botão
+de conta usa Supabase Auth; as senhas são processadas pelo provedor e as tabelas
+aplicam Row Level Security para que cada usuário só acesse seus próprios
+palpites. A sessão do navegador usa `sessionStorage`.
+
+### Configurar contas Supabase
+
+1. Crie um projeto Supabase e execute a migração
+   `supabase/migrations/20261010150000_create_prediction_snapshots.sql` no SQL
+   Editor. Ela cria a tabela e políticas RLS por `auth.uid()`.
+2. Nas configurações de Authentication, defina o Site URL do site e permita o
+   endereço do Render e `http://localhost:4173` como URLs de redirecionamento.
+   Configure a confirmação de e-mail/SMTP conforme o fluxo desejado.
+3. No Render, defina `SUPABASE_URL` e `SUPABASE_PUBLISHABLE_KEY` (ou a chave
+   pública legada `SUPABASE_ANON_KEY`). A chave publishable/anon é pública e
+   protegida pelas políticas RLS; **nunca** coloque `service_role` no navegador
+   ou nessas variáveis. O servidor só disponibiliza URLs HTTPS `*.supabase.co`
+   e chaves públicas reconhecidas; se a configuração estiver ausente ou for
+   inválida, o login permanece desativado e nenhuma chave é enviada ao navegador.
+4. Faça deploy e teste cadastro, confirmação por e-mail, login, recuperação de
+   senha e isolamento de dados entre duas contas.
+
+Sem essas variáveis o simulador continua funcionando, mas o login informa que
+não foi configurado. O armazenamento remoto requer a migração SQL aplicada;
+erros de tabela/política são exibidos e os dados locais não são apagados.
 
 ## Fonte e limites da atualização
 
@@ -60,6 +90,10 @@ Portanto:
 - a página compara jogos, vitórias, empates, derrotas e gols conhecidos com os
   totais da tabela GE. Diferenças são um alerta de cobertura, não uma prova de
   qual placar está faltando;
+- a aba **Fontes e método** contém um relatório jogo a jogo. Resultados do
+  snapshot não têm procedência individual; resultados observados identificam o
+  feed GE; correções mantêm a fonte HTTPS declarada na importação. O processo
+  não autentica essas fontes de forma independente;
 - as probabilidades usam os totais atuais por clube do GE; como o feed não
   informa separação casa/fora, a proporção de gols mandante/visitante é uma
   referência histórica do snapshot.
@@ -120,7 +154,23 @@ As vagas da liga são aproximações: títulos de copas e o regulamento oficial
 podem mudar as posições classificatórias. O validador rejeita faixas
 sobrepostas ou fora das posições da liga.
 
+A interface trata as faixas de classificação como cenários do modelo, não como
+vagas oficiais garantidas. O projeto ainda não confirmou um documento oficial
+específico do regulamento 2026 com data de publicação verificável; os cortes não
+devem ser apresentados como oficiais até que a fonte seja adicionada e conferida.
+
 Cada simulação Monte Carlo usa a semente configurável do cenário. Com os mesmos
 dados, palpites, ajustes e semente, as chances são reproduzíveis. A aba
 **Corrida** mostra a chance de título de todos os clubes, calculada pelo mesmo
 modelo e número de simulações.
+
+A aba **Meus palpites** também calcula calibração das probabilidades salvas em
+cada previsão. O Brier score de três resultados é a média da soma dos erros
+quadráticos para casa/empate/fora (0 é perfeito; menor é melhor), e a tabela de
+confiabilidade compara confiança média com frequência observada por faixas.
+Somente previsões com snapshot e resultado registrado entram nessas métricas;
+amostras pequenas não são evidência de desempenho futuro.
+
+Em telas estreitas, tabelas e relatórios rolam horizontalmente dentro de regiões
+identificadas. Os campos de placar e os controles principais têm alvos de toque
+maiores; as abas também aceitam navegação por setas, Home e End.

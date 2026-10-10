@@ -5,8 +5,11 @@ import { fileURLToPath } from 'node:url';
 import { getCompetition } from 'campeonato-brasileiro-api';
 import { createLiveFeedCache, normalizeLiveCompetition } from '../src/live-feed.js';
 import { createLiveHistoryStore } from '../src/live-history.js';
+import { getPublicSupabaseConfig } from '../src/supabase-config.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const supabaseSdkPath = path.join(root, 'node_modules', '@supabase', 'supabase-js', 'dist', 'umd', 'supabase.js');
+const supabaseConfig = getPublicSupabaseConfig(process.env);
 const port = Number(process.env.PORT || 4173);
 const host = process.env.HOST || (process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1');
 const addToHistory = createLiveHistoryStore(
@@ -62,6 +65,34 @@ const server = createServer(async (request, response) => {
         error: 'Não foi possível consultar a fonte GE neste momento.',
         details: error instanceof Error ? error.message : 'Erro externo desconhecido.',
       }));
+    }
+    return;
+  }
+
+  if (pathname === '/api/config') {
+    response.writeHead(200, {
+      'Cache-Control': 'no-store',
+      'Content-Type': 'application/json; charset=utf-8',
+      'X-Content-Type-Options': 'nosniff',
+    }).end(JSON.stringify(supabaseConfig));
+    return;
+  }
+
+  if (pathname === '/vendor/supabase.js') {
+    try {
+      if (!statSync(supabaseSdkPath).isFile()) throw new Error('SDK unavailable');
+      response.writeHead(200, {
+        'Cache-Control': 'public, max-age=3600',
+        'Content-Type': 'text/javascript; charset=utf-8',
+        'X-Content-Type-Options': 'nosniff',
+      });
+      if (request.method === 'HEAD') response.end();
+      else createReadStream(supabaseSdkPath).pipe(response);
+    } catch {
+      response.writeHead(503, {
+        'Cache-Control': 'no-store',
+        'Content-Type': 'text/plain; charset=utf-8',
+      }).end('Supabase client SDK unavailable');
     }
     return;
   }

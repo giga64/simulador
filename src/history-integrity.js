@@ -55,7 +55,7 @@ export function mergeVerifiedResults(snapshot, backfill) {
       away: result.away,
       homeGoals: result.homeGoals,
       awayGoals: result.awayGoals,
-      source: { ...result.source },
+      source: { ...result.source, type: 'verified-backfill' },
     });
     knownKeys.add(entry.key);
   }

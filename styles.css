@@ -11,7 +11,7 @@ button,select{font:600 .82rem inherit;border:1px solid var(--ln);border-radius:1
 svg.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.mu{color:var(--mu)}.sm{font-size:.76rem}
 .nav{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;padding-bottom:4px}.nav button{flex:none;padding:9px 16px}
-.lay{display:grid;gap:14px}@media(min-width:1040px){.lay{grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);align-items:start}.stick{position:sticky;top:10px;max-height:calc(100vh - 20px);overflow:auto}}
+.lay{display:grid;gap:14px}.lay>*{min-width:0}.stick,#side{min-width:0}@media(min-width:1040px){.lay{grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);align-items:start}.stick{position:sticky;top:10px;max-height:calc(100vh - 20px);overflow:auto}}
 .sc{overflow-x:auto;border-radius:10px}table{border-collapse:separate;border-spacing:0;width:100%;font-size:.83rem}
 th{color:var(--mu);font-weight:600;font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;text-align:center;padding:6px 7px;position:sticky;top:0;background:var(--s1);border-bottom:1px solid var(--ln)}th.so{cursor:pointer}
 td{padding:5px 7px;text-align:center;border-bottom:1px solid var(--ln);white-space:nowrap}td.n{font-weight:800}tr:hover td{background:var(--s2)}tr.hl td{background:var(--hl)}td.l,th.l{text-align:left}
@@ -37,6 +37,7 @@ td{padding:5px 7px;text-align:center;border-bottom:1px solid var(--ln);white-spa
 input[type=range]{width:150px;accent-color:var(--ac);vertical-align:middle}.ctl{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin-top:8px}.ctl label{font-size:.78rem;color:var(--mu);display:block}.ctl b{color:var(--tx)}
 svg.ch{width:100%;height:auto;display:block}svg.ch text{fill:var(--mu);font-size:9px}
 #mod{position:fixed;inset:0;background:#000a;display:grid;place-items:center;padding:14px;z-index:20}#mod[hidden]{display:none}.box{background:var(--s1);border:1px solid var(--ln);border-radius:16px;padding:16px;max-width:640px;width:100%;max-height:92vh;overflow:auto}
+.auth-overlay{position:fixed;inset:0;z-index:25;display:grid;place-items:center;padding:14px;background:#000a}.auth-overlay[hidden]{display:none}.auth-box{position:relative;width:min(100%,440px);max-height:92vh;overflow:auto;padding:22px;background:var(--s1);border:1px solid var(--ln);border-radius:16px;box-shadow:0 12px 40px #0006}.auth-box h2{font-size:.9rem;letter-spacing:.06em}.auth-box p{color:var(--mu);font-size:.85rem}.auth-box label{display:block;margin:12px 0 4px;font-size:.8rem}.auth-box input{display:block;width:100%;min-height:42px;padding:8px 10px;border:1px solid var(--ln);border-radius:9px;background:var(--bg);color:var(--tx)}.auth-box form>button{margin-top:14px;min-height:44px}.auth-close{position:absolute;right:14px;top:14px;min-width:42px;min-height:42px;justify-content:center;font-size:1.3rem}.auth-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.auth-links button{font-size:.75rem}.auth-message{overflow-wrap:anywhere}
 textarea{width:100%;background:var(--bg);color:var(--tx);border:1px solid var(--ln);border-radius:10px;padding:8px;font:12px/1.4 ui-monospace,monospace;min-height:64px}.box img{max-width:100%;border-radius:10px;margin-top:10px}
 ul.src{padding-left:18px;margin:6px 0}ul.src li{margin:6px 0}
 .source-status{flex-basis:100%;margin:0;color:var(--mu);font-size:.76rem}
@@ -48,4 +49,6 @@ ul.src{padding-left:18px;margin:6px 0}ul.src li{margin:6px 0}
 .toast[hidden]{display:none}
 :focus-visible{outline:3px solid var(--ac);outline-offset:2px}
 button:focus:not(:focus-visible){outline:none}
-@media(max-width:640px){main{padding:10px}.nav button{min-height:44px}.qk button{min-width:40px;min-height:40px}.tile{grid-template-columns:repeat(2,minmax(0,1fr))}.source-status{font-size:.72rem}}
+details summary{cursor:pointer;font-weight:650;padding:8px 0}
+details summary:focus-visible{outline-offset:3px}
+@media(max-width:640px){main{padding:10px}.nav button{min-height:44px}.qk button{min-width:40px;min-height:40px}.tt input{width:44px;height:44px}.tile{grid-template-columns:repeat(2,minmax(0,1fr))}.source-status{font-size:.72rem}}

@@ -9,7 +9,17 @@ function isValidMatch(match) {
     && typeof match.awayTeam?.shortName === 'string'
     && typeof match.awayTeam?.name === 'string'
     && Number.isInteger(match.score?.home) && match.score.home >= 0 && match.score.home <= 20
-    && Number.isInteger(match.score?.away) && match.score.away >= 0 && match.score.away <= 20;
+    && Number.isInteger(match.score?.away) && match.score.away >= 0 && match.score.away <= 20
+    && (match.observedAt == null || Number.isFinite(Date.parse(match.observedAt)))
+    && (match.source == null || (typeof match.source.name === 'string'
+      && typeof match.source.url === 'string'
+      && (() => {
+        try {
+          return new URL(match.source.url).protocol === 'https:';
+        } catch {
+          return false;
+        }
+      })()));
 }
 
 function matchKey(match) {
@@ -62,8 +72,14 @@ export function createLiveHistoryStore(filePath, logger = console) {
       if (!isValidMatch(match)) continue;
       const key = matchKey(match);
       const previous = matches.get(key);
-      if (JSON.stringify(previous) !== JSON.stringify(match)) {
-        matches.set(key, match);
+      const scoreChanged = previous && JSON.stringify(previous.score) !== JSON.stringify(match.score);
+      const needsProvenance = !previous?.observedAt && typeof feed.fetchedAt === 'string';
+      if (!previous || scoreChanged || needsProvenance) {
+        matches.set(key, {
+          ...match,
+          ...(typeof feed.fetchedAt === 'string' ? { observedAt: feed.fetchedAt } : {}),
+          ...(feed.source ? { source: feed.source } : {}),
+        });
         changed = true;
       }
     }

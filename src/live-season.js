@@ -117,6 +117,11 @@ export function mergeLiveSeason(snapshot, liveFeed) {
       away,
       homeGoals: match.score.home,
       awayGoals: match.score.away,
+      source: {
+        ...(match.source || liveFeed.source || { name: 'GE (Globo Esporte)', url: null }),
+        observedAt: match.observedAt || match.source?.observedAt || liveFeed.fetchedAt || null,
+        type: 'feed-observed',
+      },
     };
     const existing = seasonData.results.find((item) => item.round === result.round
       && item.home === home && item.away === away);

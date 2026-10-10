@@ -59,6 +59,12 @@ test('finished current-round scores update the calendar, while live scores remai
     away: fixture.away,
     homeGoals: 2,
     awayGoals: 1,
+    source: {
+      name: 'GE (Globo Esporte)',
+      url: null,
+      observedAt: null,
+      type: 'feed-observed',
+    },
   });
   assert.ok(merged.warnings.some((warning) => warning.includes('não pôde ser associada')));
 });

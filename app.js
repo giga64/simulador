@@ -9,6 +9,14 @@ import {
 } from './src/scenario.js';
 import { mergeLiveSeason } from './src/live-season.js';
 import { assessHistoryCoverage, mergeVerifiedResults } from './src/history-integrity.js';
+import {
+  archiveCompletedPredictions,
+  createModelSnapshot,
+  summarizePredictionCalibration,
+  summarizePredictionPerformance,
+  upsertPredictionSnapshot,
+  validatePredictionHistory,
+} from './src/prediction-performance.js';
 
 (async()=>{
   let validationWarnings=[];
@@ -68,11 +76,32 @@ const METH={ml:['Resultado mais provável (modelo)','Para cada jogo, escolhe o r
 const $=s=>document.querySelector(s),escapeHtml=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char])),formatLiveTime=value=>value?new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short',timeZone:'America/Sao_Paulo'}).format(new Date(value)):'indisponível';let SC={},tab=DEFAULT_ROUND,team='',MCR=null,tmr,view='sim',PG={},sortK='pts',sortD=-1,open={};
 let opt={full:true,odds:true,meth:'ml'},SET={k:6,ha:1,rho:-.1,adj:{},seed:20261010};
 let storageWarningShown=false;
+let predictionHistory=[];
+let anonymousPredictionHistory=[];
+let signedInUser=null;
+let supabaseClient=null;
+let supabaseConfigError='';
+let accountDialog=null;
+let authMode='login';
+let authBusy=false;
+let authStatus='';
 const notify=(message)=>{const toast=$('#toast');if(!toast)return;toast.textContent=message;toast.hidden=false;clearTimeout(notify.timer);notify.timer=setTimeout(()=>{toast.hidden=true},5000)};
+const predictionStorageKey=()=>signedInUser?`br26predictionHistory:${signedInUser.id}`:'br26predictionHistory';
+let accountSaveTimer;
+let accountSaveQueue=Promise.resolve();
+const savePredictionHistory=()=>{
+ try{localStorage.setItem(predictionStorageKey(),JSON.stringify(predictionHistory))}
+ catch(error){if(!storageWarningShown){storageWarningShown=true;notify(`Não foi possível salvar o histórico de palpites neste navegador: ${error.message}`)}}
+ if(!signedInUser)anonymousPredictionHistory=predictionHistory;
+ if(signedInUser&&supabaseClient)scheduleAccountPredictionSave();
+};
+try{const storedHistory=JSON.parse(localStorage.getItem('br26predictionHistory')||'[]');predictionHistory=validatePredictionHistory(storedHistory,ALL_FIXTURES,T);anonymousPredictionHistory=predictionHistory}catch(error){storageWarningShown=true;queueMicrotask(()=>notify(`O histórico de desempenho não pôde ser restaurado: ${error.message}`))}
 const payloadFromState=()=>({version:1,scores:SC,settings:{k:SET.k,ha:SET.ha,rho:SET.rho,seed:SET.seed,adjustments:SET.adj},options:{full:opt.full,odds:opt.odds,method:opt.meth}});
 try{
  const saved=JSON.parse(localStorage.getItem('br26c')||'null');
  if(saved){
+  const captured=archiveCompletedPredictions(predictionHistory,saved.SC||{},ALL_FIXTURES,rawResults,new Date().toISOString(),dataSource);
+  if(captured.added||captured.updated){predictionHistory=captured.history;savePredictionHistory()}
   const savedSettings={...SET,...saved.SET,adj:saved.SET?.adj||{}};
   if(saved.SET&&!Number.isInteger(saved.SET.seed))savedSettings.seed=SET.seed;
   const savedScores=pruneCompletedScenarioScores(saved.SC||{},ALL_FIXTURES,LIVE_ROUND?.number,M.map(m=>m.k));
@@ -83,6 +112,211 @@ try{
  }
 }catch(error){SC={};storageWarningShown=true;queueMicrotask(()=>notify(`N\u00e3o foi poss\u00edvel restaurar o cen\u00e1rio salvo: ${error.message}`))}
 const save=()=>{try{localStorage.setItem('br26c',JSON.stringify({SC,SET,opt}))}catch(error){if(!storageWarningShown){storageWarningShown=true;notify(`N\u00e3o foi poss\u00edvel salvar neste navegador: ${error.message}`)}}};
+function predictionToRow(entry,userId){return{
+ user_id:userId,fixture_id:entry.fixtureId,round:entry.round,home_team:entry.home,away_team:entry.away,
+ prediction:entry.prediction,model_snapshot:entry.modelSnapshot||null,actual:entry.actual||null,
+ result_source:entry.resultSource||null,recorded_at:entry.recordedAt,
+}}
+function predictionFromRow(row){
+ const fixture=ALL_FIXTURES.find((match)=>match.id===row.fixture_id);
+ if(!fixture)throw new Error(`A conta contém um palpite para uma partida desconhecida (${row.fixture_id}).`);
+ return{
+  fixtureId:fixture.id,round:fixture.round,home:fixture.home,away:fixture.away,
+  prediction:row.prediction,modelSnapshot:row.model_snapshot||undefined,actual:row.actual||undefined,
+  resultSource:row.result_source||undefined,recordedAt:row.recorded_at,
+ };
+}
+function scheduleAccountPredictionSave(){
+ if(!signedInUser||!supabaseClient)return;
+ clearTimeout(accountSaveTimer);
+ const userId=signedInUser.id,client=supabaseClient,rows=predictionHistory.map((entry)=>predictionToRow(entry,userId));
+ accountSaveTimer=setTimeout(()=>{
+  accountSaveQueue=accountSaveQueue.then(async()=>{
+   if(signedInUser?.id!==userId)return;
+   if(!rows.length)return;
+   const{error}=await client.from('prediction_snapshots').upsert(rows,{onConflict:'user_id,fixture_id'});
+   if(error)throw new Error(error.message);
+  }).catch((error)=>notify(`Não foi possível sincronizar seus palpites com a conta: ${error.message}`));
+ },350);
+}
+function deleteAccountPrediction(fixtureId){
+ if(!signedInUser||!supabaseClient)return;
+ clearTimeout(accountSaveTimer);
+ const userId=signedInUser.id,client=supabaseClient;
+ accountSaveQueue=accountSaveQueue.then(async()=>{
+  const{error}=await client.from('prediction_snapshots').delete().eq('user_id',userId).eq('fixture_id',fixtureId);
+  if(error)throw new Error(error.message);
+ }).catch((error)=>notify(`O palpite foi removido deste navegador, mas não da conta: ${error.message}`));
+}
+async function loadAccountPredictionHistory(user){
+ let local=[];
+ try{local=validatePredictionHistory(JSON.parse(localStorage.getItem(`br26predictionHistory:${user.id}`)||'[]'),ALL_FIXTURES,T)}
+ catch(error){throw new Error(`O cache local da conta não pôde ser lido: ${error.message}`)}
+ predictionHistory=local;
+ if(view==='perf')renderPerformance();
+ const{data,error}=await supabaseClient.from('prediction_snapshots').select('*').eq('user_id',user.id);
+ if(error)throw new Error(`Não foi possível carregar os palpites da conta: ${error.message}`);
+ const remote=validatePredictionHistory((data||[]).map(predictionFromRow),ALL_FIXTURES,T);
+ const merged=new Map(remote.map((entry)=>[entry.fixtureId,entry]));
+ for(const entry of local){
+  const previous=merged.get(entry.fixtureId);
+  if(!previous||Date.parse(entry.recordedAt)>Date.parse(previous.recordedAt))merged.set(entry.fixtureId,entry);
+ }
+ if(signedInUser?.id!==user.id)return;
+ const completed=archiveCompletedPredictions([...merged.values()],{},ALL_FIXTURES,rawResults,new Date().toISOString(),dataSource);
+ predictionHistory=validatePredictionHistory(completed.history,ALL_FIXTURES,T);
+ savePredictionHistory();
+ if(view==='perf')renderPerformance();
+}
+function ensureAccountDialog(){
+ if(accountDialog)return;
+ accountDialog=document.createElement('div');
+ accountDialog.id='accountDialog';
+ accountDialog.className='auth-overlay';
+ accountDialog.hidden=true;
+ accountDialog.setAttribute('role','dialog');
+ accountDialog.setAttribute('aria-modal','true');
+ accountDialog.setAttribute('aria-labelledby','account-title');
+ accountDialog.innerHTML='<div class="auth-box"></div>';
+ accountDialog.addEventListener('click',(event)=>{if(event.target===accountDialog)closeAccountDialog()});
+ document.body.append(accountDialog);
+}
+function renderAccountDialog(){
+ ensureAccountDialog();
+ const titles={login:'Entrar na sua conta',register:'Criar conta',forgot:'Recuperar senha',reset:'Definir nova senha'};
+ const description={
+  login:'Acesse seus palpites e snapshots do modelo em qualquer sessão.',
+  register:'Crie uma conta para manter seus palpites sincronizados.',
+  forgot:'Enviaremos um link de recuperação para o e-mail informado.',
+  reset:'Escolha uma nova senha para sua conta.',
+ };
+ const hasPassword=authMode==='login'||authMode==='register'||authMode==='reset';
+ const hasName=authMode==='register';
+ const box=accountDialog.querySelector('.auth-box');
+ box.innerHTML=`<button type="button" class="auth-close" data-auth-action="close" aria-label="Fechar">×</button><h2 id="account-title">${titles[authMode]}</h2><p>${description[authMode]}</p>${supabaseConfigError?`<p class="warn auth-message" role="alert">${escapeHtml(supabaseConfigError)}</p>`:''}<form id="accountForm"><label for="account-email">E-mail</label><input id="account-email" type="email" autocomplete="email" required ${authBusy||supabaseConfigError?'disabled':''}>${hasName?'<label for="account-name">Nome</label><input id="account-name" type="text" autocomplete="name" maxlength="80" required>':''}${hasPassword?`<label for="account-password">${authMode==='reset'?'Nova senha':'Senha'}</label><input id="account-password" type="password" autocomplete="${authMode==='register'||authMode==='reset'?'new-password':'current-password'}" minlength="8" required ${authBusy||supabaseConfigError?'disabled':''}>`:''}${authMode==='register'||authMode==='reset'?'<label for="account-confirm">Confirmar senha</label><input id="account-confirm" type="password" autocomplete="new-password" minlength="8" required>':''}<button type="submit" class="p" ${authBusy||supabaseConfigError?'disabled':''}>${authBusy?'Aguarde…':authMode==='login'?'Entrar':authMode==='register'?'Criar conta':authMode==='forgot'?'Enviar link':'Salvar nova senha'}</button></form><p class="auth-message" role="status" aria-live="polite">${escapeHtml(authStatus)}</p><div class="auth-links">${authMode!=='login'?'<button type="button" data-auth-action="login">Voltar ao login</button>':''}${authMode==='login'?'<button type="button" data-auth-action="register">Criar conta</button><button type="button" data-auth-action="forgot">Esqueci minha senha</button>':''}</div>`;
+ box.querySelector('#accountForm').addEventListener('submit',submitAccountForm);
+ box.querySelectorAll('[data-auth-action]').forEach((button)=>button.addEventListener('click',()=>{
+  if(button.dataset.authAction==='close'){closeAccountDialog();return}
+  const email=box.querySelector('#account-email')?.value||'';
+  authMode=button.dataset.authAction;
+  authStatus='';
+  renderAccountDialog();
+  const emailInput=accountDialog.querySelector('#account-email');
+  if(emailInput)emailInput.value=email;
+  box.querySelector('input:not([disabled])')?.focus();
+ }));
+}
+function openAccountDialog(mode='login'){
+ authMode=mode;
+ authStatus='';
+ renderAccountDialog();
+ accountDialog.hidden=false;
+ accountDialog.querySelector('input:not([disabled])')?.focus();
+}
+function closeAccountDialog(){
+ if(!accountDialog)return;
+ accountDialog.hidden=true;
+ document.querySelector('#accountButton')?.focus();
+}
+function renderAccountButton(){
+ const button=$('#accountButton');
+ if(!button)return;
+ button.textContent=signedInUser?`Sair · ${signedInUser.email}`:'Entrar / criar conta';
+ button.setAttribute('aria-label',signedInUser?`Sair da conta ${signedInUser.email}`:'Entrar ou criar conta');
+ button.disabled=!supabaseClient&&!supabaseConfigError;
+}
+async function submitAccountForm(event){
+ event.preventDefault();
+ if(!supabaseClient||authBusy)return;
+ const email=$('#account-email').value.trim(),password=$('#account-password')?.value||'';
+ const confirmation=$('#account-confirm')?.value;
+ if(confirmation!=null&&password!==confirmation){authStatus='As senhas não coincidem.';renderAccountDialog();return}
+ authBusy=true;
+ authStatus='';
+ renderAccountDialog();
+ try{
+  if(authMode==='login'){
+   const{error}=await supabaseClient.auth.signInWithPassword({email,password});
+   if(error)throw error;
+   closeAccountDialog();
+  }else if(authMode==='register'){
+   const name=$('#account-name').value.trim();
+   if(!name)throw new Error('Informe seu nome.');
+   const{data,error}=await supabaseClient.auth.signUp({email,password,options:{data:{display_name:name}}});
+   if(error)throw error;
+   authStatus=data.session?'Conta criada e conectada.':'Conta criada. Confira seu e-mail para confirmar o cadastro.';
+   if(data.session)closeAccountDialog();
+  }else if(authMode==='forgot'){
+   const{error}=await supabaseClient.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
+   if(error)throw error;
+   authStatus='Se o endereço estiver cadastrado, o link de redefinição será enviado.';
+  }else{
+   const{error}=await supabaseClient.auth.updateUser({password});
+   if(error)throw error;
+   closeAccountDialog();
+   notify('Senha atualizada.');
+  }
+ }catch(error){
+  authStatus=`Não foi possível concluir: ${error.message||String(error)}`;
+ }finally{
+  authBusy=false;
+  if(!accountDialog.hidden){
+   const emailValue=$('#account-email')?.value||'',nameValue=$('#account-name')?.value||'';
+   renderAccountDialog();
+   if($('#account-email'))$('#account-email').value=emailValue;
+   if($('#account-name'))$('#account-name').value=nameValue;
+  }
+ }
+}
+async function activateAccountSession(user){
+ const nextId=user?.id||null;
+ if((signedInUser?.id||null)===nextId){signedInUser=user;renderAccountButton();return}
+ clearTimeout(accountSaveTimer);
+ signedInUser=user;
+ if(user){
+  predictionHistory=[];
+  renderAccountButton();
+  await loadAccountPredictionHistory(user);
+  notify(`Conectado como ${user.email}. Seus palpites serão sincronizados com a conta.`);
+ }else{
+  predictionHistory=anonymousPredictionHistory;
+  renderAccountButton();
+  if(view==='perf')renderPerformance();
+ }
+}
+async function initializeAccount(){
+ renderAccountButton();
+ try{
+  const response=await fetch('/api/config',{cache:'no-store'});
+  if(!response.ok)throw new Error(`HTTP ${response.status}`);
+  const config=await response.json();
+  if(!config.authConfigured){
+   supabaseConfigError='Login ainda não configurado no servidor. Defina SUPABASE_URL e SUPABASE_PUBLISHABLE_KEY após configurar o projeto e a tabela.';
+   renderAccountButton();
+   return;
+  }
+  if(!window.supabase?.createClient)throw new Error('O cliente Supabase não foi carregado.');
+  supabaseClient=window.supabase.createClient(config.supabaseUrl,config.supabaseKey,{
+   auth:{storage:window.sessionStorage,storageKey:'br26-supabase-auth',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true},
+  });
+  const{data,error}=await supabaseClient.auth.getSession();
+  if(error)throw error;
+  try{await activateAccountSession(data.session?.user||null)}
+  catch(error){notify(`Não foi possível sincronizar os palpites da conta: ${error.message}`);console.error(error)}
+  supabaseClient.auth.onAuthStateChange((event,session)=>{
+   if(event==='PASSWORD_RECOVERY')openAccountDialog('reset');
+   void activateAccountSession(session?.user||null).catch((error)=>{
+    notify(`Falha ao preparar os dados da conta: ${error.message}`);
+    console.error(error);
+   });
+  });
+ }catch(error){
+  supabaseConfigError=`Autenticação indisponível: ${error.message||String(error)}`;
+  renderAccountButton();
+  notify(supabaseConfigError);
+  console.error('Falha ao configurar Supabase Auth:',error);
+ }
+}
 const IC={dice:'<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8.5 8.5h.01M15.5 8.5h.01M12 12h.01M8.5 15.5h.01M15.5 15.5h.01"/>',wand:'<path d="M5 3v4M3 5h4M6 17v4M4 19h4M13 3l2.2 5.8L21 11l-5.8 2.2L13 19l-2.2-5.8L5 11l5.8-2.2z"/>',trash:'<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/>',share:'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.5l6.8-4M8.6 13.5l6.8 4"/>',cl:'<path d="M15 18l-6-6 6-6"/>',cr:'<path d="M9 18l6-6-6-6"/>',x:'<path d="M18 6L6 18M6 6l12 12"/>',cols:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16"/>',chart:'<path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/>',copy:'<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/>',img:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 8h.01M21 15l-5-5L5 21"/>',list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',down:'<path d="M12 3v12m0 0l-5-5m5 5l5-5M4 21h16"/>',info:'<circle cx="12" cy="12" r="9"/><path d="M12 16v-5M12 8h.01"/>',alert:'<path d="M12 3l10 18H2zM12 10v5M12 18h.01"/>'};
 const ic=n=>`<svg class="i" viewBox="0 0 24 24">${IC[n]}</svg>`;
 const stl=document.createElement('style');stl.textContent=Object.keys(LOGO).map(c=>`.lg.${c}{background-image:url(${LOGO[c]})}`).join('');document.head.appendChild(stl);
@@ -137,7 +371,7 @@ function card(m){const v=SC[m.k]||['',''],d=m.dt,hl=team&&(m.h==team||m.a==team)
  <div class="pr"><i style="width:${G.H*100}%;background:var(--g)"></i><i style="width:${G.D*100}%;background:var(--mu)"></i><i style="width:${G.A*100}%;background:var(--b)"></i></div><div class="pl"><span>Casa ${Math.round(G.H*100)}%</span><span>Empate ${Math.round(G.D*100)}%</span><span>Fora ${Math.round(G.A*100)}%</span></div>
  <div class="qk"><button data-act="quick-score" data-match="${m.k}" data-result="1">Casa</button><button data-act="quick-score" data-match="${m.k}" data-result="0">Empate</button><button data-act="quick-score" data-match="${m.k}" data-result="2">Fora</button><button data-act="auto-match" data-match="${m.k}" title="Preencher pelo método escolhido" aria-label="Preencher ${NM[m.h]} contra ${NM[m.a]} pelo modelo">${ic('wand')}</button><button data-act="clear-match" data-match="${m.k}" title="Limpar" aria-label="Limpar palpite de ${NM[m.h]} contra ${NM[m.a]}">${ic('x')}</button><button data-act="toggle-match-info" data-match="${m.k}" title="Dados do modelo" aria-label="Mostrar dados do modelo para ${NM[m.h]} contra ${NM[m.a]}" aria-expanded="${Boolean(open[m.k])}">${ic('info')}</button>${au?'<span class="tag u">automático</span>':v[0]!==''?'<span class="tag u">seu palpite</span>':''}</div>
  ${open[m.k]?`<div class="dt">Gols esperados: <b>${f1(G.lh)}</b> x <b>${f1(G.la)}</b>. ${modelDetails}${ida?` Jogo de ida (${NM[m.a]} x ${NM[m.h]}): ${ida.x} x ${ida.y}.`:''}</div>`:''}</div>`}
-function resultCard(fixture,result){const verified=result.source,source=verified?.name||dataSource.name,verifiedAt=verified?.verifiedAt?` · conferido em ${formatLiveTime(verified.verifiedAt)}`:'';return `<div class="mc result-card"><div class="meta"><span>Resultado registrado</span><span class="sd">${fixture.stadium||STD[fixture.home]||''}</span><span>${escapeHtml(source)}</span></div><div class="tt"><span class="t h">${ab(fixture.home)}</span>${lg(fixture.home)}<b class="result-score">${result.homeGoals}</b><span class="x">x</span><b class="result-score">${result.awayGoals}</b>${lg(fixture.away)}<span class="t">${ab(fixture.away)}</span></div><div class="dt">${NM[fixture.home]} ${result.homeGoals} x ${result.awayGoals} ${NM[fixture.away]}${verifiedAt}</div></div>`}
+function resultCard(fixture,result){const sourceInfo=result.source,source=sourceInfo?.name||dataSource.name,stamp=sourceInfo?.type==='verified-backfill'&&sourceInfo.verifiedAt?` · fonte declarada, conferida em ${formatLiveTime(sourceInfo.verifiedAt)}`:sourceInfo?.type==='feed-observed'&&sourceInfo.observedAt?` · observado no GE em ${formatLiveTime(sourceInfo.observedAt)}`:'';return `<div class="mc result-card"><div class="meta"><span>Resultado registrado</span><span class="sd">${fixture.stadium||STD[fixture.home]||''}</span><span>${escapeHtml(source)}</span></div><div class="tt"><span class="t h">${ab(fixture.home)}</span>${lg(fixture.home)}<b class="result-score">${result.homeGoals}</b><span class="x">x</span><b class="result-score">${result.awayGoals}</b>${lg(fixture.away)}<span class="t">${ab(fixture.away)}</span></div><div class="dt">${NM[fixture.home]} ${result.homeGoals} x ${result.awayGoals} ${NM[fixture.away]}${stamp}</div></div>`}
 function missingResultCard(fixture){return `<div class="mc result-card"><div class="meta"><span>Resultado não disponível</span><span class="sd">${fixture.stadium||STD[fixture.home]||''}</span><span>${fixture.status==='postponed'?'Partida adiada':'Sem placar confirmado'}</span></div><div class="tt"><span class="t h">${ab(fixture.home)}</span>${lg(fixture.home)}<span class="x">x</span>${lg(fixture.away)}<span class="t">${ab(fixture.away)}</span></div><div class="dt">${NM[fixture.home]} x ${NM[fixture.away]} · ${fixture.status==='postponed'?'Data a definir.':'Este jogo não tem resultado disponível no snapshot.'}</div></div>`}
 function tools(sc,lab){return `<div class="row" style="margin-bottom:10px"><button data-act="fill-scope" data-scope="${sc}">${ic('wand')}Preencher ${lab}</button><button data-act="clear-scope" data-scope="${sc}" data-automatic="true">${ic('trash')}Limpar automáticos</button><button data-act="clear-scope" data-scope="${sc}">${ic('trash')}Limpar tudo</button></div>`}
 function renderSide(){const s=project(),o=rankTeams(s);let h='';
@@ -163,18 +397,36 @@ function renderSide(){const s=project(),o=rankTeams(s);let h='';
 function bars(v,lab,o){const W=300,H=o.h||80,n=v.length,bw=W/n,mx=Math.max(...v,o.max||0)||1;return `<svg class="ch" viewBox="0 0 ${W} ${H+14}">${v.map((x,i)=>{const hh=x/mx*H;return `<rect x="${i*bw+1}" y="${H-hh}" width="${bw-2}" height="${hh}" rx="1.5" fill="${o.col?o.col(i):'#D9B65C'}" opacity="${o.op&&o.op(i)||1}"><title>${lab[i]}: ${o.fmt?o.fmt(x):x}</title></rect>`}).join('')}${lab.map((l,i)=>n<=40&&(i%(o.step||1)==0)?`<text x="${i*bw+bw/2}" y="${H+10}" text-anchor="middle">${l}</text>`:'').join('')}${o.ref!=null?`<line x1="0" x2="${W}" y1="${H-o.ref/mx*H}" y2="${H-o.ref/mx*H}" stroke="#D9B65C" stroke-dasharray="3 3"/>`:''}</svg>`}
 function renderAll(){renderAviso();renderTab();renderSide();sched()}
 const go=d=>{const index=ROUND_OPTIONS.indexOf(tab);if(index<0||!ROUND_OPTIONS.length)return;tab=ROUND_OPTIONS[(index+d+ROUND_OPTIONS.length)%ROUND_OPTIONS.length];renderSide()};
-function sv(k,i,v){const s=SC[k]||(SC[k]=['','','u']);s[i]=v===''?'':String(Math.max(0,Math.min(20,Math.floor(+v)||0)));s[2]='u';if(s[0]===''&&s[1]==='')delete SC[k];save();renderTab();sched();document.querySelectorAll('.pills button').forEach(b=>{const round=Number(b.dataset.round);b.classList.toggle('ok',M.filter(m=>m.r===round).every(m=>val(m.k)))})}
-function qk(k,w){SC[k]=w==1?['1','0','u']:w==0?['1','1','u']:['0','1','u'];save();renderAll()}
-function auto(k){const m=M.find(m=>m.k==k),[x,y]=pick(opt.meth,m.h,m.a,m.k);SC[k]=[String(x),String(y),'a'];save();renderAll()}
+function removePendingPrediction(fixtureId){
+ const entry=predictionHistory.find((item)=>item.fixtureId===fixtureId);
+ if(entry&&!entry.actual){predictionHistory=predictionHistory.filter((item)=>item.fixtureId!==fixtureId);savePredictionHistory();deleteAccountPrediction(fixtureId)}
+}
+function recordPredictionSnapshot(fixtureId){
+ const match=M.find((item)=>item.k===fixtureId),score=SC[fixtureId];
+ if(!match||!val(fixtureId))return;
+ const forecast=grid(match.h,match.a),recordedAt=new Date().toISOString();
+ try{
+  const modelSnapshot=createModelSnapshot({
+   probabilities:{home:forecast.H,draw:forecast.D,away:forecast.A},
+   settings:SET,teams:{home:match.h,away:match.a},
+   dataRevision:liveFeed?.revision||dataUpdatedAt,method:opt.meth,recordedAt,
+  });
+  predictionHistory=upsertPredictionSnapshot(predictionHistory,ALL_FIXTURES.find((fixture)=>fixture.id===fixtureId),score,modelSnapshot);
+  savePredictionHistory();
+ }catch(error){notify(`Não foi possível registrar o snapshot deste palpite: ${error.message}`);console.error(error)}
+}
+function sv(k,i,v){const s=SC[k]||(SC[k]=['','','u']);s[i]=v===''?'':String(Math.max(0,Math.min(20,Math.floor(+v)||0)));s[2]='u';if(s[0]===''&&s[1]===''){delete SC[k];removePendingPrediction(k)}else if(val(k))recordPredictionSnapshot(k);save();renderTab();sched();document.querySelectorAll('.pills button').forEach(b=>{const round=Number(b.dataset.round);b.classList.toggle('ok',M.filter(m=>m.r===round).every(m=>val(m.k)))})}
+function qk(k,w){SC[k]=w==1?['1','0','u']:w==0?['1','1','u']:['0','1','u'];recordPredictionSnapshot(k);save();renderAll()}
+function auto(k){const m=M.find(m=>m.k==k),[x,y]=pick(opt.meth,m.h,m.a,m.k);SC[k]=[String(x),String(y),'a'];recordPredictionSnapshot(k);save();renderAll()}
 function targets(w){return w===null||w==='all'?M:w==='t'?M.filter(m=>m.h==team||m.a==team):/^\d+$/.test(w)?M.filter(m=>m.r==+w):M.filter(m=>m.k==w)}
-function fill(w){targets(w).forEach(m=>{if(SC[m.k]&&SC[m.k][2]=='u'&&val(m.k))return;const[x,y]=pick(opt.meth,m.h,m.a,m.k);SC[m.k]=[String(x),String(y),'a']});save();renderAll()}
-function clr(w,only){targets(w).forEach(m=>{if(!only||(SC[m.k]&&SC[m.k][2]=='a'))delete SC[m.k]});save();renderAll()}
-function allT(r){M.filter(m=>m.h==team||m.a==team).forEach(m=>{const home=m.h==team,w=r=='w'?(home?['2','0']:['0','2']):r=='l'?(home?['0','2']:['2','0']):['1','1'];SC[m.k]=[...w,'u']});save();renderAll()}
+function fill(w){targets(w).forEach(m=>{if(SC[m.k]&&SC[m.k][2]=='u'&&val(m.k))return;const[x,y]=pick(opt.meth,m.h,m.a,m.k);SC[m.k]=[String(x),String(y),'a'];recordPredictionSnapshot(m.k)});save();renderAll()}
+function clr(w,only){targets(w).forEach(m=>{if(!only||(SC[m.k]&&SC[m.k][2]=='a')){delete SC[m.k];removePendingPrediction(m.k)}});save();renderAll()}
+function allT(r){M.filter(m=>m.h==team||m.a==team).forEach(m=>{const home=m.h==team,w=r=='w'?(home?['2','0']:['0','2']):r=='l'?(home?['0','2']:['2','0']):['1','1'];SC[m.k]=[...w,'u'];recordPredictionSnapshot(m.k)});save();renderAll()}
 function setTeam(c){team=c;renderSide();renderTab();sched();if(c)scrollTo({top:0,behavior:'smooth'})}
 /* ---- abas ---- */
-const TABS=[['sim','Simulador'],['est','Estatísticas da temporada'],['cor',`Corrida: título, G${Q.libertadoresLeaguePositions} e Z${Q.relegationPlaces}`],['src','Fontes e método']];
+const TABS=[['sim','Simulador'],['perf','Meus palpites'],['est','Estatísticas da temporada'],['cor',`Corrida: título, G${Q.libertadoresLeaguePositions} e Z${Q.relegationPlaces}`],['src','Fontes e método']];
 function nav(){$('#nav').innerHTML=TABS.map(([k,t])=>`<button role="tab" id="tab-${k}" aria-controls="v-${k}" aria-selected="${view==k}" tabindex="${view==k?'0':'-1'}" class="${view==k?'on':''}" data-act="show-view" data-view="${k}">${t}</button>`).join('')}
-function show(v){view=v;TABS.forEach(([k])=>{$('#v-'+k).hidden=k!=v;$('#v-'+k).setAttribute('aria-labelledby','tab-'+k)});nav();if(v=='est'){renderEst();updateEstSource()}if(v=='cor')renderCor();if(v=='src'){renderSrc();updateSourceAndRules()}if(v=='sim')renderAll();scrollTo(0,0);$('#tab-'+v)?.focus({preventScroll:true})}
+function show(v){view=v;TABS.forEach(([k])=>{$('#v-'+k).hidden=k!=v;$('#v-'+k).setAttribute('aria-labelledby','tab-'+k)});nav();if(v=='perf')renderPerformance();if(v=='est'){renderEst();updateEstSource()}if(v=='cor')renderCor();if(v=='src'){renderSrc();updateSourceAndRules()}if(v=='sim')renderAll();scrollTo(0,0);$('#tab-'+v)?.focus({preventScroll:true})}
 function updateEstSource(){const paragraph=Array.from($('#v-est').querySelectorAll('p')).find((element)=>element.textContent.includes('Referência histórica 2025'));if(paragraph)paragraph.textContent=`Estes indicadores são calculados dos resultados detalhados disponíveis no snapshot local, atualizado em ${updatedLabel}; a API anexada informa somente a rodada atual, não o histórico completo. Referência histórica 2025 (ogol): 50% mandante, 26% empates, 24% visitante e 2,52 gols por jogo.`}
 function renderEst(){const L=LG,n=L.n,ps=x=>f1(x/n*100)+'%';
  const rows=T.map(c=>{const t=TS[c],e=t.h.d+t.a.d,J=t.h.n+t.a.n;return{c,e,pe:e/J*100,ph:(3*t.h.w+t.h.d)/t.h.n,pa:(3*t.a.w+t.a.d)/t.a.n,gh:t.h.gf/t.h.n,ch:t.h.ga/t.h.n,ga:t.a.gf/t.a.n,ca:t.a.ga/t.a.n,cs:t.cs,gf:(t.h.gf+t.a.gf)/J,gc:(t.h.ga+t.a.ga)/J,pts:3*(t.h.w+t.a.w)+t.h.d+t.a.d}});
@@ -189,6 +441,21 @@ function renderEst(){const L=LG,n=L.n,ps=x=>f1(x/n*100)+'%';
  <div class="cd"><h2>Gols por jogo em cada rodada</h2>${bars(L.gr,L.gr.map((_,i)=>i+1),{h:100,max:4,ref:L.gols/n,fmt:v=>f1(v),step:2})}<p class="mu sm" style="margin:4px 0 0">Linha: média de ${f1(L.gols/n)} gols por jogo.</p><h2 style="margin-top:12px">Placares mais comuns</h2>${bars(sc.map(x=>x[1]),sc.map(x=>x[0]),{h:70,fmt:v=>v+' jogos'})}</div></div>
  <div class="cd"><h2>Destaques da temporada</h2><div class="tile">${hl.map(([t,r,f])=>`<div>${lg(r.c)}<b style="font-size:.95rem">${NM[r.c]}</b><span>${t}: ${f(r)}</span></div>`).join('')}</div></div>
  <div class="cd"><h2>Desempenho detalhado do snapshot por time (clique no cabeçalho para ordenar)</h2><div class="sc"><table><tr><th class="l">Time</th>${th('pts','P')}${th('e','Emp.')}${th('pe','% emp.')}${th('ph','Pts/jogo casa')}${th('pa','Pts/jogo fora')}${th('gh','GP casa')}${th('ch','GC casa')}${th('ga','GP fora')}${th('ca','GC fora')}${th('cs','Jogos sem sofrer gol')}<th>Forma</th></tr>${rows.map(r=>`<tr><td class="l"><span class="tn">${lg(r.c)}${NM[r.c]}</span></td><td class="n">${r.pts}</td><td>${r.e}</td><td>${Math.round(r.pe)}%</td><td>${f1(r.ph)}</td><td>${f1(r.pa)}</td><td>${f1(r.gh)}</td><td>${f1(r.ch)}</td><td>${f1(r.ga)}</td><td>${f1(r.ca)}</td><td>${r.cs}</td><td>${form(r.c,{[r.c]:{sim:[]}})}</td></tr>`).join('')}</table></div></div>`}
+function renderPerformance(){
+ const completed=predictionHistory.filter((entry)=>entry.actual),userHistory=completed.filter((entry)=>entry.prediction.type==='u'),summary=summarizePredictionPerformance(userHistory,T),automatic=completed.length-userHistory.length,calibration=summarizePredictionCalibration(completed),fmtRate=value=>value==null?'–':`${(value*100).toFixed(1).replace('.',',')}%`,difference=value=>`${value>0?'+':''}${value}`;
+ const rows=summary.clubs.map(club=>`<tr><td class="l">${lg(club.code)}${NM[club.code]}</td><td>${club.matches}</td><td>${club.predictedPoints}</td><td>${club.actualPoints}</td><td class="${club.pointsDifference===0?'':club.pointsDifference>0?'gain':'dn'}">${difference(club.pointsDifference)}</td></tr>`).join('');
+ const matches=completed.slice().sort((a,b)=>b.round-a.round||b.recordedAt.localeCompare(a.recordedAt)).map(entry=>{
+  const predicted=entry.prediction,actual=entry.actual,exact=predicted.home===actual.home&&predicted.away===actual.away,source=entry.resultSource,snapshot=entry.modelSnapshot,sourceDate=source.type==='verified-backfill'?source.verifiedAt:source.observedAt;
+  const model=snapshot?`Casa ${fmtRate(snapshot.probabilities.home)} · Empate ${fmtRate(snapshot.probabilities.draw)} · Fora ${fmtRate(snapshot.probabilities.away)} · semente ${snapshot.settings.seed} · ${formatLiveTime(snapshot.recordedAt)}`:'Sem snapshot histórico';
+  return `<tr><td>${entry.round}</td><td class="l">${escapeHtml(NM[entry.home])} ${predicted.home}–${predicted.away} ${escapeHtml(NM[entry.away])}</td><td class="l">${actual.home}–${actual.away}</td><td>${exact?'Sim':'Não'}</td><td>${predicted.type==='a'?'Automático':'Seu palpite'}</td><td class="l">${escapeHtml(source.name)}${sourceDate?` · ${formatLiveTime(sourceDate)}`:''}${source.url?` · <a href="${escapeHtml(source.url)}" target="_blank" rel="noopener">fonte</a>`:''}</td><td class="l">${model}</td></tr>`;
+ }).join('');
+ const calibrationRows=calibration.bins.map((bin)=>`<tr><td>${Math.round(bin.min*100)}–${Math.round(bin.max*100)}%</td><td>${bin.matches}</td><td>${fmtRate(bin.meanConfidence)}</td><td>${fmtRate(bin.observedAccuracy)}</td></tr>`).join('');
+ const savedStatus=signedInUser?`Sincronização da conta ${escapeHtml(signedInUser.email)}. O histórico permanece vinculado à conta.`:'Salvo somente neste navegador. Entre para sincronizar seus palpites na conta.';
+ $('#v-perf').innerHTML=`<div class="cd"><h2>Precisão dos seus palpites</h2><p class="mu sm">${savedStatus} A taxa de acerto usa apenas placares que você digitou; previsões automáticas são listadas separadamente. Resultados anteriores ao início da captura não têm snapshot e não entram na calibração.</p>${summary.matches?`<div class="tile"><div><b>${summary.matches}</b><span>Seus palpites avaliados</span></div><div><b>${summary.exactScoreHits}</b><span>Placar exato</span></div><div><b>${fmtRate(summary.outcomeRate)}</b><span>Acerto casa/empate/fora</span></div><div><b>${automatic}</b><span>Preenchidos pelo modelo</span></div><div><b>${summary.predictedGoals}–${summary.actualGoals}</b><span>Gols previstos–reais</span></div></div><p>Acertou o placar exato em <b>${summary.exactScoreHits}</b> de ${summary.matches} jogos (${fmtRate(summary.exactScoreRate)}); acertou o resultado em <b>${summary.correctOutcomeHits}</b> (${fmtRate(summary.outcomeRate)}).</p>`:`<div class="cd warn"><p><b>Nenhum palpite seu concluído foi registrado ainda.</b></p><p>Faça palpites para jogos futuros; quando um resultado confirmado entrar no simulador, a comparação aparecerá aqui.</p><p>Palpites antigos sem fotografia do modelo não podem ser reconstruídos nem avaliados na calibração.</p>${automatic?`<p>${automatic} previsão(ões) automática(s) já foram avaliadas; elas não entram na sua taxa de acerto.</p>`:''}</div>`}</div>
+ <div class="cd"><h2>Calibração das probabilidades do modelo</h2><p>O <b>Brier score</b> é a média da soma dos erros quadráticos nas probabilidades de casa, empate e visitante: <b>0 é perfeito</b> e valores menores são melhores (máximo 2). Cada palpite entra com a fotografia das probabilidades salva quando foi preenchido.</p>${calibration.matches?`<div class="tile"><div><b>${calibration.brierScore.toFixed(3).replace('.',',')}</b><span>Brier score · ${calibration.matches} jogos</span></div></div><div class="sc" role="region" aria-label="Calibração por faixa de confiança" tabindex="0"><table><thead><tr><th>Confiança prevista</th><th>Jogos</th><th>Confiança média</th><th>Resultado mais provável ocorreu</th></tr></thead><tbody>${calibrationRows}</tbody></table></div><p class="mu sm">Nas faixas, comparamos a confiança média do resultado mais provável com a frequência em que ele ocorreu. Amostras pequenas oscilam bastante; esta métrica descreve os palpites registrados, não prova que o modelo seja confiável.</p>`:`<p class="mu">Ainda não há resultados concluídos com snapshot de probabilidades. Novos palpites terão seus parâmetros e probabilidades salvos para iniciar essa avaliação.</p>`}</div>
+ ${rows?`<div class="cd"><h2>Pontos projetados por clube nos jogos avaliados</h2><p class="mu sm">Compara os pontos que seus placares dariam a cada clube com os pontos dos resultados reais, somente nos jogos em que havia um palpite salvo.</p><div class="sc" role="region" aria-label="Pontos previstos e reais por clube" tabindex="0"><table><thead><tr><th class="l">Clube</th><th>Jogos avaliados</th><th>Pontos previstos</th><th>Pontos reais</th><th>Diferença</th></tr></thead><tbody>${rows}</tbody></table></div></div>`:''}
+ ${matches?`<div class="cd"><h2>Palpites comparados com resultados</h2><div class="sc" role="region" aria-label="Histórico de palpites e resultados" tabindex="0"><table><thead><tr><th>Rodada</th><th class="l">Palpite</th><th class="l">Resultado</th><th>Placar exato</th><th>Origem do palpite</th><th class="l">Fonte do resultado</th><th class="l">Snapshot do modelo</th></tr></thead><tbody>${matches}</tbody></table></div></div>`:''}`;
+}
 function sortT(k){if(sortK==k)sortD*=-1;else{sortK=k;sortD=-1}renderEst()}
 function renderCor(){const s=project(),o=rankTeams(s),L=o[0],t=s[L];
  const cut=k=>MCR?[pct(MCR.CP[k],MCR.N,.5),pct(MCR.CP[k],MCR.N,.1),pct(MCR.CP[k],MCR.N,.9)]:null,cf=(k,hist)=>{const c=cut(k);return `<tr><td class="l">${hist[0]}</td><td><b>${c?c[0]:'–'}</b> ${c?`<span class="mu">(${c[1]}–${c[2]})</span>`:''}</td><td>${hist[1]}</td></tr>`};
@@ -221,10 +488,10 @@ function updateSourceAndRules(){
  if(modelIntro&&LIVE_STANDINGS)modelIntro.textContent=`1. Gols esperados: ataque e defesa totais por clube vêm da classificação ao vivo do GE (${LIVE_ROUND?.number||'–'}ª rodada). Como a fonte não informa separação casa/fora, o modelo aplica a proporção de gols mandante/visitante do snapshot histórico e o ajuste de mando configurável.`;
  $('#v-src').querySelectorAll('p').forEach((paragraph)=>{if(paragraph.textContent.startsWith('4. Chances:'))paragraph.textContent=`4. Chances: ${M.filter((match)=>!val(match.k)).length} jogos em branco são simulados 1.200 vezes com a semente ${SET.seed}; placares definidos são tratados como certos.`;if(paragraph.textContent.startsWith('5. Desempate:'))paragraph.textContent='5. Desempate: pontos, vitórias, saldo de gols e gols pró; confronto direto se exatamente dois clubes seguem empatados. Dados disciplinares e sorteio não são modelados.'});
  const sourceHref=new URL(dataSource.url).href;
- $('#v-src').insertAdjacentHTML('afterbegin',`<div class="cd warn"><h2>Critérios e limites do simulador</h2><p>Classificação: pontos, vitórias, saldo de gols e gols pró; o confronto direto é aplicado quando exatamente dois clubes continuam empatados nesses critérios. Não há dados de cartões nem sorteio; um empate residual conserva uma ordem estável, que não representa o critério oficial faltante.</p><p>As faixas continentais usadas no cálculo são apenas uma aproximação pela posição na liga: top ${Q.libertadoresLeaguePositions} e ${Q.sudamericanaLeagueStart}º–${Q.sudamericanaLeagueEnd}º. Vagas de copas e regras oficiais podem alterá-las. O Z${Q.relegationPlaces} segue as ${Q.relegationPlaces} últimas posições.</p><p>A tabela e os totais por clube são consultados automaticamente no GE a cada 2 minutos. O pacote fornece somente classificação e rodada atual; resultados passados que o servidor não observou precisam ser reconciliados com uma fonte conferida. GE é uma fonte jornalística, não oficial da CBF.</p><p>Resultados adicionais verificados: ${VERIFIED_BACKFILL_COUNT}. Para recuperar jogos ausentes, confirme cada placar em uma fonte confiável e use um CSV com cabeçalho <code>round,home,away,homeGoals,awayGoals</code> e siglas dos clubes do snapshot. Importe com <code>node scripts/import-verified-results.mjs resultados.csv https://fonte-conferida.example "Nome da fonte"</code>. O comando valida rodada, confronto, placar, duplicatas e divergências; não autentica a fonte nem inventa resultados. Revise e publique <code>data/historical-backfill-2026.json</code> junto ao site. Consulte o estado de cobertura abaixo.</p><p>Snapshot detalhado: <a href="${sourceHref}" target="_blank" rel="noopener">${escapeHtml(dataSource.name)}</a>. Para conferir a integridade dos arquivos, rode <code>npm run validate:data</code>.</p></div>`)
+ $('#v-src').insertAdjacentHTML('afterbegin',`<div class="cd warn"><h2>Critérios e limites do simulador</h2><p>Classificação: pontos, vitórias, saldo de gols e gols pró; o confronto direto é aplicado quando exatamente dois clubes continuam empatados nesses critérios. Não há dados de cartões nem sorteio; um empate residual conserva uma ordem estável, que não representa o critério oficial faltante.</p><p><b>Regulamento 2026:</b> não foi possível confirmar aqui um documento oficial específico da temporada com publicação e data verificáveis. Portanto, este site não declara as faixas continentais abaixo como classificação oficial nem informa uma data de regulamento que não foi comprovada.</p><p><b>Cenário de posições usado pelo modelo:</b> top ${Q.libertadoresLeaguePositions} para a faixa Libertadores e ${Q.sudamericanaLeagueStart}º–${Q.sudamericanaLeagueEnd}º para a faixa Sul-Americana; são cortes simplificados da liga, não vagas garantidas. Vagas definidas por Copa do Brasil ou outros campeonatos podem alterar as posições; o simulador não determina os classificados por esses torneios. O Z${Q.relegationPlaces} representa as ${Q.relegationPlaces} últimas posições do cenário.</p><p>A tabela e os totais por clube são consultados automaticamente no GE a cada 2 minutos. O pacote fornece somente classificação e rodada atual; resultados passados que o servidor não observou precisam ser reconciliados com uma fonte conferida. GE é uma fonte jornalística, não oficial da CBF.</p><p>Resultados adicionais verificados: ${VERIFIED_BACKFILL_COUNT}. Para recuperar jogos ausentes, confirme cada placar em uma fonte confiável e use um CSV com cabeçalho <code>round,home,away,homeGoals,awayGoals</code> e siglas dos clubes do snapshot. Importe com <code>node scripts/import-verified-results.mjs resultados.csv https://fonte-conferida.example "Nome da fonte"</code>. O comando valida rodada, confronto, placar, duplicatas e divergências; não autentica a fonte nem inventa resultados. Revise e publique <code>data/historical-backfill-2026.json</code> junto ao site. Consulte o estado de cobertura abaixo.</p><p>Snapshot detalhado: <a href="${sourceHref}" target="_blank" rel="noopener">${escapeHtml(dataSource.name)}</a>. Para conferir a integridade dos arquivos, rode <code>npm run validate:data</code>.</p></div>`)
  const coverageDetails=HISTORY_COVERAGE.status==='unavailable'?'A classificação ao vivo está indisponível; a cobertura não pode ser comparada.':HISTORY_COVERAGE.status==='consistent'?`Os ${HISTORY_COVERAGE.knownMatches} placares disponíveis correspondem aos totais atuais publicados na tabela do GE. Isso é uma verificação de totais, não uma certificação oficial jogo a jogo.`:`Foram encontrados ${HISTORY_COVERAGE.knownMatches} placares para ${HISTORY_COVERAGE.expectedMatches} partidas contabilizadas na tabela do GE. Diferença estimada: ${HISTORY_COVERAGE.missingMatches} jogo(s); divergências por clube: ${HISTORY_COVERAGE.clubs.slice(0,6).map(club=>`${escapeHtml(club.name)} (${club.missingMatches>0?`${club.missingMatches} jogo(s) sem placar`:'totais diferentes'})`).join(', ')||'nenhuma identificada por clube'}.`;
  const backfillSources=[...new Map(backfill.results.map(result=>[`${result.source.name}:${result.source.url}`,result.source])).values()];
- $('#v-src').insertAdjacentHTML('afterbegin',`<div class="cd"><h2>Conferência e reconciliação do histórico</h2><p>${coverageDetails}</p><p class="mu sm">A comparação detecta diferença entre os resultados locais e os totais por clube publicados pelo GE. Ela não recupera sozinha placares passados nem transforma o GE em fonte oficial.</p><p>Correções verificadas incorporadas: <b>${VERIFIED_BACKFILL_COUNT}</b>. ${backfillSources.length?`Fontes registradas: ${backfillSources.map(source=>`<a href="${escapeHtml(source.url)}" target="_blank" rel="noopener">${escapeHtml(source.name)}</a> (conferido em ${escapeHtml(formatLiveTime(source.verifiedAt))})`).join('; ')}.`:'Nenhuma correção manual foi importada.'}</p><p class="sm">Procedimento: confira os jogos ausentes em uma fonte confiável; prepare um CSV com <code>round,home,away,homeGoals,awayGoals</code> (use siglas como FLA e PAL); execute <code>npm run import:results -- resultados.csv https://sua-fonte-verificada.example "Nome da fonte"</code>; revise o arquivo <code>data/historical-backfill-2026.json</code>, rode <code>npm test</code> e publique o arquivo junto com a página. O importador rejeita placares que contradizem resultados existentes e exige correspondência exata com o calendário.</p></div>`)
+ $('#v-src').insertAdjacentHTML('afterbegin',`<div class="cd"><h2>Conferência e reconciliação do histórico</h2><p>${coverageDetails}</p><p class="mu sm">A comparação detecta diferença entre os resultados locais e os totais por clube publicados pelo GE. Ela não recupera sozinha placares passados nem transforma o GE em fonte oficial.</p><p>Correções verificadas incorporadas: <b>${VERIFIED_BACKFILL_COUNT}</b>. ${backfillSources.length?`Fontes registradas: ${backfillSources.map(source=>`<a href="${escapeHtml(source.url)}" target="_blank" rel="noopener">${escapeHtml(source.name)}</a> (conferido em ${escapeHtml(formatLiveTime(source.verifiedAt))})`).join('; ')}.`:'Nenhuma correção manual foi importada.'}</p><p class="sm">Procedimento: confira os jogos ausentes em uma fonte confiável; prepare um CSV com <code>round,home,away,homeGoals,awayGoals</code> (use siglas como FLA e PAL); execute <code>npm run import:results -- resultados.csv https://sua-fonte-verificada.example "Nome da fonte"</code>; revise o arquivo <code>data/historical-backfill-2026.json</code>, rode <code>npm test</code> e publique o arquivo junto com a página. O importador rejeita placares que contradizem resultados existentes e exige correspondência exata com o calendário.</p><details><summary>Relatório de procedência dos ${rawResults.length} resultados carregados</summary><div class="sc" role="region" aria-label="Relatório de procedência dos resultados por partida" tabindex="0"><table><thead><tr><th>Rodada</th><th class="l">Partida</th><th>Placar</th><th>Registro</th><th class="l">Fonte e data</th></tr></thead><tbody>${rawResults.slice().sort((a,b)=>a.round-b.round||a.home.localeCompare(b.home)).map(result=>{const source=result.source||dataSource,type=source.type||'snapshot',label=type==='verified-backfill'?'Correção conferida':type==='feed-observed'?'Observado no feed GE':'Snapshot local · sem confirmação individual',sourceDate=type==='feed-observed'?source.observedAt:source.verifiedAt,when=sourceDate?` · ${escapeHtml(formatLiveTime(sourceDate))}`:'';return `<tr><td>${result.round}</td><td class="l">${escapeHtml(NM[result.home])} x ${escapeHtml(NM[result.away])}</td><td>${result.homeGoals}–${result.awayGoals}</td><td>${label}</td><td class="l">${source.url?`<a href="${escapeHtml(source.url)}" target="_blank" rel="noopener">${escapeHtml(source.name)}</a>`:escapeHtml(source.name)}${when}</td>`}).join('')}</tbody></table></div><p class="mu sm">“Correção conferida” registra a procedência declarada durante a importação; o simulador não autentica a fonte externa. Resultados do snapshot não têm prova de conferência individual. Resultados observados no GE não são confirmação oficial da CBF.</p></details></div>`)
 }
 async function csv(){const t='rodada,mandante,gols_mandante,gols_visitante,visitante\n'+RES.map(m=>`${m.r+1},${NM[m.h]},${m.x},${m.y},${NM[m.a]}`).join('\n');try{await navigator.clipboard.writeText(t);$('#csvo').textContent='CSV copiado.'}catch(error){const field=document.createElement('textarea');field.value=t;field.setAttribute('aria-label','Resultados em CSV para copiar');$('#csvo').replaceChildren(field);notify(`N\u00e3o foi poss\u00edvel copiar automaticamente: ${error.message}`)}}
 /* ---- compartilhar ---- */
@@ -236,7 +503,7 @@ async function copyText(value,message){try{await navigator.clipboard.writeText(v
 async function cp(){await copyText(code(),'C\u00f3digo copiado.')}
 function validatedPayload(payload){const pruned=pruneCompletedScenarioScores(payload?.scores,ALL_FIXTURES,LIVE_ROUND?.number,M.map(m=>m.k)),normalizedPayload={...payload,scores:pruned.scores},check=validateScenarioPayload(normalizedPayload,M.map(m=>m.k),T);if(check.errors.length)throw new Error(check.errors.join(' '));if(pruned.removed)notify(`${pruned.removed} palpite(s) de partidas já concluídas foram removidos; os demais foram importados.`);return normalizedPayload}
 function payloadFromCode(value){if(value.length>30000)throw new Error('O c\u00f3digo ultrapassa o tamanho permitido.');if(value.startsWith('B28:'))return validatedPayload(decodeScenarioPayload(value.slice(4)));if(!value.startsWith('B27:'))throw new Error('Formato de c\u00f3digo inv\u00e1lido.');const entries=value.slice(4).split('.');if(entries.length!==LEGACY_MATCHES.length)throw new Error('O c\u00f3digo pertence a outro calend\u00e1rio.');const scores={};entries.forEach((entry,index)=>{if(!entry)return;const match=/^(0|[1-9]|1[0-9]|20)-(0|[1-9]|1[0-9]|20)(a)?$/.exec(entry);if(!match)throw new Error(`Placar inv\u00e1lido na partida ${index+1}.`);scores[LEGACY_MATCHES[index].id]=[match[1],match[2],match[3]?'a':'u']});return validatedPayload({version:1,scores,settings:{k:6,ha:1,rho:-.1,seed:20261010,adjustments:{}},options:{full:true,odds:true,method:'ml'}})}
-function applyPayload(payload){SC=payload.scores;SET={k:payload.settings.k,ha:payload.settings.ha,rho:payload.settings.rho,seed:payload.settings.seed,adj:payload.settings.adjustments};opt={full:payload.options.full,odds:payload.options.odds,meth:payload.options.method};save();renderAll();closeModal()}
+function applyPayload(payload){SC=payload.scores;SET={k:payload.settings.k,ha:payload.settings.ha,rho:payload.settings.rho,seed:payload.settings.seed,adj:payload.settings.adjustments};opt={full:payload.options.full,odds:payload.options.odds,meth:payload.options.method};Object.keys(SC).forEach(recordPredictionSnapshot);save();renderAll();closeModal()}
 function importCode(){try{applyPayload(payloadFromCode($('#imp').value.trim()));notify('Cen\u00e1rio importado.')}catch(error){$('#out').textContent=error.message;$('#out').setAttribute('role','alert')}}
 async function importBackup(file){try{if(file.size>100000)throw new Error('O arquivo de backup \u00e9 grande demais.');const backup=JSON.parse(await file.text());if(backup.format!=='brasileirao-simulator-backup'||backup.version!==1)throw new Error('Formato de backup inv\u00e1lido.');applyPayload(validatedPayload(backup));notify('Backup restaurado.')}catch(error){$('#out').textContent=error.message;$('#out').setAttribute('role','alert')}}
 function exportBackup(){const blob=new Blob([JSON.stringify(makeBackup(payloadFromState()),null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),anchor=document.createElement('a');anchor.href=url;anchor.download='brasileirao-2026-cenario.json';anchor.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
@@ -287,19 +554,25 @@ function runAction(button){const {act}=button.dataset;switch(act){
 document.addEventListener('click',(event)=>{if(event.target===$('#mod')){closeModal();return}const button=event.target.closest('[data-act]');if(!button)return;try{Promise.resolve(runAction(button)).catch((error)=>{notify(`N\u00e3o foi poss\u00edvel concluir a a\u00e7\u00e3o: ${error.message}`);console.error(error)})}catch(error){notify(`N\u00e3o foi poss\u00edvel concluir a a\u00e7\u00e3o: ${error.message}`);console.error(error)}});
 document.addEventListener('input',(event)=>{const input=event.target;if(input.matches('[data-input="score"]'))sv(input.dataset.match,Number(input.dataset.side),input.value);if(input.matches('[data-input="model-setting"]'))setS(input.dataset.setting,Number(input.value));if(input.matches('[data-input="club-adjustment"]'))adjL(input.value)});
 document.addEventListener('change',(event)=>{const input=event.target,action=input.dataset.change;if(action==='method'){if(!METH[input.value]){notify('Método de simulação inválido.');return}opt.meth=input.value;save();renderAll()}else if(action==='team')setTeam(input.value);else if(action==='stats-team'){statsTeam=input.value;renderEst()}else if(action==='backup-file'&&input.files?.[0])importBackup(input.files[0]).finally(()=>{input.value='' });else if(input.matches('[data-input="model-setting"]'))setSE();else if(input.matches('[data-input="model-seed"]'))updateSeed(input.value);else if(input.matches('[data-input="club-adjustment"]')){renderSide();sched()}});
-document.addEventListener('keydown',(event)=>{if(event.key==='Escape'&&!$('#mod').hidden){closeModal();return}if(!$('#mod').hidden&&event.key==='Tab'){const focusable=Array.from($('#mod').querySelectorAll('button,input,textarea,[href],[tabindex]:not([tabindex="-1"])')).filter((element)=>!element.disabled);if(!focusable.length)return;const first=focusable[0],last=focusable[focusable.length-1];if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}return}const tabButton=event.target.closest('[role="tab"]');if(!tabButton)return;const current=TABS.findIndex(([key])=>key===tabButton.dataset.view);let next;if(event.key==='ArrowRight')next=(current+1)%TABS.length;else if(event.key==='ArrowLeft')next=(current-1+TABS.length)%TABS.length;else if(event.key==='Home')next=0;else if(event.key==='End')next=TABS.length-1;else return;event.preventDefault();show(TABS[next][0])});
+document.addEventListener('keydown',(event)=>{if(event.key==='Escape'&&accountDialog&&!accountDialog.hidden){closeAccountDialog();return}if(event.key==='Escape'&&!$('#mod').hidden){closeModal();return}if(accountDialog&&!accountDialog.hidden&&event.key==='Tab'){const focusable=Array.from(accountDialog.querySelectorAll('button,input,[href],[tabindex]:not([tabindex="-1"])')).filter((element)=>!element.disabled);if(!focusable.length)return;const first=focusable[0],last=focusable[focusable.length-1];if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}return}if(!$('#mod').hidden&&event.key==='Tab'){const focusable=Array.from($('#mod').querySelectorAll('button,input,textarea,[href],[tabindex]:not([tabindex="-1"])')).filter((element)=>!element.disabled);if(!focusable.length)return;const first=focusable[0],last=focusable[focusable.length-1];if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}return}const tabButton=event.target.closest('[role="tab"]');if(!tabButton)return;const current=TABS.findIndex(([key])=>key===tabButton.dataset.view);let next;if(event.key==='ArrowRight')next=(current+1)%TABS.length;else if(event.key==='ArrowLeft')next=(current-1+TABS.length)%TABS.length;else if(event.key==='Home')next=0;else if(event.key==='End')next=TABS.length-1;else return;event.preventDefault();show(TABS[next][0])});
 document.querySelectorAll('[data-i]').forEach(e=>e.innerHTML=ic(e.dataset.i));
 const updatedLabel=new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short',timeZone:'America/Sao_Paulo'}).format(new Date(dataUpdatedAt));
 const refreshButton=document.createElement('button');refreshButton.id='refreshLive';refreshButton.type='button';refreshButton.textContent='Atualizar agora';refreshButton.setAttribute('aria-label','Consultar agora a classificação e os resultados atuais');$('#sourceStatus').insertAdjacentElement('afterend',refreshButton);refreshButton.addEventListener('click',()=>refreshLive(true));
+const accountButton=document.createElement('button');accountButton.id='accountButton';accountButton.type='button';accountButton.textContent='Carregando conta…';accountButton.disabled=true;refreshButton.insertAdjacentElement('afterend',accountButton);accountButton.addEventListener('click',async()=>{
+ if(!signedInUser){openAccountDialog();return}
+ try{const{error}=await supabaseClient.auth.signOut();if(error)throw error;notify('Você saiu da conta.')}
+ catch(error){notify(`Não foi possível sair da conta: ${error.message}`)}
+});
 updateSourceStatus();
 $('#seasonSummary').textContent=liveFeed?`Classificação ao vivo da rodada ${LIVE_ROUND.number} · ${M.length} partidas simuláveis · ${RES.length} resultados detalhados acumulados · consulte as limitações na aba Fontes e método.`:`Snapshot local · ${RES.length} resultados detalhados disponíveis · ${M.length} partidas simuláveis · feed automático indisponível.`;
 $('#leg-lib').textContent=`1º–${Q.libertadoresLeaguePositions}º · referência Libertadores`;
 $('#leg-sud').textContent=`${Q.sudamericanaLeagueStart}º–${Q.sudamericanaLeagueEnd}º · referência Sul-Americana`;
 $('#leg-releg').textContent=`${T.length-Q.relegationPlaces+1}º–${T.length}º · rebaixamento`;
 const sharedCode=new URLSearchParams(location.search).get('scenario');
-if(sharedCode){try{const payload=payloadFromCode(`B28:${sharedCode}`);SC=payload.scores;SET={k:payload.settings.k,ha:payload.settings.ha,rho:payload.settings.rho,seed:payload.settings.seed,adj:payload.settings.adjustments};opt={full:payload.options.full,odds:payload.options.odds,meth:payload.options.method};save()}catch(error){notify(`Link de cenário ignorado: ${error.message}`)}}
+if(sharedCode){try{const payload=payloadFromCode(`B28:${sharedCode}`);SC=payload.scores;SET={k:payload.settings.k,ha:payload.settings.ha,rho:payload.settings.rho,seed:payload.settings.seed,adj:payload.settings.adjustments};opt={full:payload.options.full,odds:payload.options.odds,meth:payload.options.method};Object.keys(SC).forEach(recordPredictionSnapshot);save()}catch(error){notify(`Link de cenário ignorado: ${error.message}`)}}
 nav();renderAll();
 if(validationWarnings.length)notify(validationWarnings.join(' '));
+await initializeAccount();
 setInterval(()=>{if(document.visibilityState==='visible')refreshLive(false)},120_000);
 
   } catch(error) { showLoadError(error); console.error('Falha ao iniciar o simulador:',error); }
