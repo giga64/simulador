@@ -5,6 +5,7 @@ import {
   createModelSnapshot,
   summarizePredictionCalibration,
   summarizePredictionPerformance,
+  summarizeCalibrationByRound,
   upsertPredictionSnapshot,
   validatePredictionHistory,
 } from '../src/prediction-performance.js';
@@ -33,6 +34,25 @@ test('archives completed exact and automatic predictions with result provenance'
   assert.deepEqual(archived.history[0].prediction, { home: 2, away: 1, type: 'u' });
   assert.deepEqual(archived.history[0].actual, { home: 2, away: 1 });
   assert.deepEqual(archived.history[0].resultSource, resultSource);
+});
+
+test('calibration trend reports evaluated snapshot count and Brier score per round', () => {
+  const entry = (round, actualHome, confidence = 0.8) => ({
+    round,
+    actual: { home: actualHome, away: 0 },
+    modelSnapshot: { probabilities: { home: confidence, draw: 0.1, away: 0.1 } },
+  });
+  const trend=summarizeCalibrationByRound([
+    entry(2, 1),
+    entry(1, 0),
+    entry(2, 1, 0.7),
+    { round: 3, actual: { home: 1, away: 0 } },
+  ]);
+  assert.deepEqual(trend.map(({round,matches})=>({round,matches})),[
+    {round:1,matches:1},{round:2,matches:2},
+  ]);
+  assert.ok(Math.abs(trend[0].brierScore-1.46)<1e-12);
+  assert.ok(Math.abs(trend[1].brierScore-0.085)<1e-12);
 });
 
 test('deduplicates saved predictions and updates corrected result provenance', () => {

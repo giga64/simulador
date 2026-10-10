@@ -2,14 +2,16 @@ import { createReadStream, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createClient } from '@supabase/supabase-js';
 import { getCompetition } from 'campeonato-brasileiro-api';
 import { createLiveFeedCache, normalizeLiveCompetition } from '../src/live-feed.js';
 import { createLiveHistoryStore } from '../src/live-history.js';
-import { getPublicSupabaseConfig } from '../src/supabase-config.js';
+import { getPublicSupabaseConfig, isSupabaseServiceRoleKey } from '../src/supabase-config.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const supabaseSdkPath = path.join(root, 'node_modules', '@supabase', 'supabase-js', 'dist', 'umd', 'supabase.js');
 const supabaseConfig = getPublicSupabaseConfig(process.env);
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const port = Number(process.env.PORT || 4173);
 const host = process.env.HOST || (process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1');
 const addToHistory = createLiveHistoryStore(
@@ -29,8 +31,8 @@ const mimeTypes = new Map([
 ]);
 
 const server = createServer(async (request, response) => {
-  if (!['GET', 'HEAD'].includes(request.method || '')) {
-    response.writeHead(405, { Allow: 'GET, HEAD' }).end('Method not allowed');
+  if (!['GET', 'HEAD', 'DELETE'].includes(request.method || '')) {
+    response.writeHead(405, { Allow: 'GET, HEAD, DELETE' }).end('Method not allowed');
     return;
   }
 
@@ -41,6 +43,55 @@ const server = createServer(async (request, response) => {
     forceRefresh = requestUrl.searchParams.get('refresh') === '1';
   } catch {
     response.writeHead(400).end('Bad request');
+    return;
+  }
+
+  if (pathname === '/api/account') {
+    if (request.method !== 'DELETE') {
+      response.writeHead(405, { Allow: 'DELETE' }).end('Method not allowed');
+      return;
+    }
+    if (!supabaseConfig.authConfigured || !isSupabaseServiceRoleKey(supabaseServiceRoleKey)) {
+      response.writeHead(503, { 'Content-Type': 'application/json; charset=utf-8' })
+        .end(JSON.stringify({ error: 'Exclusão de conta não está configurada no servidor.' }));
+      return;
+    }
+    const token = /^Bearer ([A-Za-z0-9._-]+)$/.exec(request.headers.authorization || '')?.[1];
+    if (!token) {
+      response.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' })
+        .end(JSON.stringify({ error: 'Sessão inválida. Entre novamente para excluir a conta.' }));
+      return;
+    }
+    try {
+      const authClient = createClient(supabaseConfig.supabaseUrl, supabaseConfig.supabaseKey, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      });
+      const { data, error: authError } = await authClient.auth.getUser(token);
+      if (authError || !data.user) {
+        response.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' })
+          .end(JSON.stringify({ error: 'Sessão inválida ou expirada. Entre novamente.' }));
+        return;
+      }
+      const adminClient = createClient(supabaseConfig.supabaseUrl, supabaseServiceRoleKey, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      });
+      const { error } = await adminClient.auth.admin.deleteUser(data.user.id);
+      if (error) throw error;
+      response.writeHead(200, {
+        'Cache-Control': 'no-store',
+        'Content-Type': 'application/json; charset=utf-8',
+        'X-Content-Type-Options': 'nosniff',
+      }).end(JSON.stringify({ deleted: true }));
+    } catch (error) {
+      console.error('Supabase account deletion failed:', error instanceof Error ? error.message : error);
+      response.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' })
+        .end(JSON.stringify({ error: 'O provedor não conseguiu excluir a conta. Tente novamente.' }));
+    }
+    return;
+  }
+
+  if (request.method === 'DELETE') {
+    response.writeHead(405, { Allow: 'GET, HEAD' }).end('Method not allowed');
     return;
   }
 

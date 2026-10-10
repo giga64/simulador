@@ -40,11 +40,13 @@ a configuração mais simples para manter o histórico observado.
 
 O cenário ativo fica no navegador. Após configurar Supabase, os palpites
 preenchidos e a fotografia do modelo são sincronizados por conta em
-`prediction_snapshots`; sem login, o histórico continua somente neste navegador.
-Quando uma partida é concluída, o palpite arquivado mantém placar, instante,
-semente, parâmetros, probabilidades e revisão dos dados usados. A calibração
-compara essas probabilidades aos resultados reais; previsões antigas sem
-fotografia não são reconstruídas.
+`prediction_snapshots`; cenários nomeados e clubes favoritos ficam em
+`saved_scenarios` e `user_preferences`. Sem login, favoritos ficam neste
+navegador, mas cenários nomeados não são sincronizados. Quando uma partida é
+concluída, o palpite arquivado mantém placar, instante, semente, parâmetros,
+probabilidades e revisão dos dados usados. A calibração compara essas
+probabilidades aos resultados reais e mostra contagem e Brier score por rodada;
+previsões antigas sem fotografia não são reconstruídas.
 
 O projeto de login anexado era uma demonstração que guardava a senha em texto
 claro no `localStorage`, portanto não foi reutilizado como autenticação. O botão
@@ -54,9 +56,10 @@ palpites. A sessão do navegador usa `sessionStorage`.
 
 ### Configurar contas Supabase
 
-1. Crie um projeto Supabase e execute a migração
-   `supabase/migrations/20261010150000_create_prediction_snapshots.sql` no SQL
-   Editor. Ela cria a tabela e políticas RLS por `auth.uid()`.
+1. Crie um projeto Supabase e execute, nesta ordem, as migrações
+   `supabase/migrations/20261010150000_create_prediction_snapshots.sql` e
+   `supabase/migrations/20261010170000_create_user_scenarios_and_preferences.sql`
+   no SQL Editor. Elas criam as tabelas e políticas RLS por `auth.uid()`.
 2. Nas configurações de Authentication, defina o Site URL do site e permita o
    endereço do Render e `http://localhost:4173` como URLs de redirecionamento.
    Configure a confirmação de e-mail/SMTP conforme o fluxo desejado.
@@ -66,12 +69,41 @@ palpites. A sessão do navegador usa `sessionStorage`.
    ou nessas variáveis. O servidor só disponibiliza URLs HTTPS `*.supabase.co`
    e chaves públicas reconhecidas; se a configuração estiver ausente ou for
    inválida, o login permanece desativado e nenhuma chave é enviada ao navegador.
-4. Faça deploy e teste cadastro, confirmação por e-mail, login, recuperação de
-   senha e isolamento de dados entre duas contas.
+4. Para habilitar exclusão de conta pelo próprio site, configure também
+   `SUPABASE_SERVICE_ROLE_KEY` no Render usando a chave `service_role` legada
+   do Supabase. Ela é secreta, fica somente no servidor e nunca é enviada ao
+   navegador; sem ela, a exclusão é desativada. Esta variável é usada apenas
+   pelo endpoint autenticado de exclusão.
+5. Faça deploy e teste cadastro, confirmação por e-mail, login, recuperação de
+   senha, sincronização e isolamento de dados entre duas contas.
 
 Sem essas variáveis o simulador continua funcionando, mas o login informa que
 não foi configurado. O armazenamento remoto requer a migração SQL aplicada;
 erros de tabela/política são exibidos e os dados locais não são apagados.
+
+### Recursos do site e da conta
+
+- **Ao vivo:** separa jogos em andamento, próximos e encerrados da rodada
+  consultada, informa horário e origem, e sinaliza quando o feed está
+  desatualizado. Os dados seguem os limites da fonte GE acima.
+- **Clubes e histórico:** perfis públicos mostram campanha, resultados
+  conhecidos, próximos jogos e projeções. A tabela histórica é reconstruída
+  somente com placares disponíveis e explicita que pode divergir da oficial.
+- **Comparar cenários:** cole um código ou link público para comparar tabela e
+  chances estimadas. Links incluem somente placares e configurações do cenário,
+  nunca e-mail, nome, favoritos ou histórico da conta.
+- **Cenários salvos e favoritos:** usuários autenticados podem nomear, abrir,
+  duplicar, comparar e excluir cenários entre dispositivos. Favoritos e
+  lembretes internos também sincronizam pela conta. Sem login, a marcação de
+  favoritos fica no armazenamento local.
+- **Lembretes:** são avisos dentro do site para jogos futuros dos clubes
+  favoritos; exigem a página aberta e não são enviados por e-mail nem exibidos
+  quando o site está fechado.
+- **Conta:** permite alterar nome e senha, sair e, se o endpoint estiver
+  configurado com `SUPABASE_SERVICE_ROLE_KEY`, excluir a conta e os dados
+  associados após confirmação da senha.
+- **Busca e guia:** a busca encontra clubes e jogos; “Como funciona” resume
+  fontes, limites, regras aproximadas e interpretação das probabilidades.
 
 ## Fonte e limites da atualização
 

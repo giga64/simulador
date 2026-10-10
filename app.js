@@ -12,6 +12,7 @@ import { assessHistoryCoverage, mergeVerifiedResults } from './src/history-integ
 import {
   archiveCompletedPredictions,
   createModelSnapshot,
+  summarizeCalibrationByRound,
   summarizePredictionCalibration,
   summarizePredictionPerformance,
   upsertPredictionSnapshot,
@@ -85,6 +86,17 @@ let accountDialog=null;
 let authMode='login';
 let authBusy=false;
 let authStatus='';
+let savedScenarios=[];
+let favoriteTeams=[];
+let accountPreferences={inSiteReminders:false,reminderMinutes:30};
+let selectedHistoryRound=Math.max(1,(LIVE_ROUND?.number||1)-1);
+let siteSearch='';
+let compareCode='';
+let compareSavedId='';
+let reminderStorageWarningShown=false;
+const remindedFixtures=new Set();
+try{favoriteTeams=JSON.parse(localStorage.getItem('br26-favorite-teams')||'[]').filter((code)=>T.includes(code))}
+catch(error){console.error('Preferências locais inválidas:',error)}
 const notify=(message)=>{const toast=$('#toast');if(!toast)return;toast.textContent=message;toast.hidden=false;clearTimeout(notify.timer);notify.timer=setTimeout(()=>{toast.hidden=true},5000)};
 const predictionStorageKey=()=>signedInUser?`br26predictionHistory:${signedInUser.id}`:'br26predictionHistory';
 let accountSaveTimer;
@@ -167,6 +179,119 @@ async function loadAccountPredictionHistory(user){
  predictionHistory=validatePredictionHistory(completed.history,ALL_FIXTURES,T);
  savePredictionHistory();
  if(view==='perf')renderPerformance();
+}
+async function loadAccountWorkspace(user){
+ const[scenarioResult,preferenceResult]=await Promise.all([
+  supabaseClient.from('saved_scenarios').select('*').eq('user_id',user.id).order('updated_at',{ascending:false}),
+  supabaseClient.from('user_preferences').select('*').eq('user_id',user.id).maybeSingle(),
+ ]);
+ if(scenarioResult.error)throw new Error(`Não foi possível carregar seus cenários: ${scenarioResult.error.message}`);
+ if(preferenceResult.error)throw new Error(`Não foi possível carregar suas preferências: ${preferenceResult.error.message}`);
+ savedScenarios=(scenarioResult.data||[]).map((row)=>{
+  const checked=validatedPayload(row.scenario);
+  if(typeof row.id!=='string'||typeof row.name!=='string'||row.name.trim().length<1||row.name.length>60
+   ||!Number.isFinite(Date.parse(row.updated_at)))
+   throw new Error('A conta contém um cenário salvo inválido.');
+  return{id:row.id,name:row.name,scenario:checked,updatedAt:row.updated_at};
+ });
+ const preferences=preferenceResult.data;
+ if(preferences&&(!Array.isArray(preferences.favorite_teams)
+  ||preferences.favorite_teams.some((code)=>!T.includes(code))
+  ||typeof preferences.in_site_reminders!=='boolean'
+  ||![5,15,30,60,120].includes(preferences.reminder_minutes)))
+  throw new Error('As preferências da conta contêm valores inválidos.');
+ favoriteTeams=preferences?.favorite_teams||[];
+ accountPreferences={
+  inSiteReminders:preferences?.in_site_reminders===true,
+  reminderMinutes:Number.isInteger(preferences?.reminder_minutes)?preferences.reminder_minutes:30,
+ };
+ if(view==='account'||view==='clubs')renderAccountWorkspace();
+}
+async function saveAccountPreferences(){
+ if(!signedInUser||!supabaseClient)throw new Error('Entre na conta para sincronizar suas preferências.');
+ const{error}=await supabaseClient.from('user_preferences').upsert({
+  user_id:signedInUser.id,favorite_teams:favoriteTeams,
+  in_site_reminders:accountPreferences.inSiteReminders,
+  reminder_minutes:accountPreferences.reminderMinutes,updated_at:new Date().toISOString(),
+ },{onConflict:'user_id'});
+ if(error)throw new Error(`Não foi possível salvar suas preferências: ${error.message}`);
+}
+async function updateReminderPreference(key,value){
+ const previous={...accountPreferences};
+ accountPreferences={...accountPreferences,[key]:value};
+ try{await saveAccountPreferences()}
+ catch(error){accountPreferences=previous;renderAccountWorkspace();throw error}
+}
+async function saveNamedScenario(name){
+ if(!signedInUser||!supabaseClient){notify('Entre na conta para salvar cenários entre dispositivos.');openAccountDialog();return}
+ if(view!=='account'){show('account');$('#scenarioName')?.focus();notify('Dê um nome ao cenário na aba Minha conta para salvá-lo.');return}
+ const cleanName=String(name||'').trim();
+ if(!cleanName||cleanName.length>60){notify('O nome precisa ter entre 1 e 60 caracteres.');return}
+ const{data,error}=await supabaseClient.from('saved_scenarios').insert({
+  user_id:signedInUser.id,name:cleanName,scenario:payloadFromState(),
+ }).select('*').single();
+ if(error)throw new Error(`Não foi possível salvar o cenário: ${error.message}`);
+ savedScenarios=[{
+  id:data.id,name:data.name,scenario:validatedPayload(data.scenario),updatedAt:data.updated_at,
+ },...savedScenarios];
+ renderAccountWorkspace();
+ notify('Cenário salvo na sua conta.');
+}
+async function removeSavedScenario(id){
+ if(!signedInUser||!supabaseClient)return;
+ if(!window.confirm('Excluir este cenário salvo da sua conta?'))return;
+ const{error}=await supabaseClient.from('saved_scenarios').delete().eq('id',id).eq('user_id',signedInUser.id);
+ if(error)throw new Error(`Não foi possível excluir o cenário: ${error.message}`);
+ savedScenarios=savedScenarios.filter((scenario)=>scenario.id!==id);
+ renderAccountWorkspace();
+}
+async function toggleFavorite(code){
+ if(!T.includes(code))throw new Error('Clube inválido.');
+ const previous=favoriteTeams;
+ favoriteTeams=favoriteTeams.includes(code)?favoriteTeams.filter((item)=>item!==code):[...favoriteTeams,code];
+ try{
+  if(signedInUser)await saveAccountPreferences();
+  else localStorage.setItem('br26-favorite-teams',JSON.stringify(favoriteTeams));
+ }catch(error){favoriteTeams=previous;throw error}
+ if(view==='clubs'||view==='account')renderAccountWorkspace();
+ if(view==='clubs')renderClubPage();
+}
+async function updateProfileName(event){
+ event.preventDefault();
+ const name=$('#profileName').value.trim();
+ if(!name||name.length>80)throw new Error('O nome precisa ter entre 1 e 80 caracteres.');
+ const{data,error}=await supabaseClient.auth.updateUser({data:{...signedInUser.user_metadata,display_name:name}});
+ if(error)throw new Error(`Não foi possível atualizar o nome: ${error.message}`);
+ signedInUser=data.user;
+ renderAccountWorkspace();
+ notify('Nome atualizado.');
+}
+async function updateAccountPassword(event){
+ event.preventDefault();
+ const currentPassword=$('#currentPassword').value,newPassword=$('#newPassword').value;
+ if(newPassword.length<8)throw new Error('A nova senha precisa ter pelo menos 8 caracteres.');
+ const{error:reauthError}=await supabaseClient.auth.signInWithPassword({email:signedInUser.email,password:currentPassword});
+ if(reauthError)throw new Error(`Não foi possível confirmar sua senha atual: ${reauthError.message}`);
+ const{error}=await supabaseClient.auth.updateUser({password:newPassword});
+ if(error)throw new Error(`Não foi possível atualizar a senha: ${error.message}`);
+ renderAccountWorkspace();
+ notify('Senha atualizada.');
+}
+async function deleteSignedInAccount(event){
+ event.preventDefault();
+ const password=$('#deletePassword').value,confirmation=$('#deleteConfirm').value;
+ if(confirmation!=='EXCLUIR')throw new Error('Digite EXCLUIR para confirmar.');
+ if(!window.confirm('Excluir permanentemente sua conta, palpites e cenários salvos? Esta ação não pode ser desfeita.'))return;
+ const{data,error:reauthError}=await supabaseClient.auth.signInWithPassword({email:signedInUser.email,password});
+ if(reauthError)throw new Error(`Não foi possível confirmar sua senha: ${reauthError.message}`);
+ const response=await fetch('/api/account',{method:'DELETE',headers:{Authorization:`Bearer ${data.session.access_token}`}});
+ const result=await response.json().catch(()=>({}));
+ if(!response.ok)throw new Error(result.error||`HTTP ${response.status}`);
+ const{error:signOutError}=await supabaseClient.auth.signOut({scope:'local'});
+ if(signOutError)console.error('Conta excluída, mas a sessão local não foi limpa:',signOutError.message);
+ signedInUser=null;savedScenarios=[];predictionHistory=anonymousPredictionHistory;
+ renderAccountButton();renderAccountWorkspace();
+ notify('Conta e dados associados foram excluídos.');
 }
 function ensureAccountDialog(){
  if(accountDialog)return;
@@ -276,11 +401,17 @@ async function activateAccountSession(user){
   predictionHistory=[];
   renderAccountButton();
   await loadAccountPredictionHistory(user);
+  await loadAccountWorkspace(user);
   notify(`Conectado como ${user.email}. Seus palpites serão sincronizados com a conta.`);
  }else{
   predictionHistory=anonymousPredictionHistory;
+  savedScenarios=[];
+  try{favoriteTeams=JSON.parse(localStorage.getItem('br26-favorite-teams')||'[]').filter((code)=>T.includes(code))}
+  catch(error){favoriteTeams=[];console.error('Preferências locais inválidas:',error)}
+  accountPreferences={inSiteReminders:false,reminderMinutes:30};
   renderAccountButton();
   if(view==='perf')renderPerformance();
+  if(view==='account'||view==='clubs')renderAccountWorkspace();
  }
 }
 async function initializeAccount(){
@@ -423,9 +554,80 @@ function clr(w,only){targets(w).forEach(m=>{if(!only||(SC[m.k]&&SC[m.k][2]=='a')
 function allT(r){M.filter(m=>m.h==team||m.a==team).forEach(m=>{const home=m.h==team,w=r=='w'?(home?['2','0']:['0','2']):r=='l'?(home?['0','2']:['2','0']):['1','1'];SC[m.k]=[...w,'u'];recordPredictionSnapshot(m.k)});save();renderAll()}
 function setTeam(c){team=c;renderSide();renderTab();sched();if(c)scrollTo({top:0,behavior:'smooth'})}
 /* ---- abas ---- */
-const TABS=[['sim','Simulador'],['perf','Meus palpites'],['est','Estatísticas da temporada'],['cor',`Corrida: título, G${Q.libertadoresLeaguePositions} e Z${Q.relegationPlaces}`],['src','Fontes e método']];
-function nav(){$('#nav').innerHTML=TABS.map(([k,t])=>`<button role="tab" id="tab-${k}" aria-controls="v-${k}" aria-selected="${view==k}" tabindex="${view==k?'0':'-1'}" class="${view==k?'on':''}" data-act="show-view" data-view="${k}">${t}</button>`).join('')}
-function show(v){view=v;TABS.forEach(([k])=>{$('#v-'+k).hidden=k!=v;$('#v-'+k).setAttribute('aria-labelledby','tab-'+k)});nav();if(v=='perf')renderPerformance();if(v=='est'){renderEst();updateEstSource()}if(v=='cor')renderCor();if(v=='src'){renderSrc();updateSourceAndRules()}if(v=='sim')renderAll();scrollTo(0,0);$('#tab-'+v)?.focus({preventScroll:true})}
+const TABS=[['live','Ao vivo'],['sim','Simulador'],['compare','Comparar cenários'],['clubs','Clubes'],['history','Histórico'],['perf','Meus palpites'],['est','Estatísticas da temporada'],['cor',`Corrida: título, G${Q.libertadoresLeaguePositions} e Z${Q.relegationPlaces}`],['search','Buscar'],['guide','Como funciona'],['account','Minha conta'],['src','Fontes e método']];
+function renderLiveHub(){
+ const round=LIVE_ROUND?.number||DEFAULT_ROUND,fixtures=ALL_FIXTURES.filter((fixture)=>fixture.round===round);
+ const feedMatches=new Map((liveFeed?.matches||[]).map((match)=>[`${match.round}:${match.homeTeam.shortName}:${match.awayTeam.shortName}`,match]));
+ const groups={live:[],upcoming:[],finished:[]};
+ for(const fixture of fixtures){
+  const result=rawResults.find((item)=>item.round===fixture.round&&item.home===fixture.home&&item.away===fixture.away);
+  const feed=feedMatches.get(`${fixture.round}:${fixture.home}:${fixture.away}`);
+  const status=result||feed?.status==='finished'?'finished':feed?.status==='live'?'live':'upcoming';
+  groups[status].push({fixture,result,feed});
+ }
+ const card=({fixture,result,feed})=>{
+  const status=result?'Encerrado':feed?.status==='live'?'Ao vivo':fixture.status==='postponed'?'Adiado':'Agendado';
+  const score=result?`<b class="result-score">${result.homeGoals}</b><span class="x">x</span><b class="result-score">${result.awayGoals}</b>`:
+   feed?.score?.home!=null&&feed?.score?.away!=null?`<b class="result-score">${feed.score.home}</b><span class="x">x</span><b class="result-score">${feed.score.away}</b>`:'<span class="x">x</span>';
+  const kickoff=fixture.kickoff||feed?.dateTime;
+  const source=result?.source?.name||liveFeed?.source?.name||dataSource.name;
+  const at=result?.source?.observedAt||liveFeed?.fetchedAt;
+  return `<article class="mc live-fixture"><div class="meta"><span>${status}</span><span>${fixture.round}ª rodada</span></div><div class="tt"><span class="t h">${ab(fixture.home)}</span>${lg(fixture.home)}${score}${lg(fixture.away)}<span class="t">${ab(fixture.away)}</span></div><div class="dt">${escapeHtml(NM[fixture.home])} x ${escapeHtml(NM[fixture.away])}<br>${kickoff?formatLiveTime(kickoff):'Horário não disponível'} · ${escapeHtml(fixture.stadium||feed?.venue||STD[fixture.home]||'Estádio não informado')}<br>Fonte: ${escapeHtml(source)}${at?` · consultado ${formatLiveTime(at)}`:''}</div></article>`;
+ };
+ const section=(title,key)=>`<h2>${title} (${groups[key].length})</h2><div class="grid">${groups[key].length?groups[key].map(card).join(''):'<p class="mu">Nenhuma partida nesta categoria.</p>'}</div>`;
+ $('#v-live').innerHTML=`<div class="cd"><h2>Central da rodada ${round}</h2><p class="mu">${liveFeed?`Fonte: ${escapeHtml(liveFeed.source.name)} · última consulta ${formatLiveTime(liveFeed.fetchedAt)}${liveFeed.stale?' · DADOS DESATUALIZADOS':''}.`:`Feed ao vivo indisponível: ${escapeHtml(liveFeedError)}. Exibindo resultados conhecidos e calendário local.`} Atualização automática a cada 2 minutos enquanto a página estiver aberta.</p><button data-act="refresh-feed">Atualizar agora</button></div>${section('Em andamento','live')}<div class="cd">${section('Próximos jogos','upcoming')}</div><div class="cd">${section('Encerrados','finished')}</div>`;
+}
+function renderClubPage(){
+ const code=statsTeam||T[0],entry=LIVE_STANDINGS?.get(code),matches=ALL_FIXTURES.filter((fixture)=>fixture.home===code||fixture.away===code);
+ const played=matches.map((fixture)=>({fixture,result:rawResults.find((r)=>r.round===fixture.round&&r.home===fixture.home&&r.away===fixture.away)})).filter((item)=>item.result).sort((a,b)=>b.fixture.round-a.fixture.round);
+ const upcoming=matches.filter((fixture)=>fixture.status!=='played').sort((a,b)=>(a.kickoff?Date.parse(a.kickoff):Infinity)-(b.kickoff?Date.parse(b.kickoff):Infinity));
+ const current=project()[code],position=rankTeams(project()).indexOf(code)+1,probability=od(code);
+ $('#v-clubs').innerHTML=`<div class="cd"><h2>Perfil do clube</h2><label for="clubProfileSelect">Escolha um clube</label> <select id="clubProfileSelect" data-change="club-profile">${T.map((club)=>`<option value="${club}" ${club===code?'selected':''}>${escapeHtml(NM[club])} (${club})</option>`).join('')}</select> <button data-act="favorite-team" data-team="${code}" aria-pressed="${favoriteTeams.includes(code)}">${favoriteTeams.includes(code)?'★ Acompanhando':'☆ Acompanhar clube'}</button><p class="mu sm">Perfil público, disponível sem login. Favoritos ficam neste navegador; entre para sincronizá-los com sua conta.</p><div class="tile"><div><b>${entry?.position||position}º</b><span>Posição atual</span></div><div><b>${entry?.points??current.P}</b><span>Pontos</span></div><div><b>${entry?.wins??current.V}/${entry?.draws??current.E}/${entry?.losses??current.D}</b><span>V/E/D</span></div><div><b>${entry?`${entry.goalsFor}–${entry.goalsAgainst}`:`${current.GP}–${current.GC}`}</b><span>Gols pró/contra</span></div><div><b>${probability?pc(probability.t):'–'}</b><span>Chance simulada de título</span></div><div><b>${probability?pc(probability.z):'–'}</b><span>Chance simulada de Z${Q.relegationPlaces}</span></div></div><p class="mu sm">${entry?`Tabela consultada no GE em ${formatLiveTime(liveFeed?.fetchedAt)}; o GE não é fonte oficial da CBF.`:'Classificação calculada dos resultados locais disponíveis; pode haver lacunas históricas.'}</p></div><div class="g2"><div class="cd"><h2>Resultados conhecidos</h2>${played.length?`<div class="sc"><table><thead><tr><th>Rodada</th><th class="l">Partida</th><th>Placar</th><th class="l">Fonte declarada</th></tr></thead><tbody>${played.slice(0,10).map(({fixture,result})=>`<tr><td>${fixture.round}</td><td class="l">${escapeHtml(NM[fixture.home])} x ${escapeHtml(NM[fixture.away])}</td><td>${result.homeGoals}–${result.awayGoals}</td><td class="l">${escapeHtml(result.source?.name||dataSource.name)}</td></tr>`).join('')}</tbody></table></div>`:'<p class="mu">Nenhum resultado detalhado disponível.</p>'}</div><div class="cd"><h2>Próximos jogos</h2>${upcoming.length?`<div class="sc"><table><thead><tr><th>Rodada</th><th class="l">Partida</th><th>Data</th><th>Estádio</th></tr></thead><tbody>${upcoming.slice(0,8).map((fixture)=>`<tr><td>${fixture.round}</td><td class="l">${escapeHtml(NM[fixture.home])} x ${escapeHtml(NM[fixture.away])}</td><td>${fixture.kickoff?formatLiveTime(fixture.kickoff):'A definir'}</td><td>${escapeHtml(fixture.stadium||STD[fixture.home]||'–')}</td></tr>`).join('')}</tbody></table></div>`:'<p class="mu">Não há jogos futuros conhecidos no calendário local.</p>'}</div></div>`;
+}
+function renderRoundHistory(){
+ const round=selectedHistoryRound,fixtures=ALL_FIXTURES.filter((fixture)=>fixture.round===round),results=rawResults.filter((result)=>result.round===round);
+ const stats=Object.fromEntries(T.map((code)=>[code,{P:0,V:0,E:0,D:0,GP:0,GC:0,J:0}]));
+ rawResults.filter((result)=>result.round<=round).forEach((result)=>{const h=stats[result.home],a=stats[result.away];h.J++;a.J++;h.GP+=result.homeGoals;h.GC+=result.awayGoals;a.GP+=result.awayGoals;a.GC+=result.homeGoals;if(result.homeGoals>result.awayGoals){h.P+=3;h.V++;a.D++}else if(result.homeGoals<result.awayGoals){a.P+=3;a.V++;h.D++}else{h.P++;a.P++;h.E++;a.E++}});
+ const order=T.slice().sort((a,b)=>stats[b].P-stats[a].P||stats[b].V-stats[a].V||(stats[b].GP-stats[b].GC)-(stats[a].GP-stats[a].GC)||stats[b].GP-stats[a].GP);
+ const cards=fixtures.map((fixture)=>{const result=results.find((item)=>item.home===fixture.home&&item.away===fixture.away);return result?resultCard(fixture,result):missingResultCard(fixture)}).join('');
+ $('#v-history').innerHTML=`<div class="cd"><h2>Histórico por rodada</h2><label for="historyRound">Rodada</label> <select id="historyRound" data-change="history-round">${ROUND_OPTIONS.map((value)=>`<option value="${value}" ${value===round?'selected':''}>${value}ª rodada</option>`).join('')}</select><p class="mu sm">${results.length} de ${fixtures.length} placares disponíveis. Tabela reconstruída somente com resultados conhecidos até esta rodada; em caso de empate, critérios e ordem históricos podem divergir do oficial.</p><p class="mu sm">Fonte do snapshot: ${escapeHtml(dataSource.name)}. Resultados observados podem identificar GE ou a fonte declarada na conferência.</p></div><div class="g2"><div class="cd"><h2>Resultados da ${round}ª rodada</h2><div class="grid">${cards||'<p class="mu">Nenhum jogo cadastrado.</p>'}</div></div><div class="cd"><h2>Classificação após a ${round}ª rodada (dados conhecidos)</h2><div class="sc"><table><thead><tr><th>Pos.</th><th class="l">Clube</th><th>J</th><th>V</th><th>E</th><th>D</th><th>GP</th><th>GC</th><th>P</th></tr></thead><tbody>${order.map((code,index)=>`<tr><td>${index+1}º</td><td class="l"><button class="tn" data-act="open-club" data-team="${code}">${lg(code)}${escapeHtml(NM[code])}</button></td><td>${stats[code].J}</td><td>${stats[code].V}</td><td>${stats[code].E}</td><td>${stats[code].D}</td><td>${stats[code].GP}</td><td>${stats[code].GC}</td><td><b>${stats[code].P}</b></td></tr>`).join('')}</tbody></table></div></div></div>`;
+}
+function renderScenarioComparison(){
+ $('#v-compare').innerHTML=`<div class="cd"><h2>Comparar cenários lado a lado</h2><p class="mu">A coluna A usa o cenário atual. Cole na coluna B um código de compartilhamento (B28:...) ou escolha um cenário salvo. Comparamos tabela e probabilidades com o mesmo modelo, sem incluir dados pessoais.</p><div class="ctl"><label for="compareCode">Cenário B · código compartilhado<textarea id="compareCode" rows="4" maxlength="30000" placeholder="Cole aqui um código B28:...">${escapeHtml(compareCode)}</textarea></label><label for="savedScenarioSelect">Ou carregar cenário salvo da conta<select id="savedScenarioSelect"><option value="">Escolha um cenário...</option>${savedScenarios.map((item)=>`<option value="${item.id}" ${item.id===compareSavedId?'selected':''}>${escapeHtml(item.name)}</option>`).join('')}</select></label></div><div class="row"><button class="p" data-act="compare-current">Comparar com cenário atual</button><button data-act="save-current-scenario">Salvar cenário atual na conta</button></div><div id="scenarioComparisonResult" aria-live="polite"></div></div>`;
+}
+function compareScenarioPayloads(first,second){
+ const original={SC,SET,opt,PG,MCR};
+ const analyze=(payload)=>{
+  SC=payload.scores;SET={k:payload.settings.k,ha:payload.settings.ha,rho:payload.settings.rho,seed:payload.settings.seed,adj:payload.settings.adjustments};
+  opt={full:payload.options.full,odds:payload.options.odds,meth:payload.options.method};PG={};MCR=mc();
+  const standings=project(),order=rankTeams(standings);
+  return Object.fromEntries(T.map((code)=>{const rank=order.indexOf(code)+1,probability=od(code);return[code,{rank,points:standings[code].P,title:probability?.t??null,lib:probability?.g??null,sud:probability?.s??null,relegation:probability?.z??null}] }));
+ };
+ try{return[analyze(first),analyze(second)]}finally{({SC,SET,opt,PG,MCR}=original)}
+}
+function renderComparisonResults(first,second){
+ const[a,b]=compareScenarioPayloads(first,second),order=T.slice().sort((x,y)=>(a[x].rank-b[x].rank)||(b[x].title??-1)-(a[x].title??-1));
+ $('#scenarioComparisonResult').innerHTML=`<div class="sc"><table><thead><tr><th class="l">Clube</th><th>A · posição / pontos</th><th>B · posição / pontos</th><th>A−B posição (positivo = melhora em B)</th><th>Chance título A / B</th><th>G${Q.libertadoresLeaguePositions} A / B</th><th>Z${Q.relegationPlaces} A / B</th></tr></thead><tbody>${order.map((code)=>{const delta=a[code].rank-b[code].rank;return`<tr><td class="l"><button class="tn" data-act="open-club" data-team="${code}">${lg(code)}${escapeHtml(NM[code])}</button></td><td>${a[code].rank}º · ${a[code].points}</td><td>${b[code].rank}º · ${b[code].points}</td><td>${delta>0?'+':''}${delta}</td><td>${a[code].title==null?'–':pc(a[code].title)} / ${b[code].title==null?'–':pc(b[code].title)}</td><td>${a[code].lib==null?'–':pc(a[code].lib)} / ${b[code].lib==null?'–':pc(b[code].lib)}</td><td>${a[code].relegation==null?'–':pc(a[code].relegation)} / ${b[code].relegation==null?'–':pc(b[code].relegation)}</td></tr>`}).join('')}</tbody></table></div><p class="mu sm">Chance de classificação estimada por 1.200 simulações reproduzíveis para cada cenário. A/B usa as configurações salvas em cada cenário; probabilidades não são previsão oficial.</p>`;
+}
+function renderSearch(){
+ const query=siteSearch.trim().toLocaleLowerCase('pt-BR');
+ const teamMatches=T.filter((code)=>!query||NM[code].toLocaleLowerCase('pt-BR').includes(query)||code.toLowerCase().includes(query)).slice(0,10);
+ const fixtureMatches=ALL_FIXTURES.filter((fixture)=>!query||`${NM[fixture.home]} ${NM[fixture.away]} ${fixture.round} ${fixture.stadium||''}`.toLocaleLowerCase('pt-BR').includes(query)).slice(0,30);
+ $('#v-search').innerHTML=`<div class="cd"><h2>Buscar clube, partida ou rodada</h2><label for="siteSearch">Digite um nome, sigla, estádio ou número da rodada</label><input id="siteSearch" type="search" value="${escapeHtml(siteSearch)}" maxlength="80" autocomplete="off" aria-controls="searchResults"><div id="searchResults" class="g2"><div><h3>Clubes (${teamMatches.length})</h3>${teamMatches.map((code)=>`<p><button data-act="open-club" data-team="${code}">${lg(code)}${escapeHtml(NM[code])}</button></p>`).join('')}</div><div><h3>Partidas (${fixtureMatches.length})</h3>${fixtureMatches.map((fixture)=>{const result=rawResults.find((item)=>item.round===fixture.round&&item.home===fixture.home&&item.away===fixture.away);return`<p><button data-act="open-round" data-round="${fixture.round}">${fixture.round}ª · ${escapeHtml(NM[fixture.home])} ${result?`${result.homeGoals}–${result.awayGoals}`:'x'} ${escapeHtml(NM[fixture.away])} · ${fixture.kickoff?formatLiveTime(fixture.kickoff):'data a definir'}</button></p>`}).join('')}</div></div></div>`;
+ const input=$('#siteSearch');input.focus({preventScroll:true});input.setSelectionRange(input.value.length,input.value.length);
+}
+function renderGuide(){
+ $('#v-guide').innerHTML=`<div class="cd"><h2>Como usar e interpretar o simulador</h2><div class="g2"><div><h3>Dados e atualização</h3><p>A classificação atual é consultada no GE quando o servidor consegue acessar o feed. O GE é fonte jornalística, não fonte oficial da CBF. O site exibe horário da consulta e sinaliza dados desatualizados; resultados históricos vêm do snapshot e das conferências identificadas nas fontes.</p><h3>Probabilidades</h3><p>As probabilidades são estimativas do modelo de gols e frequências de simulações reproduzíveis. Ajustes de força, método, mando, regressão e semente afetam o cenário. Não são odds oficiais, garantia de resultado ou aconselhamento de aposta.</p></div><div><h3>Classificação e vagas</h3><p>O desempate é aproximado quando não há informação completa de confronto direto, cartões ou sorteio. Faixas continentais seguem parâmetros cadastrados para a temporada e podem mudar por títulos em outras competições; consulte a fonte e o regulamento vigente antes de tratá-las como definitivas.</p><h3>Limites do histórico</h3><p>Se o serviço ficou indisponível durante jogos, o histórico pode ter lacunas. A comparação com totais da tabela detecta divergências, mas não prova placares ausentes. Resultados identificam origem quando a fonte os fornece; o site não certifica independentemente cada publicação.</p></div></div><p class="mu sm">Consulte a aba Fontes e método para URLs, datas e notas de procedência. Informações exibidas publicamente não exigem login.</p><button data-act="show-view" data-view="src">Ver fontes e método</button></div>`;
+}
+function renderAccountWorkspace(){
+ const root=$('#v-account');if(!root)return;
+ if(!signedInUser){root.innerHTML=`<div class="cd"><h2>Minha conta</h2><p>Entre ou crie uma conta para salvar cenários entre dispositivos, sincronizar clubes favoritos e manter os palpites.</p><button class="p" data-act="open-account">Entrar / criar conta</button><p class="mu sm">Cenários e perfis de clubes também podem ser explorados sem login.</p></div>`;return}
+ const name=signedInUser.user_metadata?.display_name||signedInUser.user_metadata?.name||'';
+ root.innerHTML=`<div class="cd"><h2>Minha conta</h2><p>Conectado como <b>${escapeHtml(signedInUser.email||'')}</b></p><form id="profileNameForm"><label for="profileName">Nome exibido</label><input id="profileName" maxlength="80" required value="${escapeHtml(name)}"><button class="p" type="submit">Salvar nome</button></form><form id="passwordChangeForm"><h3>Alterar senha</h3><label for="currentPassword">Senha atual</label><input id="currentPassword" type="password" autocomplete="current-password" required><label for="newPassword">Nova senha (mínimo 8 caracteres)</label><input id="newPassword" type="password" autocomplete="new-password" minlength="8" required><button type="submit">Atualizar senha</button></form><hr><button data-act="sign-out">Sair da conta</button></div><div class="cd"><h2>Cenários salvos</h2><p>Salve o cenário atual com seus placares, semente, método e ajustes para abrir em outro dispositivo ou comparar.</p><button class="p" data-act="save-current-scenario">Salvar cenário atual</button><div class="grid" style="margin-top:10px">${savedScenarios.length?savedScenarios.map((item)=>`<article class="mc"><h3>${escapeHtml(item.name)}</h3><p class="mu sm">Atualizado ${formatLiveTime(item.updatedAt)}</p><div class="row"><button data-act="load-saved-scenario" data-id="${escapeHtml(item.id)}">Abrir</button><button data-act="duplicate-saved-scenario" data-id="${escapeHtml(item.id)}">Duplicar</button><button data-act="compare-saved-scenario" data-id="${escapeHtml(item.id)}">Comparar</button><button data-act="delete-saved-scenario" data-id="${escapeHtml(item.id)}">Excluir</button></div></article>`).join(''):'<p class="mu">Você ainda não salvou cenários.</p>'}</div></div><div class="cd"><h2>Clubes favoritos e lembretes no site</h2><p>Lembretes aparecem dentro do simulador enquanto esta página está aberta; não enviamos e-mail ou notificações quando o site está fechado.</p><div class="ctl"><label for="reminderEnabled"><input id="reminderEnabled" type="checkbox" data-change="reminder-enabled" ${accountPreferences.inSiteReminders?'checked':''}> Avisar antes dos próximos jogos dos clubes favoritos</label><label for="reminderMinutes">Avisar com antecedência<select id="reminderMinutes" data-change="reminder-minutes">${[5,15,30,60,120].map((minutes)=>`<option value="${minutes}" ${minutes===accountPreferences.reminderMinutes?'selected':''}>${minutes} minutos</option>`).join('')}</select></label></div><div class="ctl">${T.map((code)=>`<label><input type="checkbox" data-change="favorite-preference" data-team="${code}" ${favoriteTeams.includes(code)?'checked':''}> ${escapeHtml(NM[code])}</label>`).join('')}</div></div><div class="cd warn"><h2>Excluir conta</h2><p>Esta ação remove permanentemente a conta, palpites e cenários sincronizados. É irreversível e exige a senha atual. O serviço de exclusão precisa estar configurado no servidor de hospedagem.</p><form id="deleteAccountForm"><label for="deletePassword">Confirme sua senha</label><input id="deletePassword" type="password" autocomplete="current-password" required><label for="deleteConfirm">Digite EXCLUIR</label><input id="deleteConfirm" required pattern="EXCLUIR"><button type="submit">Excluir conta e dados</button></form></div>`;
+ root.querySelector('[data-act="save-current-scenario"]')?.insertAdjacentHTML('beforebegin','<label for="scenarioName">Nome do novo cenário (até 60 caracteres)</label><input id="scenarioName" maxlength="60" placeholder="Ex.: Rodada 30 — cenário otimista">');
+}
+function nav(){for(const[key]of TABS)if(!$('#v-'+key)){const panel=document.createElement('section');panel.id='v-'+key;panel.setAttribute('role','tabpanel');panel.hidden=true;$('#nav').after(panel)}$('#nav').innerHTML=TABS.map(([k,t])=>`<button role="tab" id="tab-${k}" aria-controls="v-${k}" aria-selected="${view==k}" tabindex="${view==k?'0':'-1'}" class="${view==k?'on':''}" data-act="show-view" data-view="${k}">${t}</button>`).join('')}
+function show(v){view=v;TABS.forEach(([k])=>{$('#v-'+k).hidden=k!=v;$('#v-'+k).setAttribute('aria-labelledby','tab-'+k)});nav();if(v=='perf')renderPerformance();if(v=='est'){renderEst();updateEstSource()}if(v=='cor')renderCor();if(v=='src'){renderSrc();updateSourceAndRules()}if(v=='sim')renderAll();if(v=='live')renderLiveHub();if(v=='compare')renderScenarioComparison();if(v=='clubs')renderClubPage();if(v=='history')renderRoundHistory();if(v=='search')renderSearch();if(v=='guide')renderGuide();if(v=='account')renderAccountWorkspace();scrollTo(0,0);$('#tab-'+v)?.focus({preventScroll:true})}
 function updateEstSource(){const paragraph=Array.from($('#v-est').querySelectorAll('p')).find((element)=>element.textContent.includes('Referência histórica 2025'));if(paragraph)paragraph.textContent=`Estes indicadores são calculados dos resultados detalhados disponíveis no snapshot local, atualizado em ${updatedLabel}; a API anexada informa somente a rodada atual, não o histórico completo. Referência histórica 2025 (ogol): 50% mandante, 26% empates, 24% visitante e 2,52 gols por jogo.`}
 function renderEst(){const L=LG,n=L.n,ps=x=>f1(x/n*100)+'%';
  const rows=T.map(c=>{const t=TS[c],e=t.h.d+t.a.d,J=t.h.n+t.a.n;return{c,e,pe:e/J*100,ph:(3*t.h.w+t.h.d)/t.h.n,pa:(3*t.a.w+t.a.d)/t.a.n,gh:t.h.gf/t.h.n,ch:t.h.ga/t.h.n,ga:t.a.gf/t.a.n,ca:t.a.ga/t.a.n,cs:t.cs,gf:(t.h.gf+t.a.gf)/J,gc:(t.h.ga+t.a.ga)/J,pts:3*(t.h.w+t.a.w)+t.h.d+t.a.d}});
@@ -449,9 +651,11 @@ function renderPerformance(){
   return `<tr><td>${entry.round}</td><td class="l">${escapeHtml(NM[entry.home])} ${predicted.home}–${predicted.away} ${escapeHtml(NM[entry.away])}</td><td class="l">${actual.home}–${actual.away}</td><td>${exact?'Sim':'Não'}</td><td>${predicted.type==='a'?'Automático':'Seu palpite'}</td><td class="l">${escapeHtml(source.name)}${sourceDate?` · ${formatLiveTime(sourceDate)}`:''}${source.url?` · <a href="${escapeHtml(source.url)}" target="_blank" rel="noopener">fonte</a>`:''}</td><td class="l">${model}</td></tr>`;
  }).join('');
  const calibrationRows=calibration.bins.map((bin)=>`<tr><td>${Math.round(bin.min*100)}–${Math.round(bin.max*100)}%</td><td>${bin.matches}</td><td>${fmtRate(bin.meanConfidence)}</td><td>${fmtRate(bin.observedAccuracy)}</td></tr>`).join('');
+ const calibrationTrend=summarizeCalibrationByRound(completed),trendRows=calibrationTrend.map((row)=>`<tr><td>${row.round}</td><td>${row.matches}</td><td>${row.brierScore.toFixed(3).replace('.',',')}</td></tr>`).join('');
  const savedStatus=signedInUser?`Sincronização da conta ${escapeHtml(signedInUser.email)}. O histórico permanece vinculado à conta.`:'Salvo somente neste navegador. Entre para sincronizar seus palpites na conta.';
  $('#v-perf').innerHTML=`<div class="cd"><h2>Precisão dos seus palpites</h2><p class="mu sm">${savedStatus} A taxa de acerto usa apenas placares que você digitou; previsões automáticas são listadas separadamente. Resultados anteriores ao início da captura não têm snapshot e não entram na calibração.</p>${summary.matches?`<div class="tile"><div><b>${summary.matches}</b><span>Seus palpites avaliados</span></div><div><b>${summary.exactScoreHits}</b><span>Placar exato</span></div><div><b>${fmtRate(summary.outcomeRate)}</b><span>Acerto casa/empate/fora</span></div><div><b>${automatic}</b><span>Preenchidos pelo modelo</span></div><div><b>${summary.predictedGoals}–${summary.actualGoals}</b><span>Gols previstos–reais</span></div></div><p>Acertou o placar exato em <b>${summary.exactScoreHits}</b> de ${summary.matches} jogos (${fmtRate(summary.exactScoreRate)}); acertou o resultado em <b>${summary.correctOutcomeHits}</b> (${fmtRate(summary.outcomeRate)}).</p>`:`<div class="cd warn"><p><b>Nenhum palpite seu concluído foi registrado ainda.</b></p><p>Faça palpites para jogos futuros; quando um resultado confirmado entrar no simulador, a comparação aparecerá aqui.</p><p>Palpites antigos sem fotografia do modelo não podem ser reconstruídos nem avaliados na calibração.</p>${automatic?`<p>${automatic} previsão(ões) automática(s) já foram avaliadas; elas não entram na sua taxa de acerto.</p>`:''}</div>`}</div>
  <div class="cd"><h2>Calibração das probabilidades do modelo</h2><p>O <b>Brier score</b> é a média da soma dos erros quadráticos nas probabilidades de casa, empate e visitante: <b>0 é perfeito</b> e valores menores são melhores (máximo 2). Cada palpite entra com a fotografia das probabilidades salva quando foi preenchido.</p>${calibration.matches?`<div class="tile"><div><b>${calibration.brierScore.toFixed(3).replace('.',',')}</b><span>Brier score · ${calibration.matches} jogos</span></div></div><div class="sc" role="region" aria-label="Calibração por faixa de confiança" tabindex="0"><table><thead><tr><th>Confiança prevista</th><th>Jogos</th><th>Confiança média</th><th>Resultado mais provável ocorreu</th></tr></thead><tbody>${calibrationRows}</tbody></table></div><p class="mu sm">Nas faixas, comparamos a confiança média do resultado mais provável com a frequência em que ele ocorreu. Amostras pequenas oscilam bastante; esta métrica descreve os palpites registrados, não prova que o modelo seja confiável.</p>`:`<p class="mu">Ainda não há resultados concluídos com snapshot de probabilidades. Novos palpites terão seus parâmetros e probabilidades salvos para iniciar essa avaliação.</p>`}</div>
+ ${calibrationTrend.length?`<div class="cd"><h2>Evolução da calibração por rodada</h2><p class="mu sm">Cada linha mostra somente os palpites concluídos com snapshot naquela rodada. Compare com cautela: poucas partidas produzem métricas instáveis.</p><div class="sc" role="region" aria-label="Brier score por rodada" tabindex="0"><table><thead><tr><th>Rodada</th><th>Jogos avaliados</th><th>Brier score (menor é melhor)</th></tr></thead><tbody>${trendRows}</tbody></table></div></div>`:''}
  ${rows?`<div class="cd"><h2>Pontos projetados por clube nos jogos avaliados</h2><p class="mu sm">Compara os pontos que seus placares dariam a cada clube com os pontos dos resultados reais, somente nos jogos em que havia um palpite salvo.</p><div class="sc" role="region" aria-label="Pontos previstos e reais por clube" tabindex="0"><table><thead><tr><th class="l">Clube</th><th>Jogos avaliados</th><th>Pontos previstos</th><th>Pontos reais</th><th>Diferença</th></tr></thead><tbody>${rows}</tbody></table></div></div>`:''}
  ${matches?`<div class="cd"><h2>Palpites comparados com resultados</h2><div class="sc" role="region" aria-label="Histórico de palpites e resultados" tabindex="0"><table><thead><tr><th>Rodada</th><th class="l">Palpite</th><th class="l">Resultado</th><th>Placar exato</th><th>Origem do palpite</th><th class="l">Fonte do resultado</th><th class="l">Snapshot do modelo</th></tr></thead><tbody>${matches}</tbody></table></div></div>`:''}`;
 }
@@ -517,7 +721,39 @@ async function mkimg(){const s=project(),o=rankTeams(s),done=M.filter(m=>val(m.k
  $('#out').innerHTML=`<img src="${cv.toDataURL('image/png')}" alt="Tabela simulada"><p class="mu sm">Clique com o botão direito (ou segure no celular) para salvar.</p>`}
 function closeModal(){const modal=$('#mod');if(modal.hidden)return;modal.hidden=true;$('#mb').replaceChildren();modalReturnFocus?.focus()}
 function updateSeed(value){const seed=Number(value);if(!Number.isInteger(seed)||seed<0||seed>0xffffffff){notify('A semente precisa ser um inteiro entre 0 e 4.294.967.295.');return}setS('seed',seed);setSE()}
-async function refreshLive(force=false){const button=$('#refreshLive');if(button)button.disabled=true;try{const response=await fetch(`/api/live-season${force?'?refresh=1':''}`,{cache:'no-store'}),payload=await response.json();if(!response.ok)throw new Error(payload.details||payload.error||`HTTP ${response.status}`);if(!liveFeed||payload.revision!==liveFeed.revision){location.reload();return}liveFeed=payload;liveFeedError='';updateSourceStatus();if(force)notify('A consulta ao GE foi atualizada.')}catch(error){liveFeedError=error.message||String(error);if(liveFeed)liveFeed={...liveFeed,stale:true,warning:'Não foi possível confirmar uma atualização recente.'};updateSourceStatus();if(force)notify(`Atualização indisponível: ${liveFeedError}`)}finally{if(button)button.disabled=false}}
+async function refreshLive(force=false){
+ const button=$('#refreshLive');if(button)button.disabled=true;
+ try{
+  const response=await fetch(`/api/live-season${force?'?refresh=1':''}`,{cache:'no-store'}),payload=await response.json();
+  if(!response.ok)throw new Error(payload.details||payload.error||`HTTP ${response.status}`);
+  if(!liveFeed||payload.revision!==liveFeed.revision){location.reload();return}
+  liveFeed=payload;liveFeedError='';updateSourceStatus();
+  if(view==='live')renderLiveHub();
+  checkInSiteReminders();
+  if(force)notify('A consulta ao GE foi atualizada.');
+ }catch(error){
+  liveFeedError=error.message||String(error);
+  if(liveFeed)liveFeed={...liveFeed,stale:true,warning:'Não foi possível confirmar uma atualização recente.'};
+  updateSourceStatus();if(view==='live')renderLiveHub();
+  if(force)notify(`Atualização indisponível: ${liveFeedError}`);
+ }finally{if(button)button.disabled=false}
+}
+function checkInSiteReminders(){
+ if(!signedInUser||!accountPreferences.inSiteReminders||!favoriteTeams.length||document.visibilityState!=='visible')return;
+ const now=Date.now(),due=[];
+ for(const fixture of ALL_FIXTURES){
+  if(fixture.status==='played'||!fixture.kickoff||(!favoriteTeams.includes(fixture.home)&&!favoriteTeams.includes(fixture.away)))continue;
+  const kickoff=Date.parse(fixture.kickoff),minutes=(kickoff-now)/60_000;
+  if(!Number.isFinite(kickoff)||minutes<=0||minutes>accountPreferences.reminderMinutes)continue;
+  const key=`br26-reminded:${signedInUser.id}:${fixture.id}`;
+  if(remindedFixtures.has(key))continue;
+  try{if(localStorage.getItem(key))continue;localStorage.setItem(key,new Date().toISOString())}
+  catch(error){if(!reminderStorageWarningShown){reminderStorageWarningShown=true;notify(`Não foi possível persistir o estado dos lembretes neste navegador: ${error.message}`)}}
+  remindedFixtures.add(key);
+  due.push(`${NM[fixture.home]} x ${NM[fixture.away]} (${formatLiveTime(fixture.kickoff)})`);
+ }
+ if(due.length)notify(`Próximo${due.length===1?'':'s'} jogo${due.length===1?'':'s'} de clube favorito: ${due.join('; ')}`);
+}
 function historyCoverageMessage(){if(HISTORY_COVERAGE.status==='unavailable')return'Não foi possível comparar o histórico com uma classificação ao vivo.';const gap=HISTORY_COVERAGE.missingMatches,affected=HISTORY_COVERAGE.clubs.slice(0,3).map(club=>`${club.name} (${club.missingMatches>0?`+${club.missingMatches} jogo(s) sem placar conhecido`:'totais divergentes'})`).join(', ');if(HISTORY_COVERAGE.status==='consistent')return`Os ${HISTORY_COVERAGE.knownMatches} placares locais conferem com os totais atuais da tabela GE; isso não certifica cada partida como fonte oficial.`;return`Histórico ${HISTORY_COVERAGE.status==='incomplete'?'incompleto':'divergente'}: tabela GE indica ${HISTORY_COVERAGE.expectedMatches} partidas contabilizadas e há ${HISTORY_COVERAGE.knownMatches} placares locais${gap?`; diferença estimada: ${gap} jogo(s)`:''}${affected?`. Verificar: ${affected}`:''}. Confira e importe resultados verificados pela aba Fontes e método.`}
 function updateSourceStatus(){const sourceStatus=$('#sourceStatus');if(!sourceStatus)return;const coverage=historyCoverageMessage();if(liveFeed){sourceStatus.textContent=`Classificação e estatísticas por clube: ${liveFeed.source.name} · consultado em ${formatLiveTime(liveFeed.fetchedAt)} · rodada ${liveFeed.round.number}${liveFeed.stale?' · cache desatualizado':''}. ${liveFeed.stale?liveFeed.warning:'Atualização automática a cada 2 minutos.'}${liveFeed.historyWarning?` ${liveFeed.historyWarning}`:''} ${coverage} Calendário completo e demais indicadores: snapshot de ${updatedLabel}. Fonte GE, não oficial da CBF.`}else{sourceStatus.textContent=`Feed GE indisponível (${liveFeedError||'sem resposta'}). Mostrando o snapshot de ${dataSource.name}, atualizado em ${updatedLabel}; os dados podem estar desatualizados. ${coverage} O site tentará novamente automaticamente.`}}
 function runAction(button){const {act}=button.dataset;switch(act){
@@ -538,7 +774,25 @@ function runAction(button){const {act}=button.dataset;switch(act){
  case'select-round':tab=Number(button.dataset.round);renderSide();break;
  case'select-team':setTeam(button.dataset.team);break;
  case'team-and-sim':setTeam(button.dataset.team);show('sim');break;
+ case'open-club':statsTeam=button.dataset.team;show('clubs');break;
+ case'open-round':team='';tab=Number(button.dataset.round);show('sim');break;
  case'show-view':show(button.dataset.view);break;
+ case'open-account':openAccountDialog();break;
+ case'sign-out':supabaseClient.auth.signOut().then(({error})=>{if(error)throw error;notify('Você saiu da conta.')}).catch((error)=>notify(`Não foi possível sair da conta: ${error.message}`));break;
+ case'refresh-feed':refreshLive(true);break;
+ case'favorite-team':toggleFavorite(button.dataset.team).catch((error)=>notify(error.message));break;
+ case'save-current-scenario':saveNamedScenario($('#scenarioName')?.value).catch((error)=>notify(error.message));break;
+ case'load-saved-scenario':{const saved=savedScenarios.find((item)=>item.id===button.dataset.id);if(!saved)throw new Error('Cenário salvo não encontrado.');applyPayload(saved.scenario);show('sim');break}
+ case'duplicate-saved-scenario':{const saved=savedScenarios.find((item)=>item.id===button.dataset.id);if(!saved)throw new Error('Cenário salvo não encontrado.');applyPayload(saved.scenario);show('account');saveNamedScenario(`${saved.name} (cópia)`.slice(0,60)).catch((error)=>notify(error.message));break}
+ case'delete-saved-scenario':removeSavedScenario(button.dataset.id).catch((error)=>notify(error.message));break;
+ case'compare-saved-scenario':compareSavedId=button.dataset.id;show('compare');renderScenarioComparison();break;
+ case'compare-current':{
+  const first=validatedPayload(payloadFromState());
+  const selected=savedScenarios.find((item)=>item.id===compareSavedId);
+  let second=selected?.scenario;
+  if(!second){let value=compareCode.trim();if(/^https?:\/\//i.test(value)){const url=new URL(value);value=url.searchParams.get('scenario')||''}if(!value)throw new Error('Cole o código público do cenário B ou escolha um cenário salvo.');second=payloadFromCode(value.startsWith('B28:')||value.startsWith('B27:')?value:`B28:${value}`)}
+  renderComparisonResults(first,validatedPayload(second));break;
+ }
  case'sort-stats':sortT(button.dataset.key);break;
  case'copy-csv':csv();break;
  case'close-modal':closeModal();break;
@@ -551,8 +805,9 @@ function runAction(button){const {act}=button.dataset;switch(act){
  default:throw new Error(`A\u00e7\u00e3o desconhecida: ${act}`);
 }}
 document.addEventListener('click',(event)=>{if(event.target===$('#mod')){closeModal();return}const button=event.target.closest('[data-act]');if(!button)return;try{Promise.resolve(runAction(button)).catch((error)=>{notify(`N\u00e3o foi poss\u00edvel concluir a a\u00e7\u00e3o: ${error.message}`);console.error(error)})}catch(error){notify(`N\u00e3o foi poss\u00edvel concluir a a\u00e7\u00e3o: ${error.message}`);console.error(error)}});
-document.addEventListener('input',(event)=>{const input=event.target;if(input.matches('[data-input="score"]'))sv(input.dataset.match,Number(input.dataset.side),input.value);if(input.matches('[data-input="model-setting"]'))setS(input.dataset.setting,Number(input.value));if(input.matches('[data-input="club-adjustment"]'))adjL(input.value)});
-document.addEventListener('change',(event)=>{const input=event.target,action=input.dataset.change;if(action==='method'){if(!METH[input.value]){notify('Método de simulação inválido.');return}opt.meth=input.value;save();renderAll()}else if(action==='team')setTeam(input.value);else if(action==='stats-team'){statsTeam=input.value;renderEst()}else if(action==='backup-file'&&input.files?.[0])importBackup(input.files[0]).finally(()=>{input.value='' });else if(input.matches('[data-input="model-setting"]'))setSE();else if(input.matches('[data-input="model-seed"]'))updateSeed(input.value);else if(input.matches('[data-input="club-adjustment"]')){renderSide();sched()}});
+document.addEventListener('input',(event)=>{const input=event.target;if(input.matches('[data-input="score"]'))sv(input.dataset.match,Number(input.dataset.side),input.value);if(input.matches('[data-input="model-setting"]'))setS(input.dataset.setting,Number(input.value));if(input.matches('[data-input="club-adjustment"]'))adjL(input.value);if(input.id==='siteSearch'){siteSearch=input.value;renderSearch()}if(input.id==='compareCode')compareCode=input.value});
+document.addEventListener('change',(event)=>{const input=event.target,action=input.dataset.change;if(action==='method'){if(!METH[input.value]){notify('Método de simulação inválido.');return}opt.meth=input.value;save();renderAll()}else if(action==='team')setTeam(input.value);else if(action==='stats-team'){statsTeam=input.value;renderEst()}else if(action==='club-profile'){statsTeam=input.value;renderClubPage()}else if(action==='history-round'){selectedHistoryRound=Number(input.value);renderRoundHistory()}else if(action==='favorite-preference'){toggleFavorite(input.dataset.team).catch((error)=>notify(error.message))}else if(action==='reminder-enabled'){updateReminderPreference('inSiteReminders',input.checked).then(()=>{notify(input.checked?'Lembretes no site ativados.':'Lembretes no site desativados.')}).catch((error)=>notify(error.message))}else if(action==='reminder-minutes'){updateReminderPreference('reminderMinutes',Number(input.value)).catch((error)=>notify(error.message))}else if(input.id==='savedScenarioSelect'){compareSavedId=input.value;renderScenarioComparison()}else if(action==='backup-file'&&input.files?.[0])importBackup(input.files[0]).finally(()=>{input.value='' });else if(input.matches('[data-input="model-setting"]'))setSE();else if(input.matches('[data-input="model-seed"]'))updateSeed(input.value);else if(input.matches('[data-input="club-adjustment"]')){renderSide();sched()}});
+document.addEventListener('submit',(event)=>{const handlers=Object.assign(Object.create(null),{profileNameForm:updateProfileName,passwordChangeForm:updateAccountPassword,deleteAccountForm:deleteSignedInAccount}),handler=handlers[event.target.id];if(!handler)return;event.preventDefault();handler(event).catch((error)=>notify(error.message||String(error)))});
 document.addEventListener('keydown',(event)=>{if(event.key==='Escape'&&accountDialog&&!accountDialog.hidden){closeAccountDialog();return}if(event.key==='Escape'&&!$('#mod').hidden){closeModal();return}if(accountDialog&&!accountDialog.hidden&&event.key==='Tab'){const focusable=Array.from(accountDialog.querySelectorAll('button,input,[href],[tabindex]:not([tabindex="-1"])')).filter((element)=>!element.disabled);if(!focusable.length)return;const first=focusable[0],last=focusable[focusable.length-1];if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}return}if(!$('#mod').hidden&&event.key==='Tab'){const focusable=Array.from($('#mod').querySelectorAll('button,input,textarea,[href],[tabindex]:not([tabindex="-1"])')).filter((element)=>!element.disabled);if(!focusable.length)return;const first=focusable[0],last=focusable[focusable.length-1];if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}return}const tabButton=event.target.closest('[role="tab"]');if(!tabButton)return;const current=TABS.findIndex(([key])=>key===tabButton.dataset.view);let next;if(event.key==='ArrowRight')next=(current+1)%TABS.length;else if(event.key==='ArrowLeft')next=(current-1+TABS.length)%TABS.length;else if(event.key==='Home')next=0;else if(event.key==='End')next=TABS.length-1;else return;event.preventDefault();show(TABS[next][0])});
 document.querySelectorAll('[data-i]').forEach(e=>e.innerHTML=ic(e.dataset.i));
 const updatedLabel=new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short',timeZone:'America/Sao_Paulo'}).format(new Date(dataUpdatedAt));
@@ -573,6 +828,9 @@ nav();renderAll();
 if(validationWarnings.length)notify(validationWarnings.join(' '));
 await initializeAccount();
 setInterval(()=>{if(document.visibilityState==='visible')refreshLive(false)},120_000);
+setInterval(checkInSiteReminders,60_000);
+document.addEventListener('visibilitychange',checkInSiteReminders);
+checkInSiteReminders();
 
   } catch(error) { showLoadError(error); console.error('Falha ao iniciar o simulador:',error); }
 })();

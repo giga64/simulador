@@ -51,4 +51,21 @@ ul.src{padding-left:18px;margin:6px 0}ul.src li{margin:6px 0}
 button:focus:not(:focus-visible){outline:none}
 details summary{cursor:pointer;font-weight:650;padding:8px 0}
 details summary:focus-visible{outline-offset:3px}
+.nav{scrollbar-width:thin}
+[role=tabpanel]{min-width:0}
+input:not([type=checkbox]):not([type=range]),select{max-width:100%;min-height:40px;padding:8px 10px;border:1px solid var(--ln);border-radius:9px;background:var(--bg);color:var(--tx);font:inherit}
+textarea{font:inherit}
+form{display:grid;gap:8px;max-width:520px}
+form h3{margin:8px 0 0}
+form label{font-size:.8rem;color:var(--mu)}
+form button{justify-self:start}
+.live-fixture{min-width:0}
+.live-fixture .tt{min-height:40px}
+#scenarioComparisonResult{margin-top:12px}
+#scenarioComparisonResult .sc{max-height:70vh}
+#v-search input[type=search]{width:min(100%,560px);margin-top:8px}
+#v-search p{margin:6px 0}
+#v-account hr{width:100%;border:0;border-top:1px solid var(--ln);margin:10px 0}
+input[type=checkbox]{width:18px;height:18px;vertical-align:middle;accent-color:var(--ac)}
+label:has(input[type=checkbox]){display:flex;gap:8px;align-items:center}
 @media(max-width:640px){main{padding:10px}.nav button{min-height:44px}.qk button{min-width:40px;min-height:40px}.tt input{width:44px;height:44px}.tile{grid-template-columns:repeat(2,minmax(0,1fr))}.source-status{font-size:.72rem}}

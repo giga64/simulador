@@ -271,3 +271,19 @@ export function summarizePredictionCalibration(history) {
     })),
   };
 }
+
+export function summarizeCalibrationByRound(history) {
+  const rounds = [...new Set(history
+    .filter((entry) => entry.actual && entry.modelSnapshot?.probabilities)
+    .map((entry) => entry.round))]
+    .sort((a, b) => a - b);
+  return rounds.map((round) => {
+    const matches = history.filter((entry) => entry.round === round
+      && entry.actual && entry.modelSnapshot?.probabilities);
+    return {
+      round,
+      matches: matches.length,
+      brierScore: summarizePredictionCalibration(matches).brierScore,
+    };
+  });
+}

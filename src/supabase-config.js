@@ -32,5 +32,17 @@ export function getPublicSupabaseConfig(environment) {
     supabaseUrl: authConfigured ? supabaseUrl : '',
     supabaseKey: authConfigured ? candidate : '',
     authConfigured,
+    accountDeletionConfigured: isSupabaseServiceRoleKey(environment.SUPABASE_SERVICE_ROLE_KEY),
   };
+}
+
+export function isSupabaseServiceRoleKey(value) {
+  if (typeof value !== 'string') return false;
+  const parts = value.split('.');
+  if (parts.length !== 3) return false;
+  try {
+    return JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8')).role === 'service_role';
+  } catch {
+    return false;
+  }
 }
