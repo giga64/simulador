@@ -1,0 +1,5625 @@
+{
+  "schemaVersion": 1,
+  "competition": "Campeonato Brasileiro S?rie A",
+  "season": 2026,
+  "updatedAt": "2026-10-08T23:33:00-03:00",
+  "source": {
+    "name": "Tabela e resultados consolidados; confer?ncia de calend?rio pela CBF",
+    "url": "https://aquiesportes.com.br/futebol/tabela-do-brasileirao/",
+    "calendarUrl": "https://www.cbf.com.br/futebol-brasileiro/noticias/campeonato-brasileiro-serie-a/a/confira-o-retrospecto-dos-confrontos-da-30-rodada-do-brasileirao",
+    "method": "Snapshot manual publicado com o site; n?o ? um feed ao vivo."
+  },
+  "qualificationModel": {
+    "libertadoresLeaguePositions": 5,
+    "sudamericanaLeagueStart": 6,
+    "sudamericanaLeagueEnd": 11,
+    "relegationPlaces": 4,
+    "note": "Cutoffs are a simplified league-table scenario, not an official qualification outcome. Cup winners and other regulations can change continental places."
+  },
+  "teams": {
+    "FLA": "Flamengo",
+    "PAL": "Palmeiras",
+    "FLU": "Fluminense",
+    "CAP": "Athletico-PR",
+    "CRU": "Cruzeiro",
+    "BAH": "Bahia",
+    "CAM": "Atlético-MG",
+    "SAN": "Santos",
+    "CFC": "Coritiba",
+    "BRA": "Red Bull Bragantino",
+    "SAO": "São Paulo",
+    "VIT": "Vitória",
+    "BOT": "Botafogo",
+    "VAS": "Vasco da Gama",
+    "MIR": "Mirassol",
+    "COR": "Corinthians",
+    "INT": "Internacional",
+    "GRE": "Grêmio",
+    "REM": "Remo",
+    "CHA": "Chapecoense"
+  },
+  "stadiums": {
+    "FLA": "Maracanã",
+    "FLU": "Maracanã",
+    "VAS": "São Januário",
+    "SAO": "Morumbis",
+    "CAM": "Arena MRV",
+    "GRE": "Arena do Grêmio",
+    "PAL": "Allianz Parque",
+    "BAH": "Arena Fonte Nova",
+    "CFC": "Couto Pereira",
+    "CHA": "Arena Condá",
+    "BRA": "Nabi Abi Chedid",
+    "CAP": "Ligga Arena",
+    "CRU": "Mineirão",
+    "COR": "Neo Química Arena",
+    "MIR": "Maião",
+    "INT": "Beira-Rio",
+    "BOT": "Nilton Santos",
+    "SAN": "Vila Belmiro",
+    "VIT": "Barradão",
+    "REM": "Mangueirão"
+  },
+  "fixtures": [
+    {
+      "id": "played:0",
+      "round": 1,
+      "home": "CAM",
+      "away": "PAL",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:1",
+      "round": 1,
+      "home": "CFC",
+      "away": "BRA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:2",
+      "round": 1,
+      "home": "INT",
+      "away": "CAP",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:3",
+      "round": 1,
+      "home": "VIT",
+      "away": "REM",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:4",
+      "round": 1,
+      "home": "FLU",
+      "away": "GRE",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:5",
+      "round": 1,
+      "home": "CHA",
+      "away": "SAN",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:6",
+      "round": 1,
+      "home": "COR",
+      "away": "BAH",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:7",
+      "round": 1,
+      "home": "SAO",
+      "away": "FLA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:8",
+      "round": 1,
+      "home": "MIR",
+      "away": "VAS",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:9",
+      "round": 1,
+      "home": "BOT",
+      "away": "CRU",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:10",
+      "round": 2,
+      "home": "BRA",
+      "away": "CAM",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:11",
+      "round": 2,
+      "home": "FLA",
+      "away": "INT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:12",
+      "round": 2,
+      "home": "REM",
+      "away": "MIR",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:13",
+      "round": 2,
+      "home": "SAN",
+      "away": "SAO",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:14",
+      "round": 2,
+      "home": "GRE",
+      "away": "BOT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:15",
+      "round": 2,
+      "home": "PAL",
+      "away": "VIT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:16",
+      "round": 2,
+      "home": "BAH",
+      "away": "FLU",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:17",
+      "round": 2,
+      "home": "VAS",
+      "away": "CHA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:18",
+      "round": 2,
+      "home": "CRU",
+      "away": "CFC",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:19",
+      "round": 2,
+      "home": "CAP",
+      "away": "COR",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:20",
+      "round": 3,
+      "home": "VIT",
+      "away": "FLA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:21",
+      "round": 3,
+      "home": "CHA",
+      "away": "CFC",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:22",
+      "round": 3,
+      "home": "MIR",
+      "away": "CRU",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:23",
+      "round": 3,
+      "home": "CAM",
+      "away": "REM",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:24",
+      "round": 3,
+      "home": "SAO",
+      "away": "GRE",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:25",
+      "round": 3,
+      "home": "VAS",
+      "away": "BAH",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:26",
+      "round": 3,
+      "home": "CAP",
+      "away": "SAN",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:27",
+      "round": 3,
+      "home": "FLU",
+      "away": "BOT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:28",
+      "round": 3,
+      "home": "COR",
+      "away": "BRA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:29",
+      "round": 3,
+      "home": "INT",
+      "away": "PAL",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:30",
+      "round": 4,
+      "home": "BRA",
+      "away": "CAP",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:31",
+      "round": 4,
+      "home": "REM",
+      "away": "INT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:32",
+      "round": 4,
+      "home": "CFC",
+      "away": "SAO",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:33",
+      "round": 4,
+      "home": "CRU",
+      "away": "COR",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:34",
+      "round": 4,
+      "home": "GRE",
+      "away": "CAM",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:35",
+      "round": 4,
+      "home": "PAL",
+      "away": "FLU",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:36",
+      "round": 4,
+      "home": "SAN",
+      "away": "VAS",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:37",
+      "round": 4,
+      "home": "BAH",
+      "away": "CHA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:38",
+      "round": 4,
+      "home": "BOT",
+      "away": "VIT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:39",
+      "round": 4,
+      "home": "FLA",
+      "away": "MIR",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:40",
+      "round": 5,
+      "home": "MIR",
+      "away": "SAN",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:41",
+      "round": 5,
+      "home": "CAM",
+      "away": "INT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:42",
+      "round": 5,
+      "home": "BAH",
+      "away": "VIT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:43",
+      "round": 5,
+      "home": "COR",
+      "away": "CFC",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:44",
+      "round": 5,
+      "home": "FLA",
+      "away": "CRU",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:45",
+      "round": 5,
+      "home": "REM",
+      "away": "FLU",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:46",
+      "round": 5,
+      "home": "VAS",
+      "away": "PAL",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:47",
+      "round": 5,
+      "home": "SAO",
+      "away": "CHA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:48",
+      "round": 5,
+      "home": "GRE",
+      "away": "BRA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:49",
+      "round": 5,
+      "home": "CAP",
+      "away": "BOT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:50",
+      "round": 6,
+      "home": "VIT",
+      "away": "CAM",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:51",
+      "round": 6,
+      "home": "BOT",
+      "away": "FLA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:52",
+      "round": 6,
+      "home": "FLU",
+      "away": "CAP",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:53",
+      "round": 6,
+      "home": "INT",
+      "away": "BAH",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:54",
+      "round": 6,
+      "home": "SAN",
+      "away": "COR",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:55",
+      "round": 6,
+      "home": "CFC",
+      "away": "REM",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:56",
+      "round": 6,
+      "home": "PAL",
+      "away": "MIR",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:57",
+      "round": 6,
+      "home": "BRA",
+      "away": "SAO",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:58",
+      "round": 6,
+      "home": "CRU",
+      "away": "VAS",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:59",
+      "round": 6,
+      "home": "CHA",
+      "away": "GRE",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:60",
+      "round": 7,
+      "home": "BAH",
+      "away": "BRA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:61",
+      "round": 7,
+      "home": "PAL",
+      "away": "BOT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:62",
+      "round": 7,
+      "home": "CAP",
+      "away": "CRU",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:63",
+      "round": 7,
+      "home": "CAM",
+      "away": "SAO",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:64",
+      "round": 7,
+      "home": "MIR",
+      "away": "CFC",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:65",
+      "round": 7,
+      "home": "SAN",
+      "away": "INT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:66",
+      "round": 7,
+      "home": "VAS",
+      "away": "FLU",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:67",
+      "round": 7,
+      "home": "GRE",
+      "away": "VIT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:68",
+      "round": 7,
+      "home": "FLA",
+      "away": "REM",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:69",
+      "round": 7,
+      "home": "CHA",
+      "away": "COR",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:70",
+      "round": 8,
+      "home": "BRA",
+      "away": "BOT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:71",
+      "round": 8,
+      "home": "FLU",
+      "away": "CAM",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:72",
+      "round": 8,
+      "home": "SAO",
+      "away": "PAL",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:73",
+      "round": 8,
+      "home": "CAP",
+      "away": "CFC",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:74",
+      "round": 8,
+      "home": "CRU",
+      "away": "SAN",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:75",
+      "round": 8,
+      "home": "REM",
+      "away": "BAH",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:76",
+      "round": 8,
+      "home": "VAS",
+      "away": "GRE",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:77",
+      "round": 8,
+      "home": "INT",
+      "away": "CHA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:78",
+      "round": 8,
+      "home": "VIT",
+      "away": "MIR",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:79",
+      "round": 8,
+      "home": "COR",
+      "away": "FLA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:80",
+      "round": 9,
+      "home": "BOT",
+      "away": "MIR",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:81",
+      "round": 9,
+      "home": "INT",
+      "away": "SAO",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:82",
+      "round": 9,
+      "home": "BAH",
+      "away": "CAP",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:83",
+      "round": 9,
+      "home": "CRU",
+      "away": "VIT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:84",
+      "round": 9,
+      "home": "CFC",
+      "away": "VAS",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:85",
+      "round": 9,
+      "home": "FLU",
+      "away": "COR",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:86",
+      "round": 9,
+      "home": "CHA",
+      "away": "CAM",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:87",
+      "round": 9,
+      "home": "SAN",
+      "away": "REM",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:88",
+      "round": 9,
+      "home": "BRA",
+      "away": "FLA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:89",
+      "round": 9,
+      "home": "PAL",
+      "away": "GRE",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:90",
+      "round": 10,
+      "home": "SAO",
+      "away": "CRU",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:91",
+      "round": 10,
+      "home": "CFC",
+      "away": "FLU",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:92",
+      "round": 10,
+      "home": "VAS",
+      "away": "BOT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:93",
+      "round": 10,
+      "home": "CHA",
+      "away": "VIT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:94",
+      "round": 10,
+      "home": "CAM",
+      "away": "CAP",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:95",
+      "round": 10,
+      "home": "FLA",
+      "away": "SAN",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:96",
+      "round": 10,
+      "home": "BAH",
+      "away": "PAL",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:97",
+      "round": 10,
+      "home": "COR",
+      "away": "INT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:98",
+      "round": 10,
+      "home": "MIR",
+      "away": "BRA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:99",
+      "round": 10,
+      "home": "GRE",
+      "away": "REM",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:100",
+      "round": 11,
+      "home": "REM",
+      "away": "VAS",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:101",
+      "round": 11,
+      "home": "VIT",
+      "away": "SAO",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:102",
+      "round": 11,
+      "home": "MIR",
+      "away": "BAH",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:103",
+      "round": 11,
+      "home": "SAN",
+      "away": "CAM",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:104",
+      "round": 11,
+      "home": "INT",
+      "away": "GRE",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:105",
+      "round": 11,
+      "home": "CAP",
+      "away": "CHA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:106",
+      "round": 11,
+      "home": "BOT",
+      "away": "CFC",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:107",
+      "round": 11,
+      "home": "FLU",
+      "away": "FLA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:108",
+      "round": 11,
+      "home": "COR",
+      "away": "PAL",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:109",
+      "round": 11,
+      "home": "CRU",
+      "away": "BRA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:110",
+      "round": 12,
+      "home": "CHA",
+      "away": "BOT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:111",
+      "round": 12,
+      "home": "VAS",
+      "away": "SAO",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:112",
+      "round": 12,
+      "home": "VIT",
+      "away": "COR",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:113",
+      "round": 12,
+      "home": "CRU",
+      "away": "GRE",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:114",
+      "round": 12,
+      "home": "INT",
+      "away": "MIR",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:115",
+      "round": 12,
+      "home": "CFC",
+      "away": "CAM",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:116",
+      "round": 12,
+      "home": "SAN",
+      "away": "FLU",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:117",
+      "round": 12,
+      "home": "BRA",
+      "away": "REM",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:118",
+      "round": 12,
+      "home": "PAL",
+      "away": "CAP",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:119",
+      "round": 12,
+      "home": "FLA",
+      "away": "BAH",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:120",
+      "round": 13,
+      "home": "BAH",
+      "away": "SAN",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:121",
+      "round": 13,
+      "home": "BOT",
+      "away": "INT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:122",
+      "round": 13,
+      "home": "REM",
+      "away": "CRU",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:123",
+      "round": 13,
+      "home": "SAO",
+      "away": "MIR",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:124",
+      "round": 13,
+      "home": "COR",
+      "away": "VAS",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:125",
+      "round": 13,
+      "home": "GRE",
+      "away": "CFC",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:126",
+      "round": 13,
+      "home": "CAP",
+      "away": "VIT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:127",
+      "round": 13,
+      "home": "BRA",
+      "away": "PAL",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:128",
+      "round": 13,
+      "home": "CAM",
+      "away": "FLA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:129",
+      "round": 13,
+      "home": "FLU",
+      "away": "CHA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:130",
+      "round": 14,
+      "home": "BOT",
+      "away": "REM",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:131",
+      "round": 14,
+      "home": "PAL",
+      "away": "SAN",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:132",
+      "round": 14,
+      "home": "VIT",
+      "away": "CFC",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:133",
+      "round": 14,
+      "home": "CAP",
+      "away": "GRE",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:134",
+      "round": 14,
+      "home": "CRU",
+      "away": "CAM",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:135",
+      "round": 14,
+      "home": "FLA",
+      "away": "VAS",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:136",
+      "round": 14,
+      "home": "SAO",
+      "away": "BAH",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:137",
+      "round": 14,
+      "home": "CHA",
+      "away": "BRA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:138",
+      "round": 14,
+      "home": "INT",
+      "away": "FLU",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:139",
+      "round": 14,
+      "home": "MIR",
+      "away": "COR",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:140",
+      "round": 15,
+      "home": "CFC",
+      "away": "INT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:141",
+      "round": 15,
+      "home": "FLU",
+      "away": "VIT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:142",
+      "round": 15,
+      "home": "BAH",
+      "away": "CRU",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:143",
+      "round": 15,
+      "home": "CAM",
+      "away": "BOT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:144",
+      "round": 15,
+      "home": "REM",
+      "away": "PAL",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:145",
+      "round": 15,
+      "home": "COR",
+      "away": "SAO",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:146",
+      "round": 15,
+      "home": "MIR",
+      "away": "CHA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:147",
+      "round": 15,
+      "home": "SAN",
+      "away": "BRA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:148",
+      "round": 15,
+      "home": "GRE",
+      "away": "FLA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:149",
+      "round": 15,
+      "home": "VAS",
+      "away": "CAP",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:150",
+      "round": 16,
+      "home": "CAM",
+      "away": "MIR",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:151",
+      "round": 16,
+      "home": "INT",
+      "away": "VAS",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:152",
+      "round": 16,
+      "home": "FLU",
+      "away": "SAO",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:153",
+      "round": 16,
+      "home": "PAL",
+      "away": "CRU",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:154",
+      "round": 16,
+      "home": "SAN",
+      "away": "CFC",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:155",
+      "round": 16,
+      "home": "BAH",
+      "away": "GRE",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:156",
+      "round": 16,
+      "home": "BOT",
+      "away": "COR",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:157",
+      "round": 16,
+      "home": "BRA",
+      "away": "VIT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:158",
+      "round": 16,
+      "home": "CHA",
+      "away": "REM",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:159",
+      "round": 16,
+      "home": "CAP",
+      "away": "FLA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:160",
+      "round": 17,
+      "home": "SAO",
+      "away": "BOT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:161",
+      "round": 17,
+      "home": "VIT",
+      "away": "INT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:162",
+      "round": 17,
+      "home": "GRE",
+      "away": "SAN",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:163",
+      "round": 17,
+      "home": "MIR",
+      "away": "FLU",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:164",
+      "round": 17,
+      "home": "FLA",
+      "away": "PAL",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:165",
+      "round": 17,
+      "home": "CRU",
+      "away": "CHA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:166",
+      "round": 17,
+      "home": "REM",
+      "away": "CAP",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:167",
+      "round": 17,
+      "home": "COR",
+      "away": "CAM",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:168",
+      "round": 17,
+      "home": "VAS",
+      "away": "BRA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:169",
+      "round": 17,
+      "home": "CFC",
+      "away": "BAH",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:170",
+      "round": 18,
+      "home": "CAP",
+      "away": "MIR",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:171",
+      "round": 18,
+      "home": "FLA",
+      "away": "CFC",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:172",
+      "round": 18,
+      "home": "BAH",
+      "away": "BOT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:173",
+      "round": 18,
+      "home": "GRE",
+      "away": "COR",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:174",
+      "round": 18,
+      "home": "SAN",
+      "away": "VIT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:175",
+      "round": 18,
+      "home": "BRA",
+      "away": "INT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:176",
+      "round": 18,
+      "home": "PAL",
+      "away": "CHA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:177",
+      "round": 18,
+      "home": "VAS",
+      "away": "CAM",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:178",
+      "round": 18,
+      "home": "CRU",
+      "away": "FLU",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:179",
+      "round": 18,
+      "home": "REM",
+      "away": "SAO",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:180",
+      "round": 19,
+      "home": "BOT",
+      "away": "SAN",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:181",
+      "round": 19,
+      "home": "VIT",
+      "away": "VAS",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:182",
+      "round": 19,
+      "home": "FLU",
+      "away": "BRA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:183",
+      "round": 19,
+      "home": "MIR",
+      "away": "GRE",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:184",
+      "round": 19,
+      "home": "CAM",
+      "away": "BAH",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:185",
+      "round": 19,
+      "home": "CFC",
+      "away": "PAL",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:186",
+      "round": 19,
+      "home": "CHA",
+      "away": "FLA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:187",
+      "round": 19,
+      "home": "INT",
+      "away": "CRU",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:188",
+      "round": 19,
+      "home": "SAO",
+      "away": "CAP",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:189",
+      "round": 19,
+      "home": "COR",
+      "away": "REM",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:190",
+      "round": 20,
+      "home": "CAP",
+      "away": "INT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:191",
+      "round": 20,
+      "home": "SAN",
+      "away": "CHA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:192",
+      "round": 20,
+      "home": "VAS",
+      "away": "MIR",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:193",
+      "round": 20,
+      "home": "BAH",
+      "away": "COR",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:194",
+      "round": 20,
+      "home": "CRU",
+      "away": "BOT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:195",
+      "round": 20,
+      "home": "BRA",
+      "away": "CFC",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:196",
+      "round": 20,
+      "home": "FLA",
+      "away": "SAO",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:197",
+      "round": 20,
+      "home": "GRE",
+      "away": "FLU",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:198",
+      "round": 20,
+      "home": "PAL",
+      "away": "CAM",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:199",
+      "round": 20,
+      "home": "REM",
+      "away": "VIT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:200",
+      "round": 21,
+      "home": "INT",
+      "away": "FLA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:201",
+      "round": 21,
+      "home": "MIR",
+      "away": "REM",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:202",
+      "round": 21,
+      "home": "FLU",
+      "away": "BAH",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:203",
+      "round": 21,
+      "home": "VIT",
+      "away": "PAL",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:204",
+      "round": 21,
+      "home": "COR",
+      "away": "CAP",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:205",
+      "round": 21,
+      "home": "CFC",
+      "away": "CRU",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:206",
+      "round": 21,
+      "home": "BOT",
+      "away": "GRE",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:207",
+      "round": 21,
+      "home": "SAO",
+      "away": "SAN",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:208",
+      "round": 21,
+      "home": "CAM",
+      "away": "BRA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:209",
+      "round": 22,
+      "home": "GRE",
+      "away": "SAO",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:210",
+      "round": 22,
+      "home": "REM",
+      "away": "CAM",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:211",
+      "round": 22,
+      "home": "CFC",
+      "away": "CHA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:212",
+      "round": 22,
+      "home": "BOT",
+      "away": "FLU",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:213",
+      "round": 22,
+      "home": "CRU",
+      "away": "MIR",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:214",
+      "round": 22,
+      "home": "BAH",
+      "away": "VAS",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:215",
+      "round": 22,
+      "home": "PAL",
+      "away": "INT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:216",
+      "round": 22,
+      "home": "BRA",
+      "away": "COR",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:217",
+      "round": 22,
+      "home": "SAN",
+      "away": "CAP",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:218",
+      "round": 22,
+      "home": "FLA",
+      "away": "VIT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:219",
+      "round": 23,
+      "home": "FLU",
+      "away": "PAL",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:220",
+      "round": 23,
+      "home": "CAP",
+      "away": "BRA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:221",
+      "round": 23,
+      "home": "SAO",
+      "away": "CFC",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:222",
+      "round": 23,
+      "home": "CHA",
+      "away": "BAH",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:223",
+      "round": 23,
+      "home": "CAM",
+      "away": "GRE",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:224",
+      "round": 23,
+      "home": "VAS",
+      "away": "SAN",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:225",
+      "round": 23,
+      "home": "MIR",
+      "away": "FLA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:226",
+      "round": 23,
+      "home": "VIT",
+      "away": "BOT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:227",
+      "round": 23,
+      "home": "COR",
+      "away": "CRU",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:228",
+      "round": 23,
+      "home": "INT",
+      "away": "REM",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:229",
+      "round": 24,
+      "home": "FLU",
+      "away": "REM",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:230",
+      "round": 24,
+      "home": "INT",
+      "away": "CAM",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:231",
+      "round": 24,
+      "home": "CRU",
+      "away": "FLA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:232",
+      "round": 24,
+      "home": "BRA",
+      "away": "GRE",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:233",
+      "round": 24,
+      "home": "PAL",
+      "away": "VAS",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:234",
+      "round": 24,
+      "home": "VIT",
+      "away": "BAH",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:235",
+      "round": 24,
+      "home": "CHA",
+      "away": "SAO",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:236",
+      "round": 24,
+      "home": "SAN",
+      "away": "MIR",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:237",
+      "round": 24,
+      "home": "CFC",
+      "away": "COR",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:238",
+      "round": 24,
+      "home": "BOT",
+      "away": "CAP",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:239",
+      "round": 25,
+      "home": "CAM",
+      "away": "VIT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:240",
+      "round": 25,
+      "home": "SAO",
+      "away": "BRA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:241",
+      "round": 25,
+      "home": "VAS",
+      "away": "CRU",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:242",
+      "round": 25,
+      "home": "CAP",
+      "away": "FLU",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:243",
+      "round": 25,
+      "home": "COR",
+      "away": "SAN",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:244",
+      "round": 25,
+      "home": "FLA",
+      "away": "BOT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:245",
+      "round": 25,
+      "home": "GRE",
+      "away": "CHA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:246",
+      "round": 25,
+      "home": "MIR",
+      "away": "PAL",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:247",
+      "round": 25,
+      "home": "BAH",
+      "away": "INT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:248",
+      "round": 25,
+      "home": "REM",
+      "away": "CFC",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:249",
+      "round": 26,
+      "home": "BRA",
+      "away": "BAH",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:250",
+      "round": 26,
+      "home": "SAO",
+      "away": "CAM",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:251",
+      "round": 26,
+      "home": "FLU",
+      "away": "VAS",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:252",
+      "round": 26,
+      "home": "CFC",
+      "away": "MIR",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:253",
+      "round": 26,
+      "home": "CRU",
+      "away": "CAP",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:254",
+      "round": 26,
+      "home": "INT",
+      "away": "SAN",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:255",
+      "round": 26,
+      "home": "REM",
+      "away": "FLA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:256",
+      "round": 26,
+      "home": "BOT",
+      "away": "PAL",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:257",
+      "round": 26,
+      "home": "COR",
+      "away": "CHA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:258",
+      "round": 26,
+      "home": "VIT",
+      "away": "GRE",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:259",
+      "round": 27,
+      "home": "CFC",
+      "away": "CAP",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:260",
+      "round": 27,
+      "home": "CAM",
+      "away": "FLU",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:261",
+      "round": 27,
+      "home": "GRE",
+      "away": "VAS",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:262",
+      "round": 27,
+      "home": "CHA",
+      "away": "INT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:263",
+      "round": 27,
+      "home": "PAL",
+      "away": "SAO",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:264",
+      "round": 27,
+      "home": "BOT",
+      "away": "BRA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:265",
+      "round": 27,
+      "home": "SAN",
+      "away": "CRU",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:266",
+      "round": 27,
+      "home": "MIR",
+      "away": "VIT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:267",
+      "round": 27,
+      "home": "FLA",
+      "away": "COR",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:268",
+      "round": 27,
+      "home": "BAH",
+      "away": "REM",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:269",
+      "round": 28,
+      "home": "CAM",
+      "away": "CHA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:270",
+      "round": 28,
+      "home": "MIR",
+      "away": "BOT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:271",
+      "round": 28,
+      "home": "REM",
+      "away": "SAN",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:272",
+      "round": 28,
+      "home": "VAS",
+      "away": "CFC",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:273",
+      "round": 28,
+      "home": "SAO",
+      "away": "INT",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:274",
+      "round": 28,
+      "home": "GRE",
+      "away": "PAL",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:275",
+      "round": 28,
+      "home": "COR",
+      "away": "FLU",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:276",
+      "round": 28,
+      "home": "VIT",
+      "away": "CRU",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:277",
+      "round": 28,
+      "home": "FLA",
+      "away": "BRA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:278",
+      "round": 28,
+      "home": "CAP",
+      "away": "BAH",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:279",
+      "round": 29,
+      "home": "BRA",
+      "away": "MIR",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:280",
+      "round": 29,
+      "home": "INT",
+      "away": "COR",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:281",
+      "round": 29,
+      "home": "REM",
+      "away": "GRE",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:282",
+      "round": 29,
+      "home": "VIT",
+      "away": "CHA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:283",
+      "round": 29,
+      "home": "BOT",
+      "away": "VAS",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:284",
+      "round": 29,
+      "home": "CRU",
+      "away": "SAO",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:285",
+      "round": 29,
+      "home": "SAN",
+      "away": "FLA",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:286",
+      "round": 29,
+      "home": "CAP",
+      "away": "CAM",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:287",
+      "round": 29,
+      "home": "FLU",
+      "away": "CFC",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "played:288",
+      "round": 29,
+      "home": "PAL",
+      "away": "BAH",
+      "status": "played",
+      "kickoff": null,
+      "stadium": null
+    },
+    {
+      "id": "0:0",
+      "round": 30,
+      "home": "VAS",
+      "away": "REM",
+      "status": "scheduled",
+      "kickoff": "2026-10-10T18:00:00-03:00",
+      "stadium": "São Januário"
+    },
+    {
+      "id": "0:1",
+      "round": 30,
+      "home": "SAO",
+      "away": "VIT",
+      "status": "scheduled",
+      "kickoff": "2026-10-10T21:00:00-03:00",
+      "stadium": "Morumbis"
+    },
+    {
+      "id": "0:2",
+      "round": 30,
+      "home": "CAM",
+      "away": "SAN",
+      "status": "scheduled",
+      "kickoff": "2026-10-11T16:00:00-03:00",
+      "stadium": "Arena MRV"
+    },
+    {
+      "id": "0:3",
+      "round": 30,
+      "home": "FLA",
+      "away": "FLU",
+      "status": "scheduled",
+      "kickoff": "2026-10-11T17:30:00-03:00",
+      "stadium": "Maracanã"
+    },
+    {
+      "id": "0:4",
+      "round": 30,
+      "home": "GRE",
+      "away": "INT",
+      "status": "scheduled",
+      "kickoff": "2026-10-11T17:30:00-03:00",
+      "stadium": "Arena do Grêmio"
+    },
+    {
+      "id": "0:5",
+      "round": 30,
+      "home": "PAL",
+      "away": "COR",
+      "status": "scheduled",
+      "kickoff": "2026-10-11T17:30:00-03:00",
+      "stadium": "Allianz Parque"
+    },
+    {
+      "id": "0:6",
+      "round": 30,
+      "home": "BAH",
+      "away": "MIR",
+      "status": "scheduled",
+      "kickoff": "2026-10-11T19:30:00-03:00",
+      "stadium": "Arena Fonte Nova"
+    },
+    {
+      "id": "0:7",
+      "round": 30,
+      "home": "CFC",
+      "away": "BOT",
+      "status": "scheduled",
+      "kickoff": "2026-10-12T16:00:00-03:00",
+      "stadium": "Couto Pereira"
+    },
+    {
+      "id": "0:8",
+      "round": 30,
+      "home": "CHA",
+      "away": "CAP",
+      "status": "scheduled",
+      "kickoff": "2026-10-12T19:30:00-03:00",
+      "stadium": "Arena Condá"
+    },
+    {
+      "id": "0:9",
+      "round": 30,
+      "home": "BRA",
+      "away": "CRU",
+      "status": "scheduled",
+      "kickoff": "2026-10-12T21:00:00-03:00",
+      "stadium": "Nabi Abi Chedid"
+    },
+    {
+      "id": "1:0",
+      "round": 31,
+      "home": "CAP",
+      "away": "PAL",
+      "status": "scheduled",
+      "kickoff": "2026-10-17T19:30:00-03:00",
+      "stadium": "Ligga Arena"
+    },
+    {
+      "id": "1:1",
+      "round": 31,
+      "home": "CAM",
+      "away": "CFC",
+      "status": "scheduled",
+      "kickoff": "2026-10-17T18:30:00-03:00",
+      "stadium": "Arena MRV"
+    },
+    {
+      "id": "1:2",
+      "round": 31,
+      "home": "BAH",
+      "away": "FLA",
+      "status": "scheduled",
+      "kickoff": "2026-10-18T18:30:00-03:00",
+      "stadium": "Arena Fonte Nova"
+    },
+    {
+      "id": "1:3",
+      "round": 31,
+      "home": "BOT",
+      "away": "CHA",
+      "status": "scheduled",
+      "kickoff": "2026-10-17T18:00:00-03:00",
+      "stadium": "Nilton Santos"
+    },
+    {
+      "id": "1:4",
+      "round": 31,
+      "home": "COR",
+      "away": "VIT",
+      "status": "scheduled",
+      "kickoff": "2026-10-19T20:00:00-03:00",
+      "stadium": "Neo Química Arena"
+    },
+    {
+      "id": "1:5",
+      "round": 31,
+      "home": "FLU",
+      "away": "SAN",
+      "status": "scheduled",
+      "kickoff": "2026-10-18T16:00:00-03:00",
+      "stadium": "Maracanã"
+    },
+    {
+      "id": "1:6",
+      "round": 31,
+      "home": "GRE",
+      "away": "CRU",
+      "status": "scheduled",
+      "kickoff": "2026-10-18T16:00:00-03:00",
+      "stadium": "Arena do Grêmio"
+    },
+    {
+      "id": "1:7",
+      "round": 31,
+      "home": "MIR",
+      "away": "INT",
+      "status": "scheduled",
+      "kickoff": "2026-10-16T20:00:00-03:00",
+      "stadium": "Maião"
+    },
+    {
+      "id": "1:8",
+      "round": 31,
+      "home": "REM",
+      "away": "BRA",
+      "status": "scheduled",
+      "kickoff": "2026-10-18T19:30:00-03:00",
+      "stadium": "Mangueirão"
+    },
+    {
+      "id": "1:9",
+      "round": 31,
+      "home": "SAO",
+      "away": "VAS",
+      "status": "scheduled",
+      "kickoff": "2026-10-17T21:00:00-03:00",
+      "stadium": "Morumbis"
+    },
+    {
+      "id": "2:0",
+      "round": 32,
+      "home": "CHA",
+      "away": "FLU",
+      "status": "scheduled",
+      "kickoff": "2026-10-24T19:30:00-03:00",
+      "stadium": "Arena Condá"
+    },
+    {
+      "id": "2:1",
+      "round": 32,
+      "home": "CFC",
+      "away": "GRE",
+      "status": "scheduled",
+      "kickoff": "2026-10-26T19:30:00-03:00",
+      "stadium": "Couto Pereira"
+    },
+    {
+      "id": "2:2",
+      "round": 32,
+      "home": "CRU",
+      "away": "REM",
+      "status": "scheduled",
+      "kickoff": "2026-10-23T20:00:00-03:00",
+      "stadium": "Mineirão"
+    },
+    {
+      "id": "2:3",
+      "round": 32,
+      "home": "FLA",
+      "away": "CAM",
+      "status": "scheduled",
+      "kickoff": "2026-10-26T20:00:00-03:00",
+      "stadium": "Maracanã"
+    },
+    {
+      "id": "2:4",
+      "round": 32,
+      "home": "INT",
+      "away": "BOT",
+      "status": "scheduled",
+      "kickoff": "2026-10-24T16:30:00-03:00",
+      "stadium": "Beira-Rio"
+    },
+    {
+      "id": "2:5",
+      "round": 32,
+      "home": "MIR",
+      "away": "SAO",
+      "status": "scheduled",
+      "kickoff": "2026-10-24T16:30:00-03:00",
+      "stadium": "Maião"
+    },
+    {
+      "id": "2:6",
+      "round": 32,
+      "home": "PAL",
+      "away": "BRA",
+      "status": "scheduled",
+      "kickoff": "2026-10-24T18:30:00-03:00",
+      "stadium": "Arena Barueri"
+    },
+    {
+      "id": "2:7",
+      "round": 32,
+      "home": "SAN",
+      "away": "BAH",
+      "status": "scheduled",
+      "kickoff": "2026-10-24T21:00:00-03:00",
+      "stadium": "Vila Belmiro"
+    },
+    {
+      "id": "2:8",
+      "round": 32,
+      "home": "VAS",
+      "away": "COR",
+      "status": "scheduled",
+      "kickoff": "2026-10-24T18:30:00-03:00",
+      "stadium": "São Januário"
+    },
+    {
+      "id": "2:9",
+      "round": 32,
+      "home": "VIT",
+      "away": "CAP",
+      "status": "scheduled",
+      "kickoff": "2026-10-24T16:30:00-03:00",
+      "stadium": "Barradão"
+    },
+    {
+      "id": "3:0",
+      "round": 33,
+      "home": "CAM",
+      "away": "CRU",
+      "status": "scheduled",
+      "kickoff": "2026-10-29T19:30:00-03:00",
+      "stadium": "Arena MRV"
+    },
+    {
+      "id": "3:1",
+      "round": 33,
+      "home": "BAH",
+      "away": "SAO",
+      "status": "scheduled",
+      "kickoff": "2026-10-28T21:30:00-03:00",
+      "stadium": "Arena Fonte Nova"
+    },
+    {
+      "id": "3:2",
+      "round": 33,
+      "home": "BRA",
+      "away": "CHA",
+      "status": "scheduled",
+      "kickoff": "2026-10-28T19:30:00-03:00",
+      "stadium": "Nabi Abi Chedid"
+    },
+    {
+      "id": "3:3",
+      "round": 33,
+      "home": "COR",
+      "away": "MIR",
+      "status": "scheduled",
+      "kickoff": "2026-10-30T20:00:00-03:00",
+      "stadium": "Neo Química Arena"
+    },
+    {
+      "id": "3:4",
+      "round": 33,
+      "home": "CFC",
+      "away": "VIT",
+      "status": "scheduled",
+      "kickoff": "2026-10-29T19:30:00-03:00",
+      "stadium": "Couto Pereira"
+    },
+    {
+      "id": "3:5",
+      "round": 33,
+      "home": "FLU",
+      "away": "INT",
+      "status": "scheduled",
+      "kickoff": "2026-10-28T19:30:00-03:00",
+      "stadium": "Maracanã"
+    },
+    {
+      "id": "3:6",
+      "round": 33,
+      "home": "GRE",
+      "away": "CAP",
+      "status": "scheduled",
+      "kickoff": "2026-10-29T21:30:00-03:00",
+      "stadium": "Arena do Grêmio"
+    },
+    {
+      "id": "3:7",
+      "round": 33,
+      "home": "REM",
+      "away": "BOT",
+      "status": "scheduled",
+      "kickoff": "2026-10-28T21:30:00-03:00",
+      "stadium": "Mangueirão"
+    },
+    {
+      "id": "3:8",
+      "round": 33,
+      "home": "SAN",
+      "away": "PAL",
+      "status": "scheduled",
+      "kickoff": "2026-10-28T19:30:00-03:00",
+      "stadium": "Vila Belmiro"
+    },
+    {
+      "id": "3:9",
+      "round": 33,
+      "home": "VAS",
+      "away": "FLA",
+      "status": "scheduled",
+      "kickoff": "2026-10-29T20:00:00-03:00",
+      "stadium": "São Januário"
+    },
+    {
+      "id": "4:0",
+      "round": 34,
+      "home": "CAP",
+      "away": "VAS",
+      "status": "scheduled",
+      "kickoff": "2026-11-04T19:30:00-03:00",
+      "stadium": "Ligga Arena"
+    },
+    {
+      "id": "4:1",
+      "round": 34,
+      "home": "BOT",
+      "away": "CAM",
+      "status": "scheduled",
+      "kickoff": "2026-11-04T21:30:00-03:00",
+      "stadium": "Nilton Santos"
+    },
+    {
+      "id": "4:2",
+      "round": 34,
+      "home": "BRA",
+      "away": "SAN",
+      "status": "scheduled",
+      "kickoff": "2026-11-02T20:00:00-03:00",
+      "stadium": "Nabi Abi Chedid"
+    },
+    {
+      "id": "4:3",
+      "round": 34,
+      "home": "CHA",
+      "away": "MIR",
+      "status": "scheduled",
+      "kickoff": "2026-11-03T19:30:00-03:00",
+      "stadium": "Arena Condá"
+    },
+    {
+      "id": "4:4",
+      "round": 34,
+      "home": "CRU",
+      "away": "BAH",
+      "status": "scheduled",
+      "kickoff": "2026-11-05T21:30:00-03:00",
+      "stadium": "Mineirão"
+    },
+    {
+      "id": "4:5",
+      "round": 34,
+      "home": "FLA",
+      "away": "GRE",
+      "status": "scheduled",
+      "kickoff": "2026-11-04T19:30:00-03:00",
+      "stadium": "Maracanã"
+    },
+    {
+      "id": "4:6",
+      "round": 34,
+      "home": "INT",
+      "away": "CFC",
+      "status": "scheduled",
+      "kickoff": "2026-11-03T21:30:00-03:00",
+      "stadium": "Beira-Rio"
+    },
+    {
+      "id": "4:7",
+      "round": 34,
+      "home": "PAL",
+      "away": "REM",
+      "status": "scheduled",
+      "kickoff": "2026-11-05T19:30:00-03:00",
+      "stadium": "Allianz Parque"
+    },
+    {
+      "id": "4:8",
+      "round": 34,
+      "home": "SAO",
+      "away": "COR",
+      "status": "scheduled",
+      "kickoff": "2026-11-04T21:30:00-03:00",
+      "stadium": "Morumbis"
+    },
+    {
+      "id": "4:9",
+      "round": 34,
+      "home": "VIT",
+      "away": "FLU",
+      "status": "scheduled",
+      "kickoff": "2026-11-06T20:00:00-03:00",
+      "stadium": "Barradão"
+    },
+    {
+      "id": "5:0",
+      "round": 35,
+      "home": "COR",
+      "away": "BOT",
+      "status": "scheduled",
+      "kickoff": "2026-11-18T17:00:00-03:00",
+      "stadium": "Neo Química Arena"
+    },
+    {
+      "id": "5:1",
+      "round": 35,
+      "home": "CFC",
+      "away": "SAN",
+      "status": "scheduled",
+      "kickoff": "2026-11-18T17:00:00-03:00",
+      "stadium": "Couto Pereira"
+    },
+    {
+      "id": "5:2",
+      "round": 35,
+      "home": "CRU",
+      "away": "PAL",
+      "status": "scheduled",
+      "kickoff": "2026-11-18T17:00:00-03:00",
+      "stadium": "Mineirão"
+    },
+    {
+      "id": "5:3",
+      "round": 35,
+      "home": "FLA",
+      "away": "CAP",
+      "status": "scheduled",
+      "kickoff": "2026-11-18T17:00:00-03:00",
+      "stadium": "Maracanã"
+    },
+    {
+      "id": "5:4",
+      "round": 35,
+      "home": "GRE",
+      "away": "BAH",
+      "status": "scheduled",
+      "kickoff": "2026-11-18T17:00:00-03:00",
+      "stadium": "Arena do Grêmio"
+    },
+    {
+      "id": "5:5",
+      "round": 35,
+      "home": "MIR",
+      "away": "CAM",
+      "status": "scheduled",
+      "kickoff": "2026-11-18T17:00:00-03:00",
+      "stadium": "Maião"
+    },
+    {
+      "id": "5:6",
+      "round": 35,
+      "home": "REM",
+      "away": "CHA",
+      "status": "scheduled",
+      "kickoff": "2026-11-18T17:00:00-03:00",
+      "stadium": "Baen?o"
+    },
+    {
+      "id": "5:7",
+      "round": 35,
+      "home": "SAO",
+      "away": "FLU",
+      "status": "scheduled",
+      "kickoff": "2026-11-18T17:00:00-03:00",
+      "stadium": "Morumbis"
+    },
+    {
+      "id": "5:8",
+      "round": 35,
+      "home": "VAS",
+      "away": "INT",
+      "status": "scheduled",
+      "kickoff": "2026-11-18T17:00:00-03:00",
+      "stadium": "São Januário"
+    },
+    {
+      "id": "5:9",
+      "round": 35,
+      "home": "VIT",
+      "away": "BRA",
+      "status": "scheduled",
+      "kickoff": "2026-11-18T17:00:00-03:00",
+      "stadium": "Barradão"
+    },
+    {
+      "id": "6:0",
+      "round": 36,
+      "home": "CAP",
+      "away": "REM",
+      "status": "scheduled",
+      "kickoff": "2026-11-21T17:00:00-03:00",
+      "stadium": "Ligga Arena"
+    },
+    {
+      "id": "6:1",
+      "round": 36,
+      "home": "CAM",
+      "away": "COR",
+      "status": "scheduled",
+      "kickoff": "2026-11-21T17:00:00-03:00",
+      "stadium": "Arena MRV"
+    },
+    {
+      "id": "6:2",
+      "round": 36,
+      "home": "BAH",
+      "away": "CFC",
+      "status": "scheduled",
+      "kickoff": "2026-11-21T17:00:00-03:00",
+      "stadium": "Arena Fonte Nova"
+    },
+    {
+      "id": "6:3",
+      "round": 36,
+      "home": "BOT",
+      "away": "SAO",
+      "status": "scheduled",
+      "kickoff": "2026-11-21T17:00:00-03:00",
+      "stadium": "Nilton Santos"
+    },
+    {
+      "id": "6:4",
+      "round": 36,
+      "home": "BRA",
+      "away": "VAS",
+      "status": "scheduled",
+      "kickoff": "2026-11-21T17:00:00-03:00",
+      "stadium": "Nabi Abi Chedid"
+    },
+    {
+      "id": "6:5",
+      "round": 36,
+      "home": "CHA",
+      "away": "CRU",
+      "status": "scheduled",
+      "kickoff": "2026-11-21T17:00:00-03:00",
+      "stadium": "Arena Condá"
+    },
+    {
+      "id": "6:6",
+      "round": 36,
+      "home": "FLU",
+      "away": "MIR",
+      "status": "scheduled",
+      "kickoff": "2026-11-21T17:00:00-03:00",
+      "stadium": "Maracanã"
+    },
+    {
+      "id": "6:7",
+      "round": 36,
+      "home": "INT",
+      "away": "VIT",
+      "status": "scheduled",
+      "kickoff": "2026-11-21T17:00:00-03:00",
+      "stadium": "Beira-Rio"
+    },
+    {
+      "id": "6:8",
+      "round": 36,
+      "home": "PAL",
+      "away": "FLA",
+      "status": "scheduled",
+      "kickoff": "2026-11-21T17:00:00-03:00",
+      "stadium": "Allianz Parque"
+    },
+    {
+      "id": "6:9",
+      "round": 36,
+      "home": "SAN",
+      "away": "GRE",
+      "status": "scheduled",
+      "kickoff": "2026-11-21T17:00:00-03:00",
+      "stadium": "Vila Belmiro"
+    },
+    {
+      "id": "7:0",
+      "round": 37,
+      "home": "CAM",
+      "away": "VAS",
+      "status": "scheduled",
+      "kickoff": "2026-11-28T17:00:00-03:00",
+      "stadium": "Arena MRV"
+    },
+    {
+      "id": "7:1",
+      "round": 37,
+      "home": "BOT",
+      "away": "BAH",
+      "status": "scheduled",
+      "kickoff": "2026-11-28T17:00:00-03:00",
+      "stadium": "Nilton Santos"
+    },
+    {
+      "id": "7:2",
+      "round": 37,
+      "home": "CHA",
+      "away": "PAL",
+      "status": "scheduled",
+      "kickoff": "2026-11-28T17:00:00-03:00",
+      "stadium": "Arena Condá"
+    },
+    {
+      "id": "7:3",
+      "round": 37,
+      "home": "COR",
+      "away": "GRE",
+      "status": "scheduled",
+      "kickoff": "2026-11-28T17:00:00-03:00",
+      "stadium": "Neo Química Arena"
+    },
+    {
+      "id": "7:4",
+      "round": 37,
+      "home": "CFC",
+      "away": "FLA",
+      "status": "scheduled",
+      "kickoff": "2026-11-28T17:00:00-03:00",
+      "stadium": "Couto Pereira"
+    },
+    {
+      "id": "7:5",
+      "round": 37,
+      "home": "FLU",
+      "away": "CRU",
+      "status": "scheduled",
+      "kickoff": "2026-11-28T17:00:00-03:00",
+      "stadium": "Maracanã"
+    },
+    {
+      "id": "7:6",
+      "round": 37,
+      "home": "INT",
+      "away": "BRA",
+      "status": "scheduled",
+      "kickoff": "2026-11-28T17:00:00-03:00",
+      "stadium": "Beira-Rio"
+    },
+    {
+      "id": "7:7",
+      "round": 37,
+      "home": "MIR",
+      "away": "CAP",
+      "status": "scheduled",
+      "kickoff": "2026-11-28T17:00:00-03:00",
+      "stadium": "Maião"
+    },
+    {
+      "id": "7:8",
+      "round": 37,
+      "home": "SAO",
+      "away": "REM",
+      "status": "scheduled",
+      "kickoff": "2026-11-28T17:00:00-03:00",
+      "stadium": "Morumbis"
+    },
+    {
+      "id": "7:9",
+      "round": 37,
+      "home": "VIT",
+      "away": "SAN",
+      "status": "scheduled",
+      "kickoff": "2026-11-28T17:00:00-03:00",
+      "stadium": "Barradão"
+    },
+    {
+      "id": "8:0",
+      "round": 38,
+      "home": "CAP",
+      "away": "SAO",
+      "status": "scheduled",
+      "kickoff": "2026-12-02T17:00:00-03:00",
+      "stadium": "Ligga Arena"
+    },
+    {
+      "id": "8:1",
+      "round": 38,
+      "home": "BAH",
+      "away": "CAM",
+      "status": "scheduled",
+      "kickoff": "2026-12-02T17:00:00-03:00",
+      "stadium": "Arena Fonte Nova"
+    },
+    {
+      "id": "8:2",
+      "round": 38,
+      "home": "BRA",
+      "away": "FLU",
+      "status": "scheduled",
+      "kickoff": "2026-12-02T17:00:00-03:00",
+      "stadium": "Nabi Abi Chedid"
+    },
+    {
+      "id": "8:3",
+      "round": 38,
+      "home": "CRU",
+      "away": "INT",
+      "status": "scheduled",
+      "kickoff": "2026-12-02T17:00:00-03:00",
+      "stadium": "Mineirão"
+    },
+    {
+      "id": "8:4",
+      "round": 38,
+      "home": "FLA",
+      "away": "CHA",
+      "status": "scheduled",
+      "kickoff": "2026-12-02T17:00:00-03:00",
+      "stadium": "Maracanã"
+    },
+    {
+      "id": "8:5",
+      "round": 38,
+      "home": "GRE",
+      "away": "MIR",
+      "status": "scheduled",
+      "kickoff": "2026-12-02T17:00:00-03:00",
+      "stadium": "Arena do Grêmio"
+    },
+    {
+      "id": "8:6",
+      "round": 38,
+      "home": "PAL",
+      "away": "CFC",
+      "status": "scheduled",
+      "kickoff": "2026-12-02T17:00:00-03:00",
+      "stadium": "Allianz Parque"
+    },
+    {
+      "id": "8:7",
+      "round": 38,
+      "home": "REM",
+      "away": "COR",
+      "status": "scheduled",
+      "kickoff": "2026-12-02T17:00:00-03:00",
+      "stadium": "Baen?o"
+    },
+    {
+      "id": "8:8",
+      "round": 38,
+      "home": "SAN",
+      "away": "BOT",
+      "status": "scheduled",
+      "kickoff": "2026-12-02T17:00:00-03:00",
+      "stadium": "Vila Belmiro"
+    },
+    {
+      "id": "8:9",
+      "round": 38,
+      "home": "VAS",
+      "away": "VIT",
+      "status": "scheduled",
+      "kickoff": "2026-12-02T17:00:00-03:00",
+      "stadium": "São Januário"
+    },
+    {
+      "id": "p",
+      "round": 21,
+      "home": "CHA",
+      "away": "VAS",
+      "status": "postponed",
+      "kickoff": null,
+      "stadium": "Arena Condá"
+    }
+  ],
+  "results": [
+    {
+      "round": 1,
+      "home": "CAM",
+      "away": "PAL",
+      "homeGoals": 2,
+      "awayGoals": 2
+    },
+    {
+      "round": 1,
+      "home": "CFC",
+      "away": "BRA",
+      "homeGoals": 0,
+      "awayGoals": 1
+    },
+    {
+      "round": 1,
+      "home": "INT",
+      "away": "CAP",
+      "homeGoals": 0,
+      "awayGoals": 1
+    },
+    {
+      "round": 1,
+      "home": "VIT",
+      "away": "REM",
+      "homeGoals": 2,
+      "awayGoals": 0
+    },
+    {
+      "round": 1,
+      "home": "FLU",
+      "away": "GRE",
+      "homeGoals": 2,
+      "awayGoals": 1
+    },
+    {
+      "round": 1,
+      "home": "CHA",
+      "away": "SAN",
+      "homeGoals": 4,
+      "awayGoals": 2
+    },
+    {
+      "round": 1,
+      "home": "COR",
+      "away": "BAH",
+      "homeGoals": 1,
+      "awayGoals": 2
+    },
+    {
+      "round": 1,
+      "home": "SAO",
+      "away": "FLA",
+      "homeGoals": 2,
+      "awayGoals": 1
+    },
+    {
+      "round": 1,
+      "home": "MIR",
+      "away": "VAS",
+      "homeGoals": 2,
+      "awayGoals": 1
+    },
+    {
+      "round": 1,
+      "home": "BOT",
+      "away": "CRU",
+      "homeGoals": 4,
+      "awayGoals": 0
+    },
+    {
+      "round": 2,
+      "home": "BRA",
+      "away": "CAM",
+      "homeGoals": 1,
+      "awayGoals": 0
+    },
+    {
+      "round": 2,
+      "home": "FLA",
+      "away": "INT",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 2,
+      "home": "REM",
+      "away": "MIR",
+      "homeGoals": 2,
+      "awayGoals": 2
+    },
+    {
+      "round": 2,
+      "home": "SAN",
+      "away": "SAO",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 2,
+      "home": "GRE",
+      "away": "BOT",
+      "homeGoals": 5,
+      "awayGoals": 3
+    },
+    {
+      "round": 2,
+      "home": "PAL",
+      "away": "VIT",
+      "homeGoals": 5,
+      "awayGoals": 1
+    },
+    {
+      "round": 2,
+      "home": "BAH",
+      "away": "FLU",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 2,
+      "home": "VAS",
+      "away": "CHA",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 2,
+      "home": "CRU",
+      "away": "CFC",
+      "homeGoals": 1,
+      "awayGoals": 2
+    },
+    {
+      "round": 2,
+      "home": "CAP",
+      "away": "COR",
+      "homeGoals": 0,
+      "awayGoals": 1
+    },
+    {
+      "round": 3,
+      "home": "VIT",
+      "away": "FLA",
+      "homeGoals": 1,
+      "awayGoals": 2
+    },
+    {
+      "round": 3,
+      "home": "CHA",
+      "away": "CFC",
+      "homeGoals": 3,
+      "awayGoals": 3
+    },
+    {
+      "round": 3,
+      "home": "MIR",
+      "away": "CRU",
+      "homeGoals": 2,
+      "awayGoals": 2
+    },
+    {
+      "round": 3,
+      "home": "CAM",
+      "away": "REM",
+      "homeGoals": 3,
+      "awayGoals": 3
+    },
+    {
+      "round": 3,
+      "home": "SAO",
+      "away": "GRE",
+      "homeGoals": 2,
+      "awayGoals": 0
+    },
+    {
+      "round": 3,
+      "home": "VAS",
+      "away": "BAH",
+      "homeGoals": 0,
+      "awayGoals": 1
+    },
+    {
+      "round": 3,
+      "home": "CAP",
+      "away": "SAN",
+      "homeGoals": 2,
+      "awayGoals": 1
+    },
+    {
+      "round": 3,
+      "home": "FLU",
+      "away": "BOT",
+      "homeGoals": 1,
+      "awayGoals": 0
+    },
+    {
+      "round": 3,
+      "home": "COR",
+      "away": "BRA",
+      "homeGoals": 2,
+      "awayGoals": 0
+    },
+    {
+      "round": 3,
+      "home": "INT",
+      "away": "PAL",
+      "homeGoals": 1,
+      "awayGoals": 3
+    },
+    {
+      "round": 4,
+      "home": "BRA",
+      "away": "CAP",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 4,
+      "home": "REM",
+      "away": "INT",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 4,
+      "home": "CFC",
+      "away": "SAO",
+      "homeGoals": 0,
+      "awayGoals": 1
+    },
+    {
+      "round": 4,
+      "home": "CRU",
+      "away": "COR",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 4,
+      "home": "GRE",
+      "away": "CAM",
+      "homeGoals": 2,
+      "awayGoals": 1
+    },
+    {
+      "round": 4,
+      "home": "PAL",
+      "away": "FLU",
+      "homeGoals": 2,
+      "awayGoals": 1
+    },
+    {
+      "round": 4,
+      "home": "SAN",
+      "away": "VAS",
+      "homeGoals": 2,
+      "awayGoals": 1
+    },
+    {
+      "round": 4,
+      "home": "BAH",
+      "away": "CHA",
+      "homeGoals": 2,
+      "awayGoals": 0
+    },
+    {
+      "round": 4,
+      "home": "BOT",
+      "away": "VIT",
+      "homeGoals": 0,
+      "awayGoals": 0
+    },
+    {
+      "round": 4,
+      "home": "FLA",
+      "away": "MIR",
+      "homeGoals": 2,
+      "awayGoals": 0
+    },
+    {
+      "round": 5,
+      "home": "MIR",
+      "away": "SAN",
+      "homeGoals": 2,
+      "awayGoals": 2
+    },
+    {
+      "round": 5,
+      "home": "CAM",
+      "away": "INT",
+      "homeGoals": 1,
+      "awayGoals": 0
+    },
+    {
+      "round": 5,
+      "home": "BAH",
+      "away": "VIT",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 5,
+      "home": "COR",
+      "away": "CFC",
+      "homeGoals": 0,
+      "awayGoals": 2
+    },
+    {
+      "round": 5,
+      "home": "FLA",
+      "away": "CRU",
+      "homeGoals": 2,
+      "awayGoals": 0
+    },
+    {
+      "round": 5,
+      "home": "REM",
+      "away": "FLU",
+      "homeGoals": 0,
+      "awayGoals": 2
+    },
+    {
+      "round": 5,
+      "home": "VAS",
+      "away": "PAL",
+      "homeGoals": 2,
+      "awayGoals": 1
+    },
+    {
+      "round": 5,
+      "home": "SAO",
+      "away": "CHA",
+      "homeGoals": 2,
+      "awayGoals": 0
+    },
+    {
+      "round": 5,
+      "home": "GRE",
+      "away": "BRA",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 5,
+      "home": "CAP",
+      "away": "BOT",
+      "homeGoals": 4,
+      "awayGoals": 1
+    },
+    {
+      "round": 6,
+      "home": "VIT",
+      "away": "CAM",
+      "homeGoals": 2,
+      "awayGoals": 0
+    },
+    {
+      "round": 6,
+      "home": "BOT",
+      "away": "FLA",
+      "homeGoals": 0,
+      "awayGoals": 3
+    },
+    {
+      "round": 6,
+      "home": "FLU",
+      "away": "CAP",
+      "homeGoals": 3,
+      "awayGoals": 2
+    },
+    {
+      "round": 6,
+      "home": "INT",
+      "away": "BAH",
+      "homeGoals": 0,
+      "awayGoals": 1
+    },
+    {
+      "round": 6,
+      "home": "SAN",
+      "away": "COR",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 6,
+      "home": "CFC",
+      "away": "REM",
+      "homeGoals": 1,
+      "awayGoals": 0
+    },
+    {
+      "round": 6,
+      "home": "PAL",
+      "away": "MIR",
+      "homeGoals": 1,
+      "awayGoals": 0
+    },
+    {
+      "round": 6,
+      "home": "BRA",
+      "away": "SAO",
+      "homeGoals": 1,
+      "awayGoals": 2
+    },
+    {
+      "round": 6,
+      "home": "CRU",
+      "away": "VAS",
+      "homeGoals": 3,
+      "awayGoals": 3
+    },
+    {
+      "round": 6,
+      "home": "CHA",
+      "away": "GRE",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 7,
+      "home": "BAH",
+      "away": "BRA",
+      "homeGoals": 2,
+      "awayGoals": 0
+    },
+    {
+      "round": 7,
+      "home": "PAL",
+      "away": "BOT",
+      "homeGoals": 2,
+      "awayGoals": 1
+    },
+    {
+      "round": 7,
+      "home": "CAP",
+      "away": "CRU",
+      "homeGoals": 2,
+      "awayGoals": 1
+    },
+    {
+      "round": 7,
+      "home": "CAM",
+      "away": "SAO",
+      "homeGoals": 1,
+      "awayGoals": 0
+    },
+    {
+      "round": 7,
+      "home": "MIR",
+      "away": "CFC",
+      "homeGoals": 0,
+      "awayGoals": 1
+    },
+    {
+      "round": 7,
+      "home": "SAN",
+      "away": "INT",
+      "homeGoals": 1,
+      "awayGoals": 2
+    },
+    {
+      "round": 7,
+      "home": "VAS",
+      "away": "FLU",
+      "homeGoals": 3,
+      "awayGoals": 2
+    },
+    {
+      "round": 7,
+      "home": "GRE",
+      "away": "VIT",
+      "homeGoals": 2,
+      "awayGoals": 0
+    },
+    {
+      "round": 7,
+      "home": "FLA",
+      "away": "REM",
+      "homeGoals": 3,
+      "awayGoals": 0
+    },
+    {
+      "round": 7,
+      "home": "CHA",
+      "away": "COR",
+      "homeGoals": 0,
+      "awayGoals": 0
+    },
+    {
+      "round": 8,
+      "home": "BRA",
+      "away": "BOT",
+      "homeGoals": 1,
+      "awayGoals": 2
+    },
+    {
+      "round": 8,
+      "home": "FLU",
+      "away": "CAM",
+      "homeGoals": 1,
+      "awayGoals": 0
+    },
+    {
+      "round": 8,
+      "home": "SAO",
+      "away": "PAL",
+      "homeGoals": 0,
+      "awayGoals": 1
+    },
+    {
+      "round": 8,
+      "home": "CAP",
+      "away": "CFC",
+      "homeGoals": 2,
+      "awayGoals": 0
+    },
+    {
+      "round": 8,
+      "home": "CRU",
+      "away": "SAN",
+      "homeGoals": 0,
+      "awayGoals": 0
+    },
+    {
+      "round": 8,
+      "home": "REM",
+      "away": "BAH",
+      "homeGoals": 4,
+      "awayGoals": 1
+    },
+    {
+      "round": 8,
+      "home": "VAS",
+      "away": "GRE",
+      "homeGoals": 2,
+      "awayGoals": 1
+    },
+    {
+      "round": 8,
+      "home": "INT",
+      "away": "CHA",
+      "homeGoals": 2,
+      "awayGoals": 0
+    },
+    {
+      "round": 8,
+      "home": "VIT",
+      "away": "MIR",
+      "homeGoals": 1,
+      "awayGoals": 0
+    },
+    {
+      "round": 8,
+      "home": "COR",
+      "away": "FLA",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 9,
+      "home": "BOT",
+      "away": "MIR",
+      "homeGoals": 3,
+      "awayGoals": 2
+    },
+    {
+      "round": 9,
+      "home": "INT",
+      "away": "SAO",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 9,
+      "home": "BAH",
+      "away": "CAP",
+      "homeGoals": 3,
+      "awayGoals": 0
+    },
+    {
+      "round": 9,
+      "home": "CRU",
+      "away": "VIT",
+      "homeGoals": 3,
+      "awayGoals": 0
+    },
+    {
+      "round": 9,
+      "home": "CFC",
+      "away": "VAS",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 9,
+      "home": "FLU",
+      "away": "COR",
+      "homeGoals": 3,
+      "awayGoals": 1
+    },
+    {
+      "round": 9,
+      "home": "CHA",
+      "away": "CAM",
+      "homeGoals": 0,
+      "awayGoals": 4
+    },
+    {
+      "round": 9,
+      "home": "SAN",
+      "away": "REM",
+      "homeGoals": 2,
+      "awayGoals": 0
+    },
+    {
+      "round": 9,
+      "home": "BRA",
+      "away": "FLA",
+      "homeGoals": 3,
+      "awayGoals": 0
+    },
+    {
+      "round": 9,
+      "home": "PAL",
+      "away": "GRE",
+      "homeGoals": 2,
+      "awayGoals": 1
+    },
+    {
+      "round": 10,
+      "home": "SAO",
+      "away": "CRU",
+      "homeGoals": 4,
+      "awayGoals": 1
+    },
+    {
+      "round": 10,
+      "home": "CFC",
+      "away": "FLU",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 10,
+      "home": "VAS",
+      "away": "BOT",
+      "homeGoals": 1,
+      "awayGoals": 2
+    },
+    {
+      "round": 10,
+      "home": "CHA",
+      "away": "VIT",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 10,
+      "home": "CAM",
+      "away": "CAP",
+      "homeGoals": 2,
+      "awayGoals": 1
+    },
+    {
+      "round": 10,
+      "home": "FLA",
+      "away": "SAN",
+      "homeGoals": 3,
+      "awayGoals": 1
+    },
+    {
+      "round": 10,
+      "home": "BAH",
+      "away": "PAL",
+      "homeGoals": 1,
+      "awayGoals": 2
+    },
+    {
+      "round": 10,
+      "home": "COR",
+      "away": "INT",
+      "homeGoals": 0,
+      "awayGoals": 1
+    },
+    {
+      "round": 10,
+      "home": "MIR",
+      "away": "BRA",
+      "homeGoals": 0,
+      "awayGoals": 1
+    },
+    {
+      "round": 10,
+      "home": "GRE",
+      "away": "REM",
+      "homeGoals": 0,
+      "awayGoals": 0
+    },
+    {
+      "round": 11,
+      "home": "REM",
+      "away": "VAS",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 11,
+      "home": "VIT",
+      "away": "SAO",
+      "homeGoals": 2,
+      "awayGoals": 0
+    },
+    {
+      "round": 11,
+      "home": "MIR",
+      "away": "BAH",
+      "homeGoals": 1,
+      "awayGoals": 2
+    },
+    {
+      "round": 11,
+      "home": "SAN",
+      "away": "CAM",
+      "homeGoals": 1,
+      "awayGoals": 0
+    },
+    {
+      "round": 11,
+      "home": "INT",
+      "away": "GRE",
+      "homeGoals": 0,
+      "awayGoals": 0
+    },
+    {
+      "round": 11,
+      "home": "CAP",
+      "away": "CHA",
+      "homeGoals": 2,
+      "awayGoals": 0
+    },
+    {
+      "round": 11,
+      "home": "BOT",
+      "away": "CFC",
+      "homeGoals": 2,
+      "awayGoals": 2
+    },
+    {
+      "round": 11,
+      "home": "FLU",
+      "away": "FLA",
+      "homeGoals": 1,
+      "awayGoals": 2
+    },
+    {
+      "round": 11,
+      "home": "COR",
+      "away": "PAL",
+      "homeGoals": 0,
+      "awayGoals": 0
+    },
+    {
+      "round": 11,
+      "home": "CRU",
+      "away": "BRA",
+      "homeGoals": 2,
+      "awayGoals": 1
+    },
+    {
+      "round": 12,
+      "home": "CHA",
+      "away": "BOT",
+      "homeGoals": 1,
+      "awayGoals": 4
+    },
+    {
+      "round": 12,
+      "home": "VAS",
+      "away": "SAO",
+      "homeGoals": 2,
+      "awayGoals": 1
+    },
+    {
+      "round": 12,
+      "home": "VIT",
+      "away": "COR",
+      "homeGoals": 0,
+      "awayGoals": 0
+    },
+    {
+      "round": 12,
+      "home": "CRU",
+      "away": "GRE",
+      "homeGoals": 2,
+      "awayGoals": 0
+    },
+    {
+      "round": 12,
+      "home": "INT",
+      "away": "MIR",
+      "homeGoals": 1,
+      "awayGoals": 2
+    },
+    {
+      "round": 12,
+      "home": "CFC",
+      "away": "CAM",
+      "homeGoals": 2,
+      "awayGoals": 0
+    },
+    {
+      "round": 12,
+      "home": "SAN",
+      "away": "FLU",
+      "homeGoals": 2,
+      "awayGoals": 3
+    },
+    {
+      "round": 12,
+      "home": "BRA",
+      "away": "REM",
+      "homeGoals": 4,
+      "awayGoals": 2
+    },
+    {
+      "round": 12,
+      "home": "PAL",
+      "away": "CAP",
+      "homeGoals": 1,
+      "awayGoals": 0
+    },
+    {
+      "round": 12,
+      "home": "FLA",
+      "away": "BAH",
+      "homeGoals": 2,
+      "awayGoals": 0
+    },
+    {
+      "round": 13,
+      "home": "BAH",
+      "away": "SAN",
+      "homeGoals": 2,
+      "awayGoals": 2
+    },
+    {
+      "round": 13,
+      "home": "BOT",
+      "away": "INT",
+      "homeGoals": 2,
+      "awayGoals": 2
+    },
+    {
+      "round": 13,
+      "home": "REM",
+      "away": "CRU",
+      "homeGoals": 0,
+      "awayGoals": 1
+    },
+    {
+      "round": 13,
+      "home": "SAO",
+      "away": "MIR",
+      "homeGoals": 1,
+      "awayGoals": 0
+    },
+    {
+      "round": 13,
+      "home": "COR",
+      "away": "VAS",
+      "homeGoals": 1,
+      "awayGoals": 0
+    },
+    {
+      "round": 13,
+      "home": "GRE",
+      "away": "CFC",
+      "homeGoals": 1,
+      "awayGoals": 0
+    },
+    {
+      "round": 13,
+      "home": "CAP",
+      "away": "VIT",
+      "homeGoals": 3,
+      "awayGoals": 1
+    },
+    {
+      "round": 13,
+      "home": "BRA",
+      "away": "PAL",
+      "homeGoals": 0,
+      "awayGoals": 1
+    },
+    {
+      "round": 13,
+      "home": "CAM",
+      "away": "FLA",
+      "homeGoals": 0,
+      "awayGoals": 4
+    },
+    {
+      "round": 13,
+      "home": "FLU",
+      "away": "CHA",
+      "homeGoals": 2,
+      "awayGoals": 1
+    },
+    {
+      "round": 14,
+      "home": "BOT",
+      "away": "REM",
+      "homeGoals": 1,
+      "awayGoals": 2
+    },
+    {
+      "round": 14,
+      "home": "PAL",
+      "away": "SAN",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 14,
+      "home": "VIT",
+      "away": "CFC",
+      "homeGoals": 4,
+      "awayGoals": 1
+    },
+    {
+      "round": 14,
+      "home": "CAP",
+      "away": "GRE",
+      "homeGoals": 0,
+      "awayGoals": 0
+    },
+    {
+      "round": 14,
+      "home": "CRU",
+      "away": "CAM",
+      "homeGoals": 1,
+      "awayGoals": 3
+    },
+    {
+      "round": 14,
+      "home": "FLA",
+      "away": "VAS",
+      "homeGoals": 2,
+      "awayGoals": 2
+    },
+    {
+      "round": 14,
+      "home": "SAO",
+      "away": "BAH",
+      "homeGoals": 2,
+      "awayGoals": 2
+    },
+    {
+      "round": 14,
+      "home": "CHA",
+      "away": "BRA",
+      "homeGoals": 1,
+      "awayGoals": 2
+    },
+    {
+      "round": 14,
+      "home": "INT",
+      "away": "FLU",
+      "homeGoals": 2,
+      "awayGoals": 0
+    },
+    {
+      "round": 14,
+      "home": "MIR",
+      "away": "COR",
+      "homeGoals": 2,
+      "awayGoals": 1
+    },
+    {
+      "round": 15,
+      "home": "CFC",
+      "away": "INT",
+      "homeGoals": 2,
+      "awayGoals": 2
+    },
+    {
+      "round": 15,
+      "home": "FLU",
+      "away": "VIT",
+      "homeGoals": 2,
+      "awayGoals": 2
+    },
+    {
+      "round": 15,
+      "home": "BAH",
+      "away": "CRU",
+      "homeGoals": 1,
+      "awayGoals": 2
+    },
+    {
+      "round": 15,
+      "home": "CAM",
+      "away": "BOT",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 15,
+      "home": "REM",
+      "away": "PAL",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 15,
+      "home": "COR",
+      "away": "SAO",
+      "homeGoals": 3,
+      "awayGoals": 2
+    },
+    {
+      "round": 15,
+      "home": "MIR",
+      "away": "CHA",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 15,
+      "home": "SAN",
+      "away": "BRA",
+      "homeGoals": 2,
+      "awayGoals": 0
+    },
+    {
+      "round": 15,
+      "home": "GRE",
+      "away": "FLA",
+      "homeGoals": 0,
+      "awayGoals": 1
+    },
+    {
+      "round": 15,
+      "home": "VAS",
+      "away": "CAP",
+      "homeGoals": 1,
+      "awayGoals": 0
+    },
+    {
+      "round": 16,
+      "home": "CAM",
+      "away": "MIR",
+      "homeGoals": 3,
+      "awayGoals": 1
+    },
+    {
+      "round": 16,
+      "home": "INT",
+      "away": "VAS",
+      "homeGoals": 4,
+      "awayGoals": 1
+    },
+    {
+      "round": 16,
+      "home": "FLU",
+      "away": "SAO",
+      "homeGoals": 2,
+      "awayGoals": 1
+    },
+    {
+      "round": 16,
+      "home": "PAL",
+      "away": "CRU",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 16,
+      "home": "SAN",
+      "away": "CFC",
+      "homeGoals": 0,
+      "awayGoals": 3
+    },
+    {
+      "round": 16,
+      "home": "BAH",
+      "away": "GRE",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 16,
+      "home": "BOT",
+      "away": "COR",
+      "homeGoals": 3,
+      "awayGoals": 1
+    },
+    {
+      "round": 16,
+      "home": "BRA",
+      "away": "VIT",
+      "homeGoals": 2,
+      "awayGoals": 0
+    },
+    {
+      "round": 16,
+      "home": "CHA",
+      "away": "REM",
+      "homeGoals": 2,
+      "awayGoals": 3
+    },
+    {
+      "round": 16,
+      "home": "CAP",
+      "away": "FLA",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 17,
+      "home": "SAO",
+      "away": "BOT",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 17,
+      "home": "VIT",
+      "away": "INT",
+      "homeGoals": 2,
+      "awayGoals": 0
+    },
+    {
+      "round": 17,
+      "home": "GRE",
+      "away": "SAN",
+      "homeGoals": 3,
+      "awayGoals": 2
+    },
+    {
+      "round": 17,
+      "home": "MIR",
+      "away": "FLU",
+      "homeGoals": 1,
+      "awayGoals": 0
+    },
+    {
+      "round": 17,
+      "home": "FLA",
+      "away": "PAL",
+      "homeGoals": 0,
+      "awayGoals": 3
+    },
+    {
+      "round": 17,
+      "home": "CRU",
+      "away": "CHA",
+      "homeGoals": 2,
+      "awayGoals": 1
+    },
+    {
+      "round": 17,
+      "home": "REM",
+      "away": "CAP",
+      "homeGoals": 1,
+      "awayGoals": 2
+    },
+    {
+      "round": 17,
+      "home": "COR",
+      "away": "CAM",
+      "homeGoals": 1,
+      "awayGoals": 0
+    },
+    {
+      "round": 17,
+      "home": "VAS",
+      "away": "BRA",
+      "homeGoals": 0,
+      "awayGoals": 3
+    },
+    {
+      "round": 17,
+      "home": "CFC",
+      "away": "BAH",
+      "homeGoals": 3,
+      "awayGoals": 2
+    },
+    {
+      "round": 18,
+      "home": "CAP",
+      "away": "MIR",
+      "homeGoals": 1,
+      "awayGoals": 0
+    },
+    {
+      "round": 18,
+      "home": "FLA",
+      "away": "CFC",
+      "homeGoals": 3,
+      "awayGoals": 0
+    },
+    {
+      "round": 18,
+      "home": "BAH",
+      "away": "BOT",
+      "homeGoals": 2,
+      "awayGoals": 1
+    },
+    {
+      "round": 18,
+      "home": "GRE",
+      "away": "COR",
+      "homeGoals": 1,
+      "awayGoals": 3
+    },
+    {
+      "round": 18,
+      "home": "SAN",
+      "away": "VIT",
+      "homeGoals": 3,
+      "awayGoals": 1
+    },
+    {
+      "round": 18,
+      "home": "BRA",
+      "away": "INT",
+      "homeGoals": 3,
+      "awayGoals": 1
+    },
+    {
+      "round": 18,
+      "home": "PAL",
+      "away": "CHA",
+      "homeGoals": 1,
+      "awayGoals": 0
+    },
+    {
+      "round": 18,
+      "home": "VAS",
+      "away": "CAM",
+      "homeGoals": 0,
+      "awayGoals": 1
+    },
+    {
+      "round": 18,
+      "home": "CRU",
+      "away": "FLU",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 18,
+      "home": "REM",
+      "away": "SAO",
+      "homeGoals": 1,
+      "awayGoals": 0
+    },
+    {
+      "round": 19,
+      "home": "BOT",
+      "away": "SAN",
+      "homeGoals": 2,
+      "awayGoals": 1
+    },
+    {
+      "round": 19,
+      "home": "VIT",
+      "away": "VAS",
+      "homeGoals": 1,
+      "awayGoals": 0
+    },
+    {
+      "round": 19,
+      "home": "FLU",
+      "away": "BRA",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 19,
+      "home": "MIR",
+      "away": "GRE",
+      "homeGoals": 2,
+      "awayGoals": 1
+    },
+    {
+      "round": 19,
+      "home": "CAM",
+      "away": "BAH",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 19,
+      "home": "CFC",
+      "away": "PAL",
+      "homeGoals": 1,
+      "awayGoals": 3
+    },
+    {
+      "round": 19,
+      "home": "CHA",
+      "away": "FLA",
+      "homeGoals": 0,
+      "awayGoals": 4
+    },
+    {
+      "round": 19,
+      "home": "INT",
+      "away": "CRU",
+      "homeGoals": 1,
+      "awayGoals": 2
+    },
+    {
+      "round": 19,
+      "home": "SAO",
+      "away": "CAP",
+      "homeGoals": 1,
+      "awayGoals": 2
+    },
+    {
+      "round": 19,
+      "home": "COR",
+      "away": "REM",
+      "homeGoals": 3,
+      "awayGoals": 0
+    },
+    {
+      "round": 20,
+      "home": "CAP",
+      "away": "INT",
+      "homeGoals": 2,
+      "awayGoals": 0
+    },
+    {
+      "round": 20,
+      "home": "SAN",
+      "away": "CHA",
+      "homeGoals": 2,
+      "awayGoals": 2
+    },
+    {
+      "round": 20,
+      "home": "VAS",
+      "away": "MIR",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 20,
+      "home": "BAH",
+      "away": "COR",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 20,
+      "home": "CRU",
+      "away": "BOT",
+      "homeGoals": 0,
+      "awayGoals": 1
+    },
+    {
+      "round": 20,
+      "home": "BRA",
+      "away": "CFC",
+      "homeGoals": 0,
+      "awayGoals": 0
+    },
+    {
+      "round": 20,
+      "home": "FLA",
+      "away": "SAO",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 20,
+      "home": "GRE",
+      "away": "FLU",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 20,
+      "home": "PAL",
+      "away": "CAM",
+      "homeGoals": 1,
+      "awayGoals": 2
+    },
+    {
+      "round": 20,
+      "home": "REM",
+      "away": "VIT",
+      "homeGoals": 2,
+      "awayGoals": 0
+    },
+    {
+      "round": 21,
+      "home": "INT",
+      "away": "FLA",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 21,
+      "home": "MIR",
+      "away": "REM",
+      "homeGoals": 2,
+      "awayGoals": 1
+    },
+    {
+      "round": 21,
+      "home": "FLU",
+      "away": "BAH",
+      "homeGoals": 0,
+      "awayGoals": 0
+    },
+    {
+      "round": 21,
+      "home": "VIT",
+      "away": "PAL",
+      "homeGoals": 0,
+      "awayGoals": 4
+    },
+    {
+      "round": 21,
+      "home": "COR",
+      "away": "CAP",
+      "homeGoals": 0,
+      "awayGoals": 0
+    },
+    {
+      "round": 21,
+      "home": "CFC",
+      "away": "CRU",
+      "homeGoals": 0,
+      "awayGoals": 1
+    },
+    {
+      "round": 21,
+      "home": "BOT",
+      "away": "GRE",
+      "homeGoals": 3,
+      "awayGoals": 2
+    },
+    {
+      "round": 21,
+      "home": "SAO",
+      "away": "SAN",
+      "homeGoals": 1,
+      "awayGoals": 2
+    },
+    {
+      "round": 21,
+      "home": "CAM",
+      "away": "BRA",
+      "homeGoals": 1,
+      "awayGoals": 0
+    },
+    {
+      "round": 22,
+      "home": "GRE",
+      "away": "SAO",
+      "homeGoals": 2,
+      "awayGoals": 1
+    },
+    {
+      "round": 22,
+      "home": "REM",
+      "away": "CAM",
+      "homeGoals": 2,
+      "awayGoals": 2
+    },
+    {
+      "round": 22,
+      "home": "CFC",
+      "away": "CHA",
+      "homeGoals": 2,
+      "awayGoals": 1
+    },
+    {
+      "round": 22,
+      "home": "BOT",
+      "away": "FLU",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 22,
+      "home": "CRU",
+      "away": "MIR",
+      "homeGoals": 3,
+      "awayGoals": 1
+    },
+    {
+      "round": 22,
+      "home": "BAH",
+      "away": "VAS",
+      "homeGoals": 0,
+      "awayGoals": 0
+    },
+    {
+      "round": 22,
+      "home": "PAL",
+      "away": "INT",
+      "homeGoals": 0,
+      "awayGoals": 0
+    },
+    {
+      "round": 22,
+      "home": "BRA",
+      "away": "COR",
+      "homeGoals": 0,
+      "awayGoals": 2
+    },
+    {
+      "round": 22,
+      "home": "SAN",
+      "away": "CAP",
+      "homeGoals": 0,
+      "awayGoals": 2
+    },
+    {
+      "round": 22,
+      "home": "FLA",
+      "away": "VIT",
+      "homeGoals": 2,
+      "awayGoals": 0
+    },
+    {
+      "round": 23,
+      "home": "FLU",
+      "away": "PAL",
+      "homeGoals": 3,
+      "awayGoals": 2
+    },
+    {
+      "round": 23,
+      "home": "CAP",
+      "away": "BRA",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 23,
+      "home": "SAO",
+      "away": "CFC",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 23,
+      "home": "CHA",
+      "away": "BAH",
+      "homeGoals": 3,
+      "awayGoals": 3
+    },
+    {
+      "round": 23,
+      "home": "CAM",
+      "away": "GRE",
+      "homeGoals": 3,
+      "awayGoals": 0
+    },
+    {
+      "round": 23,
+      "home": "VAS",
+      "away": "SAN",
+      "homeGoals": 0,
+      "awayGoals": 3
+    },
+    {
+      "round": 23,
+      "home": "MIR",
+      "away": "FLA",
+      "homeGoals": 1,
+      "awayGoals": 5
+    },
+    {
+      "round": 23,
+      "home": "VIT",
+      "away": "BOT",
+      "homeGoals": 1,
+      "awayGoals": 0
+    },
+    {
+      "round": 23,
+      "home": "COR",
+      "away": "CRU",
+      "homeGoals": 1,
+      "awayGoals": 2
+    },
+    {
+      "round": 23,
+      "home": "INT",
+      "away": "REM",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 24,
+      "home": "FLU",
+      "away": "REM",
+      "homeGoals": 2,
+      "awayGoals": 1
+    },
+    {
+      "round": 24,
+      "home": "INT",
+      "away": "CAM",
+      "homeGoals": 0,
+      "awayGoals": 0
+    },
+    {
+      "round": 24,
+      "home": "CRU",
+      "away": "FLA",
+      "homeGoals": 2,
+      "awayGoals": 1
+    },
+    {
+      "round": 24,
+      "home": "BRA",
+      "away": "GRE",
+      "homeGoals": 1,
+      "awayGoals": 0
+    },
+    {
+      "round": 24,
+      "home": "PAL",
+      "away": "VAS",
+      "homeGoals": 4,
+      "awayGoals": 1
+    },
+    {
+      "round": 24,
+      "home": "VIT",
+      "away": "BAH",
+      "homeGoals": 0,
+      "awayGoals": 2
+    },
+    {
+      "round": 24,
+      "home": "CHA",
+      "away": "SAO",
+      "homeGoals": 1,
+      "awayGoals": 0
+    },
+    {
+      "round": 24,
+      "home": "SAN",
+      "away": "MIR",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 24,
+      "home": "CFC",
+      "away": "COR",
+      "homeGoals": 2,
+      "awayGoals": 1
+    },
+    {
+      "round": 24,
+      "home": "BOT",
+      "away": "CAP",
+      "homeGoals": 2,
+      "awayGoals": 3
+    },
+    {
+      "round": 25,
+      "home": "CAM",
+      "away": "VIT",
+      "homeGoals": 2,
+      "awayGoals": 1
+    },
+    {
+      "round": 25,
+      "home": "SAO",
+      "away": "BRA",
+      "homeGoals": 2,
+      "awayGoals": 1
+    },
+    {
+      "round": 25,
+      "home": "VAS",
+      "away": "CRU",
+      "homeGoals": 3,
+      "awayGoals": 1
+    },
+    {
+      "round": 25,
+      "home": "CAP",
+      "away": "FLU",
+      "homeGoals": 3,
+      "awayGoals": 3
+    },
+    {
+      "round": 25,
+      "home": "COR",
+      "away": "SAN",
+      "homeGoals": 0,
+      "awayGoals": 1
+    },
+    {
+      "round": 25,
+      "home": "FLA",
+      "away": "BOT",
+      "homeGoals": 3,
+      "awayGoals": 0
+    },
+    {
+      "round": 25,
+      "home": "GRE",
+      "away": "CHA",
+      "homeGoals": 3,
+      "awayGoals": 1
+    },
+    {
+      "round": 25,
+      "home": "MIR",
+      "away": "PAL",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 25,
+      "home": "BAH",
+      "away": "INT",
+      "homeGoals": 3,
+      "awayGoals": 2
+    },
+    {
+      "round": 25,
+      "home": "REM",
+      "away": "CFC",
+      "homeGoals": 2,
+      "awayGoals": 3
+    },
+    {
+      "round": 26,
+      "home": "BRA",
+      "away": "BAH",
+      "homeGoals": 2,
+      "awayGoals": 3
+    },
+    {
+      "round": 26,
+      "home": "SAO",
+      "away": "CAM",
+      "homeGoals": 2,
+      "awayGoals": 0
+    },
+    {
+      "round": 26,
+      "home": "FLU",
+      "away": "VAS",
+      "homeGoals": 1,
+      "awayGoals": 0
+    },
+    {
+      "round": 26,
+      "home": "CFC",
+      "away": "MIR",
+      "homeGoals": 1,
+      "awayGoals": 2
+    },
+    {
+      "round": 26,
+      "home": "CRU",
+      "away": "CAP",
+      "homeGoals": 3,
+      "awayGoals": 1
+    },
+    {
+      "round": 26,
+      "home": "INT",
+      "away": "SAN",
+      "homeGoals": 2,
+      "awayGoals": 3
+    },
+    {
+      "round": 26,
+      "home": "REM",
+      "away": "FLA",
+      "homeGoals": 0,
+      "awayGoals": 1
+    },
+    {
+      "round": 26,
+      "home": "BOT",
+      "away": "PAL",
+      "homeGoals": 0,
+      "awayGoals": 0
+    },
+    {
+      "round": 26,
+      "home": "COR",
+      "away": "CHA",
+      "homeGoals": 1,
+      "awayGoals": 2
+    },
+    {
+      "round": 26,
+      "home": "VIT",
+      "away": "GRE",
+      "homeGoals": 1,
+      "awayGoals": 0
+    },
+    {
+      "round": 27,
+      "home": "CFC",
+      "away": "CAP",
+      "homeGoals": 3,
+      "awayGoals": 3
+    },
+    {
+      "round": 27,
+      "home": "CAM",
+      "away": "FLU",
+      "homeGoals": 3,
+      "awayGoals": 1
+    },
+    {
+      "round": 27,
+      "home": "GRE",
+      "away": "VAS",
+      "homeGoals": 1,
+      "awayGoals": 2
+    },
+    {
+      "round": 27,
+      "home": "CHA",
+      "away": "INT",
+      "homeGoals": 1,
+      "awayGoals": 2
+    },
+    {
+      "round": 27,
+      "home": "PAL",
+      "away": "SAO",
+      "homeGoals": 2,
+      "awayGoals": 0
+    },
+    {
+      "round": 27,
+      "home": "BOT",
+      "away": "BRA",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 27,
+      "home": "SAN",
+      "away": "CRU",
+      "homeGoals": 2,
+      "awayGoals": 1
+    },
+    {
+      "round": 27,
+      "home": "MIR",
+      "away": "VIT",
+      "homeGoals": 2,
+      "awayGoals": 2
+    },
+    {
+      "round": 27,
+      "home": "FLA",
+      "away": "COR",
+      "homeGoals": 2,
+      "awayGoals": 1
+    },
+    {
+      "round": 27,
+      "home": "BAH",
+      "away": "REM",
+      "homeGoals": 2,
+      "awayGoals": 1
+    },
+    {
+      "round": 28,
+      "home": "CAM",
+      "away": "CHA",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 28,
+      "home": "MIR",
+      "away": "BOT",
+      "homeGoals": 2,
+      "awayGoals": 0
+    },
+    {
+      "round": 28,
+      "home": "REM",
+      "away": "SAN",
+      "homeGoals": 1,
+      "awayGoals": 2
+    },
+    {
+      "round": 28,
+      "home": "VAS",
+      "away": "CFC",
+      "homeGoals": 5,
+      "awayGoals": 0
+    },
+    {
+      "round": 28,
+      "home": "SAO",
+      "away": "INT",
+      "homeGoals": 1,
+      "awayGoals": 0
+    },
+    {
+      "round": 28,
+      "home": "GRE",
+      "away": "PAL",
+      "homeGoals": 0,
+      "awayGoals": 0
+    },
+    {
+      "round": 28,
+      "home": "COR",
+      "away": "FLU",
+      "homeGoals": 1,
+      "awayGoals": 3
+    },
+    {
+      "round": 28,
+      "home": "VIT",
+      "away": "CRU",
+      "homeGoals": 1,
+      "awayGoals": 3
+    },
+    {
+      "round": 28,
+      "home": "FLA",
+      "away": "BRA",
+      "homeGoals": 2,
+      "awayGoals": 1
+    },
+    {
+      "round": 28,
+      "home": "CAP",
+      "away": "BAH",
+      "homeGoals": 2,
+      "awayGoals": 1
+    },
+    {
+      "round": 29,
+      "home": "BRA",
+      "away": "MIR",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 29,
+      "home": "INT",
+      "away": "COR",
+      "homeGoals": 2,
+      "awayGoals": 1
+    },
+    {
+      "round": 29,
+      "home": "REM",
+      "away": "GRE",
+      "homeGoals": 1,
+      "awayGoals": 1
+    },
+    {
+      "round": 29,
+      "home": "VIT",
+      "away": "CHA",
+      "homeGoals": 4,
+      "awayGoals": 0
+    },
+    {
+      "round": 29,
+      "home": "BOT",
+      "away": "VAS",
+      "homeGoals": 1,
+      "awayGoals": 2
+    },
+    {
+      "round": 29,
+      "home": "CRU",
+      "away": "SAO",
+      "homeGoals": 2,
+      "awayGoals": 0
+    },
+    {
+      "round": 29,
+      "home": "SAN",
+      "away": "FLA",
+      "homeGoals": 2,
+      "awayGoals": 2
+    },
+    {
+      "round": 29,
+      "home": "CAP",
+      "away": "CAM",
+      "homeGoals": 2,
+      "awayGoals": 2
+    },
+    {
+      "round": 29,
+      "home": "FLU",
+      "away": "CFC",
+      "homeGoals": 4,
+      "awayGoals": 0
+    },
+    {
+      "round": 29,
+      "home": "PAL",
+      "away": "BAH",
+      "homeGoals": 1,
+      "awayGoals": 0
+    }
+  ],
+  "champions": [
+    [
+      2006,
+      "São Paulo",
+      78
+    ],
+    [
+      2007,
+      "São Paulo",
+      77
+    ],
+    [
+      2008,
+      "São Paulo",
+      75
+    ],
+    [
+      2009,
+      "Flamengo",
+      67
+    ],
+    [
+      2010,
+      "Fluminense",
+      71
+    ],
+    [
+      2011,
+      "Corinthians",
+      71
+    ],
+    [
+      2012,
+      "Fluminense",
+      77
+    ],
+    [
+      2013,
+      "Cruzeiro",
+      76
+    ],
+    [
+      2014,
+      "Cruzeiro",
+      80
+    ],
+    [
+      2015,
+      "Corinthians",
+      81
+    ],
+    [
+      2016,
+      "Palmeiras",
+      80
+    ],
+    [
+      2017,
+      "Corinthians",
+      72
+    ],
+    [
+      2018,
+      "Palmeiras",
+      80
+    ],
+    [
+      2019,
+      "Flamengo",
+      90
+    ],
+    [
+      2020,
+      "Flamengo",
+      71
+    ],
+    [
+      2021,
+      "Atlético-MG",
+      84
+    ],
+    [
+      2022,
+      "Palmeiras",
+      81
+    ],
+    [
+      2023,
+      "Palmeiras",
+      70
+    ],
+    [
+      2024,
+      "Botafogo",
+      79
+    ],
+    [
+      2025,
+      "Flamengo",
+      79
+    ]
+  ],
+  "relegationByPoints": {
+    "37": 96.2,
+    "38": 87.7,
+    "39": 72.5,
+    "40": 51.5,
+    "41": 30,
+    "42": 13.7,
+    "43": 4.8,
+    "44": 1.2,
+    "45": 0.2,
+    "46": 0.03,
+    "47": 0.003
+  }
+}
