@@ -564,15 +564,16 @@ function renderLiveHub(){
   groups[status].push({fixture,result,feed});
  }
  const card=({fixture,result,feed})=>{
-  const status=result?'Encerrado':feed?.status==='live'?'Ao vivo':fixture.status==='postponed'?'Adiado':'Agendado';
+  const live=feed?.status==='live'&&!result;
+  const status=result?'Encerrado':live?'<span class="live-indicator"><i aria-hidden="true"></i>AO VIVO<span class="sr-only">: partida em andamento</span></span>':fixture.status==='postponed'?'Adiado':'Agendado';
   const score=result?`<b class="result-score">${result.homeGoals}</b><span class="x">x</span><b class="result-score">${result.awayGoals}</b>`:
    feed?.score?.home!=null&&feed?.score?.away!=null?`<b class="result-score">${feed.score.home}</b><span class="x">x</span><b class="result-score">${feed.score.away}</b>`:'<span class="x">x</span>';
   const kickoff=fixture.kickoff||feed?.dateTime;
   const source=result?.source?.name||liveFeed?.source?.name||dataSource.name;
   const at=result?.source?.observedAt||liveFeed?.fetchedAt;
-  return `<article class="mc live-fixture"><div class="meta"><span>${status}</span><span>${fixture.round}ª rodada</span></div><div class="tt"><span class="t h">${ab(fixture.home)}</span>${lg(fixture.home)}${score}${lg(fixture.away)}<span class="t">${ab(fixture.away)}</span></div><div class="dt">${escapeHtml(NM[fixture.home])} x ${escapeHtml(NM[fixture.away])}<br>${kickoff?formatLiveTime(kickoff):'Horário não disponível'} · ${escapeHtml(fixture.stadium||feed?.venue||STD[fixture.home]||'Estádio não informado')}<br>Fonte: ${escapeHtml(source)}${at?` · consultado ${formatLiveTime(at)}`:''}</div></article>`;
+  return `<article class="mc live-fixture${live?' is-live':''}"><div class="meta"><span>${status}</span><span>${fixture.round}ª rodada</span></div><div class="tt"><span class="t h">${ab(fixture.home)}</span>${lg(fixture.home)}${score}${lg(fixture.away)}<span class="t">${ab(fixture.away)}</span></div><div class="dt">${escapeHtml(NM[fixture.home])} x ${escapeHtml(NM[fixture.away])}<br>${kickoff?formatLiveTime(kickoff):'Horário não disponível'} · ${escapeHtml(fixture.stadium||feed?.venue||STD[fixture.home]||'Estádio não informado')}<br>Fonte: ${escapeHtml(source)}${at?` · consultado ${formatLiveTime(at)}`:''}</div></article>`;
  };
- const section=(title,key)=>`<h2>${title} (${groups[key].length})</h2><div class="grid">${groups[key].length?groups[key].map(card).join(''):'<p class="mu">Nenhuma partida nesta categoria.</p>'}</div>`;
+ const section=(title,key)=>`<h2>${key==='live'&&groups.live.length?'<span class="live-indicator"><i aria-hidden="true"></i>AO VIVO<span class="sr-only">: há partidas em andamento</span></span> ':''}${title} (${groups[key].length})</h2><div class="grid">${groups[key].length?groups[key].map(card).join(''):'<p class="mu">Nenhuma partida nesta categoria.</p>'}</div>`;
  $('#v-live').innerHTML=`<div class="cd"><h2>Central da rodada ${round}</h2><p class="mu">${liveFeed?`Fonte: ${escapeHtml(liveFeed.source.name)} · última consulta ${formatLiveTime(liveFeed.fetchedAt)}${liveFeed.stale?' · DADOS DESATUALIZADOS':''}.`:`Feed ao vivo indisponível: ${escapeHtml(liveFeedError)}. Exibindo resultados conhecidos e calendário local.`} Atualização automática a cada 2 minutos enquanto a página estiver aberta.</p><button data-act="refresh-feed">Atualizar agora</button></div>${section('Em andamento','live')}<div class="cd">${section('Próximos jogos','upcoming')}</div><div class="cd">${section('Encerrados','finished')}</div>`;
 }
 function renderClubPage(){
