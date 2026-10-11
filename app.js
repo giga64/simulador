@@ -19,6 +19,12 @@ import {
   validatePredictionHistory,
 } from './src/prediction-performance.js';
 
+import { icon } from './src/ui/icons.js';
+import { privacySection, termsSection } from './src/ui/legal-content.js';
+import { SOURCES } from './src/ui/sources.js';
+import { TOUR_STEPS } from './src/ui/tour-steps.js';
+import { createTeamButtons } from './src/ui/team-buttons.js';
+
 (async () => {
   let validationWarnings = [];
   // Contato exibido em Privacidade e Termos. Preencha com um e-mail monitorado;
@@ -413,7 +419,7 @@ import {
         btn = $('#bMin');
       if (!body || !btn) return;
       body.hidden = tableCollapsed;
-      btn.innerHTML = ic(tableCollapsed ? 'down' : 'up') + (tableCollapsed ? 'Expandir' : 'Minimizar');
+      btn.innerHTML = ic(tableCollapsed ? 'chevronDown' : 'chevronUp') + (tableCollapsed ? 'Expandir' : 'Minimizar');
       btn.setAttribute('aria-expanded', String(!tableCollapsed));
       btn.setAttribute(
         'aria-label',
@@ -938,27 +944,7 @@ import {
         console.error('Falha ao configurar Supabase Auth:', error);
       }
     }
-    const IC = {
-      dice: '<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8.5 8.5h.01M15.5 8.5h.01M12 12h.01M8.5 15.5h.01M15.5 15.5h.01"/>',
-      wand: '<path d="M5 3v4M3 5h4M6 17v4M4 19h4M13 3l2.2 5.8L21 11l-5.8 2.2L13 19l-2.2-5.8L5 11l5.8-2.2z"/>',
-      trash: '<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/>',
-      share:
-        '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.5l6.8-4M8.6 13.5l6.8 4"/>',
-      cl: '<path d="M15 18l-6-6 6-6"/>',
-      cr: '<path d="M9 18l6-6-6-6"/>',
-      x: '<path d="M18 6L6 18M6 6l12 12"/>',
-      cols: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16"/>',
-      chart: '<path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/>',
-      copy: '<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/>',
-      img: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 8h.01M21 15l-5-5L5 21"/>',
-      list: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
-      down: '<path d="M12 3v12m0 0l-5-5m5 5l5-5M4 21h16"/>',
-      info: '<circle cx="12" cy="12" r="9"/><path d="M12 16v-5M12 8h.01"/>',
-      alert: '<path d="M12 3l10 18H2zM12 10v5M12 18h.01"/>',
-    };
-    IC.up = '<path d="M6 15l6-6 6 6"/>';
-    IC.down = '<path d="M6 9l6 6 6-6"/>';
-    const ic = (n) => `<svg class="i" viewBox="0 0 24 24">${IC[n]}</svg>`;
+    const ic = icon;
     const stl = document.createElement('style');
     stl.textContent = Object.keys(LOGO)
       .map((c) => `.lg.${c}{background-image:url(${LOGO[c]})}`)
@@ -967,6 +953,7 @@ import {
     const lg = (c) => `<i class="lg ${c}"></i>`,
       f1 = (n) => n.toFixed(1).replace('.', ','),
       pc = (v) => (v < 1 ? '<1%' : Math.round(v) + '%');
+    const { teamSimButton, clubButton } = createTeamButtons({ lg, NM, escapeHtml });
     function pm(l, n) {
       const a = [Math.exp(-l)];
       for (let i = 1; i < n; i++) a.push((a[i - 1] * l) / i);
@@ -1840,7 +1827,7 @@ import {
           ? `Dados desatualizados · última consulta ${formatLiveTime(liveFeed.fetchedAt)}`
           : `Dados atualizados · ${escapeHtml(liveFeed.source.name)} · ${formatLiveTime(liveFeed.fetchedAt)}`
         : `Feed ao vivo indisponível · snapshot de ${updatedLabel}`;
-      const spotlightMarkup = `<section class="home-spotlight${spotlightLive ? ' has-live' : ''}" aria-labelledby="spotlightTitle"><div class="spotlight-copy"><span class="hero-kicker">${spotlightLive ? 'ACOMPANHAMENTO AO VIVO' : 'BRASILEIRÃO 2026 · PAINEL DA RODADA'}</span><h2 id="spotlightTitle">${spotlightHeading}</h2><p>${spotlightFixture ? 'Acompanhe horário, placar e situação da partida em destaque.' : 'Explore o calendário e acompanhe a temporada.'}</p><p class="spotlight-feed" role="status">${spotlightStatus}</p><div class="spotlight-actions"><button class="p" data-act="show-view" data-view="sim">Criar simulação</button><button data-act="show-view" data-view="live">Ver jogos e calendário</button></div></div><div class="spotlight-match">${spotlightFixture ? renderFixtureCard(spotlightFixture, null, spotlightFeed) : '<p class="mu">Não há próxima partida cadastrada.</p>'}</div></section>`;
+      const spotlightMarkup = `<section class="home-spotlight${spotlightLive ? ' has-live' : ''}" aria-labelledby="spotlightTitle"><div class="spotlight-copy"><span class="hero-kicker">${spotlightLive ? 'ACOMPANHAMENTO AO VIVO' : 'BRASILEIRÃO 2026 · PAINEL DA RODADA'}</span><h2 id="spotlightTitle">${spotlightHeading}</h2><p>${spotlightFixture ? 'Acompanhe horário, placar e situação da partida em destaque.' : 'Explore o calendário e acompanhe a temporada.'}</p><p class="spotlight-feed" role="status">${spotlightStatus}</p><div class="spotlight-actions"><button data-act="show-view" data-view="live">Ver jogos e calendário</button></div></div><div class="spotlight-match">${spotlightFixture ? renderFixtureCard(spotlightFixture, null, spotlightFeed) : '<p class="mu">Não há próxima partida cadastrada.</p>'}</div></section>`;
       const secondaryFixtures = spotlightMatch ? recentFixtures.slice(0, 2) : recentFixtures.slice(1, 3);
       const favoriteFixtures = upcoming
         .filter((fixture) => favoriteTeams.includes(fixture.home) || favoriteTeams.includes(fixture.away))
@@ -1860,7 +1847,7 @@ import {
         ? `${escapeHtml(liveFeed.source.name)} · consultado ${formatLiveTime(liveFeed.fetchedAt)}${liveFeed.stale ? ' · desatualizado' : ''}`
         : `Snapshot local · atualizado ${updatedLabel} · feed ao vivo indisponível`;
       $('#v-home').innerHTML =
-        `${spotlightMarkup}<div class="home-tour"><div><b>Primeira vez no SimulaBR?</b><span class="mu sm">Veja em poucos passos como simular e acompanhar os dados.</span></div><button data-act="start-tour">Fazer visita guiada</button></div><div class="home-grid"><section class="cd"><div class="home-section-heading"><h2>Jogos ao vivo</h2>${liveCards.length ? '<span class="live-indicator"><i aria-hidden="true"></i>AGORA<span class="sr-only">: jogos ao vivo</span></span>' : ''}</div>${liveCards.length ? `<div class="grid">${liveCards.slice(0, 4).join('')}</div>` : staleCards.length ? `<p class="warn stale-notice">A última consulta válida encontrou estas partidas em andamento; o placar pode ter mudado.</p><div class="grid">${staleCards.slice(0, 4).join('')}</div>` : `<p class="mu">Nenhuma partida em andamento neste momento.</p><button data-act="show-view" data-view="live">Ver central da rodada</button>`}</section>
+        `${spotlightMarkup}<div class="home-tour"><div><b>Primeira vez no SimulaBR?</b><span class="mu sm">Veja em poucos passos como simular e acompanhar os dados.</span></div><button data-act="start-tour">Fazer visita guiada</button></div><div class="home-grid"><section class="cd"><div class="home-section-heading"><h2>Jogos ao vivo</h2>${liveCards.length ? '<span class="live-indicator"><i aria-hidden="true"></i>AGORA<span class="sr-only">: jogos ao vivo</span></span>' : ''}</div>${liveCards.length ? `<div class="grid">${liveCards.slice(0, 4).join('')}</div>` : staleCards.length ? `<p class="warn stale-notice">A última consulta válida encontrou estas partidas em andamento; o placar pode ter mudado.</p><div class="grid">${staleCards.slice(0, 4).join('')}</div>` : `<p class="mu">Nenhuma partida em andamento neste momento.</p>`}</section>
   <section class="cd"><h2>Outros próximos jogos</h2>${
     secondaryFixtures.length
       ? `<div class="grid">${secondaryFixtures
@@ -1879,7 +1866,7 @@ import {
           )
           .join('')}</div>`
       : '<p class="mu">Consulte o calendário para ver os próximos jogos.</p>'
-  }<button data-act="show-view" data-view="live">Abrir calendário completo</button></section></div>
+  }</section></div>
   <div class="home-grid home-lower"><section class="cd"><div class="home-section-heading"><h2>Classificação atual</h2><span class="data-chip">${dataLabel}</span></div><p class="mu sm">${liveFeed ? 'Tabela consultada na fonte indicada; não é publicação oficial da CBF.' : 'Cálculo local com resultados conhecidos; pode haver partidas sem placar.'}</p><div class="home-standings">${standings.map(({ code, entry }) => `<button class="home-standing-row" data-act="open-club" data-team="${code}"><span class="home-position">${entry.position}º</span>${lg(code)}<b>${escapeHtml(NM[code])}</b><span>${entry.points} pts</span></button>`).join('')}</div><button data-act="show-view" data-view="est">Ver estatísticas da temporada</button></section>
   <section class="cd"><div class="home-section-heading"><h2>Seus clubes</h2><button data-act="show-view" data-view="clubs">Explorar clubes</button></div>${
     favoriteTeams.length
@@ -2137,7 +2124,7 @@ import {
         })
         .join('');
       $('#v-history').innerHTML =
-        `<div class="cd"><h2>Histórico por rodada</h2><label for="historyRound">Rodada</label> <select id="historyRound" data-change="history-round">${ROUND_OPTIONS.map((value) => `<option value="${value}" ${value === round ? 'selected' : ''}>${value}ª rodada</option>`).join('')}</select><p class="mu sm">${results.length} de ${fixtures.length} placares disponíveis. Tabela reconstruída somente com resultados conhecidos até esta rodada; em caso de empate, critérios e ordem históricos podem divergir do oficial.</p><p class="mu sm">Fonte do snapshot: ${escapeHtml(dataSource.name)}. Resultados observados podem identificar GE ou a fonte declarada na conferência.</p></div><div class="g2"><div class="cd"><h2>Resultados da ${round}ª rodada</h2><div class="grid">${cards || '<p class="mu">Nenhum jogo cadastrado.</p>'}</div></div><div class="cd"><h2>Classificação após a ${round}ª rodada (dados conhecidos)</h2><div class="sc"><table><thead><tr><th>Pos.</th><th class="l">Clube</th><th>J</th><th>V</th><th>E</th><th>D</th><th>GP</th><th>GC</th><th>P</th></tr></thead><tbody>${order.map((code, index) => `<tr><td>${index + 1}º</td><td class="l"><button class="tn" data-act="open-club" data-team="${code}">${lg(code)}${escapeHtml(NM[code])}</button></td><td>${stats[code].J}</td><td>${stats[code].V}</td><td>${stats[code].E}</td><td>${stats[code].D}</td><td>${stats[code].GP}</td><td>${stats[code].GC}</td><td><b>${stats[code].P}</b></td></tr>`).join('')}</tbody></table></div></div></div>`;
+        `<div class="cd"><h2>Histórico por rodada</h2><label for="historyRound">Rodada</label> <select id="historyRound" data-change="history-round">${ROUND_OPTIONS.map((value) => `<option value="${value}" ${value === round ? 'selected' : ''}>${value}ª rodada</option>`).join('')}</select><p class="mu sm">${results.length} de ${fixtures.length} placares disponíveis. Tabela reconstruída somente com resultados conhecidos até esta rodada; em caso de empate, critérios e ordem históricos podem divergir do oficial.</p><p class="mu sm">Fonte do snapshot: ${escapeHtml(dataSource.name)}. Resultados observados podem identificar GE ou a fonte declarada na conferência.</p></div><div class="g2"><div class="cd"><h2>Resultados da ${round}ª rodada</h2><div class="grid">${cards || '<p class="mu">Nenhum jogo cadastrado.</p>'}</div></div><div class="cd"><h2>Classificação após a ${round}ª rodada (dados conhecidos)</h2><div class="sc"><table><thead><tr><th>Pos.</th><th class="l">Clube</th><th>J</th><th>V</th><th>E</th><th>D</th><th>GP</th><th>GC</th><th>P</th></tr></thead><tbody>${order.map((code, index) => `<tr><td>${index + 1}º</td><td class="l">${clubButton(code)}</td><td>${stats[code].J}</td><td>${stats[code].V}</td><td>${stats[code].E}</td><td>${stats[code].D}</td><td>${stats[code].GP}</td><td>${stats[code].GC}</td><td><b>${stats[code].P}</b></td></tr>`).join('')}</tbody></table></div></div></div>`;
     }
     function renderComparisonResults(first, second) {
       const [a, b] = compareScenarioPayloads(first, second),
@@ -2146,7 +2133,7 @@ import {
         `<div class="sc"><table><thead><tr><th class="l">Clube</th><th>A · posição / pontos</th><th>B · posição / pontos</th><th>A−B posição (positivo = melhora em B)</th><th>Chance título A / B</th><th>G${Q.libertadoresLeaguePositions} A / B</th><th>Z${Q.relegationPlaces} A / B</th></tr></thead><tbody>${order
           .map((code) => {
             const delta = a[code].rank - b[code].rank;
-            return `<tr><td class="l"><button class="tn" data-act="open-club" data-team="${code}">${lg(code)}${escapeHtml(NM[code])}</button></td><td>${a[code].rank}º · ${a[code].points}</td><td>${b[code].rank}º · ${b[code].points}</td><td>${delta > 0 ? '+' : ''}${delta}</td><td>${a[code].title == null ? '–' : pc(a[code].title)} / ${b[code].title == null ? '–' : pc(b[code].title)}</td><td>${a[code].lib == null ? '–' : pc(a[code].lib)} / ${b[code].lib == null ? '–' : pc(b[code].lib)}</td><td>${a[code].relegation == null ? '–' : pc(a[code].relegation)} / ${b[code].relegation == null ? '–' : pc(b[code].relegation)}</td></tr>`;
+            return `<tr><td class="l">${clubButton(code)}</td><td>${a[code].rank}º · ${a[code].points}</td><td>${b[code].rank}º · ${b[code].points}</td><td>${delta > 0 ? '+' : ''}${delta}</td><td>${a[code].title == null ? '–' : pc(a[code].title)} / ${b[code].title == null ? '–' : pc(b[code].title)}</td><td>${a[code].lib == null ? '–' : pc(a[code].lib)} / ${b[code].lib == null ? '–' : pc(b[code].lib)}</td><td>${a[code].relegation == null ? '–' : pc(a[code].relegation)} / ${b[code].relegation == null ? '–' : pc(b[code].relegation)}</td></tr>`;
           })
           .join(
             '',
@@ -2180,8 +2167,8 @@ import {
     function renderGuide() {
       $('#v-guide').innerHTML =
         `<section class="cd help-intro" id="help-start" tabindex="-1"><span class="hero-kicker">CENTRAL DE AJUDA · SIMULABR</span><h2>Entenda o site e encontre respostas</h2><p>Dados da temporada, cenários, conta e privacidade explicados sem jargão.</p><div class="help-shortcuts"><button data-act="start-tour">Fazer visita guiada</button><button data-act="show-help-section" data-section="help-data">Dados e simulações</button><button data-act="show-help-section" data-section="help-privacy">Privacidade</button><button data-act="show-help-section" data-section="terms-of-use">Termos de uso</button></div><div class="help-columns"><article><h3>Como começar</h3><ol><li>Veja a partida em destaque ou abra <b>Ao vivo</b> para consultar a rodada.</li><li>Em <b>Simular</b>, escolha uma rodada e ajuste placares ou use uma simulação automática.</li><li>Confira como o cenário altera a classificação e as probabilidades.</li><li>Crie uma conta para sincronizar palpites, salvar cenários, escolher favoritos e configurar lembretes.</li></ol></article><article id="help-data" tabindex="-1"><h3>Fontes e probabilidades</h3><p>A classificação atual é consultada no GE quando o feed está disponível; o GE é uma fonte jornalística, não oficial da CBF. Resultados anteriores, calendário completo e histórico usam o snapshot local identificado em <b>Fontes</b>.</p><p>Probabilidades são estimativas do modelo e simulações reproduzíveis, não previsões oficiais, odds, garantia de resultado ou aconselhamento de apostas. Desempates e vagas continentais podem usar aproximações.</p><button data-act="show-view" data-view="src">Consultar fontes e método</button></article></div></section>
- <details class="cd help-legal" id="help-privacy"><summary><span>Privacidade</span><span>Quais dados usamos e como cuidar deles</span></summary><div class="legal-content"><p><b>Última atualização: 11/10/2026.</b> Esta página explica o funcionamento de privacidade previsto nesta versão do SimulaBR. O serviço de autenticação e banco é fornecido pelo Supabase, e a hospedagem pode ter seus próprios registros e políticas.</p><h3>Dados que podem ser tratados</h3><ul><li><b>Conta:</b> e-mail e nome informado no cadastro, processados pelo Supabase Auth.</li><li><b>Palpites:</b> placares escolhidos, instante do registro, partida e, quando disponível, fotografia dos parâmetros e probabilidades do modelo.</li><li><b>Dados de conta:</b> cenários salvos, clubes favoritos e preferências de lembretes no site.</li><li><b>No seu navegador:</b> cenário ativo, histórico local de palpites e cópia da última consulta válida do feed podem ficar no armazenamento local; a sessão de login fica em armazenamento de sessão.</li><li><b>Dados técnicos:</b> a hospedagem e os provedores de autenticação podem registrar informações técnicas de acesso conforme suas configurações e políticas.</li></ul><h3>Para que são usados</h3><p>Os dados de conta servem para autenticar você, sincronizar recursos solicitados e exibir o painel pessoal. Favoritos e lembretes são opcionais; lembretes são avisos dentro do site enquanto ele está aberto, não mensagens push ou e-mails. O SimulaBR não processa doações: o link do Ko-fi leva a um serviço externo, que trata qualquer pagamento segundo as próprias regras.</p><h3>Armazenamento, compartilhamento e controle</h3><p>Dados sincronizados ficam no projeto Supabase configurado pelo operador, sob políticas de acesso por conta. O site não mostra seu e-mail, histórico ou preferências em links públicos de cenário; esses links contêm apenas o cenário compartilhado. Não inclua informações pessoais nos placares ou no conteúdo que compartilhar.</p><p>Você pode alterar dados de conta, sair e solicitar a exclusão pela seção <b>Minha conta</b>. A exclusão configurada remove a conta e os registros associados nas tabelas do projeto; dados guardados no navegador não são apagados automaticamente por isso e podem ser removidos limpando os dados locais do site no navegador. A hospedagem ou provedores podem manter cópias técnicas sujeitas às respectivas políticas e prazos.</p><p>Para dúvidas ou solicitações sobre dados, entre em contato por ${contactHtml}.</p></div></details>
- <details class="cd help-legal" id="terms-of-use"><summary><span>Termos de uso</span><span>Regras para usar o SimulaBR</span></summary><div class="legal-content"><p><b>Última atualização: 11/10/2026.</b> Ao acessar o SimulaBR, você concorda com estes termos. Se não concordar, não use os recursos de conta.</p><h3>O que o serviço oferece</h3><p>O SimulaBR é uma ferramenta independente de informação e entretenimento para acompanhar dados disponíveis e criar simulações da temporada. Não é afiliado à CBF, aos clubes, ao GE ou às competições citadas. Resultados e calendário podem conter lacunas, atrasos ou correções; consulte as fontes indicadas para confirmar informações.</p><h3>Simulações não são previsões oficiais</h3><p>Probabilidades, classificações projetadas e cenários dependem dos dados e das configurações escolhidas, usam aproximações e não garantem resultados. Não constituem aconselhamento financeiro, recomendação de apostas ou promessa de retorno. O usuário é responsável por suas decisões e deve observar as leis aplicáveis.</p><h3>Conta e uso aceitável</h3><p>Informe dados verdadeiros, proteja sua senha e use apenas a própria conta. Não tente acessar dados alheios, comprometer o serviço, contornar controles de segurança ou usar o site de forma ilegal. Recursos pessoais sincronizados dependem de uma conta e da disponibilidade dos provedores.</p><h3>Disponibilidade, conteúdo externo e apoio</h3><p>O serviço pode ficar temporariamente indisponível ou mudar para manutenção e atualização. Links para GE, Supabase e Ko-fi abrem serviços de terceiros sujeitos aos próprios termos e políticas. Apoio pelo Ko-fi é voluntário, externo e não é necessário para usar o simulador.</p><h3>Dados pessoais e encerramento</h3><p>O tratamento de dados é explicado na seção Privacidade. Você pode parar de usar o site a qualquer momento e solicitar a exclusão da conta pela área Minha conta, quando o recurso estiver configurado.</p><h3>Alterações e contato</h3><p>Estes termos podem ser atualizados quando o serviço mudar; a data no início indicará a revisão mais recente. Para questões sobre o serviço, entre em contato por ${contactHtml}.</p></div></details>
+ ${privacySection(contactHtml)}
+ ${termsSection(contactHtml)}
  <section class="cd help-footer"><h2>Quer saber mais?</h2><p>Consulte a procedência e as limitações dos dados antes de usar uma simulação como referência.</p><button data-act="show-view" data-view="src">Abrir fontes e método</button></section>`;
     }
     function renderAccountWorkspace() {
@@ -2470,7 +2457,7 @@ import {
         .map((c, i) => {
           const q = od(c),
             k = calc(c);
-          return `<tr class="${c == team ? 'hl' : ''}"><td class="l">${i + 1}º <button class="tn team-link" data-act="team-and-sim" data-team="${c}" aria-label="Ver detalhes de ${NM[c]}">${lg(c)}${NM[c]}</button></td><td class="n">${s[c].P}</td><td>${st[c].mx}</td><td>${q ? Math.round(q.mean) + ' <span class="mu">(' + q.lo + '–' + q.hi + ')</span>' : '–'}</td><td>${q ? pc(q.t) : '–'}</td><td>${q ? pc(q.g) : '–'}</td><td>${q ? pc(q.z) : '–'}</td><td>${k.n} (${k.hm} em casa)</td><td>${f1(k.dif)}</td><td class="l">${sit(c)}</td></tr>`;
+          return `<tr class="${c == team ? 'hl' : ''}"><td class="l">${i + 1}º ${teamSimButton(c)}</td><td class="n">${s[c].P}</td><td>${st[c].mx}</td><td>${q ? Math.round(q.mean) + ' <span class="mu">(' + q.lo + '–' + q.hi + ')</span>' : '–'}</td><td>${q ? pc(q.t) : '–'}</td><td>${q ? pc(q.g) : '–'}</td><td>${q ? pc(q.z) : '–'}</td><td>${k.n} (${k.hm} em casa)</td><td>${f1(k.dif)}</td><td class="l">${sit(c)}</td></tr>`;
         })
         .join('');
       const titleRows = o
@@ -2481,7 +2468,7 @@ import {
         .sort((a, b) => (b.title ?? -1) - (a.title ?? -1) || a.pos - b.pos)
         .map(
           (r) =>
-            `<tr><td>${r.pos}º</td><td class="l"><button class="tn team-link" data-act="team-and-sim" data-team="${r.c}" aria-label="Ver detalhes de ${NM[r.c]}">${lg(r.c)}${NM[r.c]}</button></td><td>${r.points}</td><td>${r.projected ?? '–'}</td><td><b>${r.title == null ? '–' : pc(r.title)}</b></td></tr>`,
+            `<tr><td>${r.pos}º</td><td class="l">${teamSimButton(r.c)}</td><td>${r.points}</td><td>${r.projected ?? '–'}</td><td><b>${r.title == null ? '–' : pc(r.title)}</b></td></tr>`,
         )
         .join('');
       const contenders = o
@@ -2489,7 +2476,7 @@ import {
         .map((c, i) => {
           const q = od(c),
             gap = t.P - s[c].P;
-          return `<tr><td>${i + 1}º</td><td class="l"><button class="tn team-link" data-act="team-and-sim" data-team="${c}" aria-label="Ver detalhes de ${NM[c]}">${lg(c)}${NM[c]}</button></td><td>${s[c].P}${gap ? ` <span class="mu">(${gap} atrás)</span>` : ' <span class="mu">(na liderança)</span>'}</td><td>${s[c].P + 3 * (38 - s[c].J)}</td><td>${q ? Math.round(q.mean) : '–'}</td><td>${q ? pc(q.t) : '–'}</td></tr>`;
+          return `<tr><td>${i + 1}º</td><td class="l">${teamSimButton(c)}</td><td>${s[c].P}${gap ? ` <span class="mu">(${gap} atrás)</span>` : ' <span class="mu">(na liderança)</span>'}</td><td>${s[c].P + 3 * (38 - s[c].J)}</td><td>${q ? Math.round(q.mean) : '–'}</td><td>${q ? pc(q.t) : '–'}</td></tr>`;
         })
         .join('');
       const leaderNames = o
@@ -2514,63 +2501,7 @@ import {
  <div class="cd"><h2>Situação de cada clube no cenário atual</h2><div class="sc"><table><tr><th class="l">Time</th><th>P</th><th>Máx</th><th>Proj. (10–90%)</th><th>Tít.</th><th>G${Q.libertadoresLeaguePositions}</th><th>Z${Q.relegationPlaces}</th><th>Jogos restantes</th><th title="Média de pontos por jogo dos próximos adversários">Dificuldade</th><th class="l">Situação matemática</th></tr>${rowsC}</table></div><p class="mu sm" style="margin:6px 0 0">Dificuldade = média de pontos por jogo dos adversários que ainda faltam (maior = calendário mais duro). Situação: conta direta com pontos máximos, sem critérios de desempate (empates em pontos contam contra o clube).</p></div>`;
     }
     function renderSrc() {
-      const S = [
-        [
-          'Classificação e rodada atualizadas · GE',
-          'https://ge.globo.com/futebol/brasileirao-serie-a/',
-          'Fonte consultada pelo campeonato-brasileiro-api. É uma extração do GE, não um feed oficial da CBF; disponibiliza a classificação e a rodada atual, não o histórico completo.',
-        ],
-        [
-          'Classificação, 289 resultados e jogos (ESPN, atualizado em 08/10/2026 23:33)',
-          'https://aquiesportes.com.br/futebol/tabela-do-brasileirao/',
-          'Snapshot local: resultados das rodadas 1–29, calendário com datas e estádios da 30ª à 38ª, artilharia e critérios de desempate do regulamento.',
-        ],
-        [
-          'CBF · jogos da 30ª rodada',
-          'https://www.cbf.com.br/futebol-brasileiro/noticias/campeonato-brasileiro-serie-a/a/confira-o-retrospecto-dos-confrontos-da-30-rodada-do-brasileirao',
-          'Conferência de datas e horários da 30ª rodada.',
-        ],
-        [
-          'Wikipedia · Série A 2026',
-          'https://en.wikipedia.org/wiki/2026_Campeonato_Brasileiro_S%C3%A9rie_A',
-          'Formato: 5 primeiros na Libertadores (mais finalistas da Copa do Brasil), 6 seguintes na Sul-Americana, 4 rebaixados.',
-        ],
-        [
-          'Olympics.com · pontos dos campeões',
-          'https://www.olympics.com/pt/noticias/brasileirao-pontos-campeao-torneio',
-          'Pontuação dos campeões 2006–2025 (gráfico da aba Corrida).',
-        ],
-        [
-          'Goal.com · média dos campeões',
-          'https://www.goal.com/br/listas/quantos-pontos-um-time-precisa-fazer-para-ser-campeao-do-campeonato-brasileiro/bltdf0c8d03837a3825',
-          'Média de 77 pontos e mínimo de 67 pontos.',
-        ],
-        [
-          'Olympics.com · 16º e 17º colocados',
-          'https://www.olympics.com/pt/noticias/brasileirao-2024-pontos-escapar-rebaixamento',
-          'Maior rebaixado (45 pontos) e menor pontuação de quem se salvou (39).',
-        ],
-        [
-          'Betway · pontos para não cair',
-          'https://blog.betway.com/pt/futebol/brasileirao/brasileirao-quantos-pontos-um-time-precisa-fazer-para-nao-cair-para-a-serie-b/',
-          'Média do 16º colocado (43,2) e "nenhum clube com 46 pontos caiu".',
-        ],
-        [
-          'No Ataque · risco por pontuação (UFMG)',
-          'https://noataque.com.br/futebol/brasileirao-serie-a/time/atletico-mg/noticia/2025/09/22/de-quantos-pontos-o-atletico-precisa-para-escapar-do-rebaixamento-no-brasileiro/',
-          'Probabilidade de queda por pontos finais, usada só como referência.',
-        ],
-        [
-          'ogol · estatísticas de 2025',
-          'https://www.ogol.com.br/edicao/brasileirao-serie-a-2025/194851/estatisticas',
-          'Referência: 50% mandante, 26% empates, 24% visitante, 2,52 gols por jogo.',
-        ],
-        [
-          'Escudos',
-          'https://github.com/Lobobinho/Escudos-dos-Clubes-do-Brasileirao-2026',
-          'Imagens dos escudos. As marcas pertencem aos respectivos clubes.',
-        ],
-      ];
+      const S = SOURCES;
       const k = SET.k;
       $('#v-src').innerHTML =
         `<div class="cd warn"><h2>Leia antes de usar</h2><p style="margin:0">Este é um simulador de cenários, <b>não uma previsão oficial</b>. Você pode digitar qualquer placar: o que você define é hipótese sua, e a página marca como "seu palpite". Jogos preenchidos automaticamente aparecem como "automático" e usam o método que você escolheu. O modelo não conhece lesões, suspensões, escalações, calendário de copas nem arbitragem.</p></div>
@@ -2878,28 +2809,6 @@ import {
       $('#mb').replaceChildren();
       modalReturnFocus?.focus();
     }
-    const TOUR_STEPS = [
-      {
-        view: 'home',
-        title: 'Acompanhe a rodada',
-        text: 'Na página inicial, veja a próxima partida, jogos ao vivo e a classificação consultada. O horário e a fonte ajudam a entender quando os dados foram atualizados.',
-      },
-      {
-        view: 'sim',
-        title: 'Monte seu cenário',
-        text: 'Escolha uma rodada, digite placares ou use as opções rápidas. “Preencher faltantes” preserva seus palpites e completa somente os jogos sem placar.',
-      },
-      {
-        view: 'est',
-        title: 'Explore os números',
-        text: 'Filtre resultados por clube e rodada. A contagem da amostra mostra quantas partidas sustentam cada indicador; probabilidades continuam sendo estimativas do modelo.',
-      },
-      {
-        view: 'account',
-        title: 'Use uma conta se quiser',
-        text: 'O conteúdo público continua aberto. Uma conta opcional permite sincronizar palpites, favoritos e lembretes entre sessões.',
-      },
-    ];
     function renderTour() {
       const step = TOUR_STEPS[tourStep];
       show(step.view);
