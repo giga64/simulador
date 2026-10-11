@@ -24,6 +24,11 @@ import { privacySection, termsSection } from './src/ui/legal-content.js';
 import { SOURCES } from './src/ui/sources.js';
 import { TOUR_STEPS } from './src/ui/tour-steps.js';
 import { createTeamButtons } from './src/ui/team-buttons.js';
+import { buildClubNeeds } from './src/club-needs.js';
+import { SPLIT_MODES, buildSplitTable } from './src/standings-splits.js';
+import { renderClubNeedsCard } from './src/ui/club-needs-card.js';
+import { renderSplitsCard } from './src/ui/splits-card.js';
+import { renderPositionMap } from './src/ui/position-map.js';
 
 (async () => {
   let validationWarnings = [];
@@ -141,6 +146,7 @@ import { createTeamButtons } from './src/ui/team-buttons.js';
       AB = { BRA: 'RBB' },
       ab = (c) => AB[c] || c;
     let statsTeam = LIVE_STANDINGS?.keys().next().value || T[0];
+    let splitMode = 'all';
     let snapshotStatsTeam = 'all',
       snapshotStatsRound = 'all',
       modelPanelOpen = false,
@@ -2074,10 +2080,84 @@ import { createTeamButtons } from './src/ui/team-buttons.js';
           : '';
       return `<div class="cd"><h2>Evolução na tabela e forma recente</h2><h3>Posição reconstruída por rodada</h3>${chart}${pointsChart}<p class="mu sm">Posições e pontos reconstruídos apenas dos placares conhecidos até cada rodada, com desempate simplificado. Podem faltar jogos e a ordem pode divergir da tabela oficial.</p><p>Últimos resultados conhecidos: <span class="fm" role="img" aria-label="${escapeHtml(outcomes || 'Sem resultados recentes')}">${form.map((result, index) => `<i class="${outcomes.split(' · ')[index]}" title="${escapeHtml(outcomes.split(' · ')[index])} · rodada ${result.round}"></i>`).join('')}</span> <span class="mu sm">${escapeHtml(outcomes || 'Sem resultados recentes')}</span></p></div>`;
     }
+    // ---- Novos cartões: metas do clube, recortes da tabela e mapa de posições ----
+    const TOTAL_GAMES = 2 * (T.length - 1);
+    function renderClubNeeds(code) {
+      if (!MCR) MCR = mc();
+      const s = project(),
+        chances = od(code);
+      if (!chances) return '';
+      const rows = buildClubNeeds({
+        points: s[code].P,
+        played: s[code].J,
+        totalGames: TOTAL_GAMES,
+        targets: [
+          { key: 'title', label: 'Ser campeão', cutHistogram: MCR.CP[0], simulations: MCR.N, chance: chances.t },
+          {
+            key: 'lib',
+            label: `Terminar no G${Q.libertadoresLeaguePositions}`,
+            cutHistogram: MCR.CP[1],
+            simulations: MCR.N,
+            chance: chances.g,
+          },
+          {
+            key: 'safe',
+            label: `Escapar do Z${Q.relegationPlaces}`,
+            cutHistogram: MCR.CP[3],
+            simulations: MCR.N,
+            extra: 1,
+            chance: 100 - chances.z,
+          },
+        ],
+      });
+      return renderClubNeedsCard({
+        clubName: escapeHtml(NM[code]),
+        rows,
+        simulations: MCR.N,
+        formatPercent: pc,
+      });
+    }
+    function renderSplits() {
+      const rows = buildSplitTable(rawResults, T, splitMode);
+      const coverage = HISTORY_COVERAGE.status === 'consistent' ? '' : ` ${historyCoverageMessage()}`;
+      return renderSplitsCard({
+        rows,
+        mode: splitMode,
+        modes: SPLIT_MODES,
+        renderTeam: clubButton,
+        formatSigned: (n) => (n > 0 ? `+${n}` : String(n)),
+        note: `Calculada com os ${rawResults.length} placares conhecidos, sem o desempate oficial (empate residual mantém ordem estável).${coverage}`,
+      });
+    }
+    function renderMapCard(order) {
+      if (!MCR) return '';
+      const zoneOf = (i) =>
+        i < Q.libertadoresLeaguePositions
+          ? 'g'
+          : i >= Q.sudamericanaLeagueStart - 1 && i < Q.sudamericanaLeagueEnd
+            ? 'b'
+            : i >= T.length - Q.relegationPlaces
+              ? 'r'
+              : 'n';
+      return renderPositionMap({
+        order,
+        positions: T.length,
+        positionsOf: (code) => od(code)?.pos || null,
+        zoneOf,
+        renderTeam: teamSimButton,
+        nameOf: (code) => escapeHtml(NM[code]),
+        highlight: team,
+      });
+    }
     function renderClubPage() {
       renderClubProfile();
       const profile = $('#v-clubs').firstElementChild;
-      if (profile) profile.insertAdjacentHTML('afterend', renderClubProgress(statsTeam || T[0]));
+      if (profile) {
+        profile.insertAdjacentHTML(
+          'afterend',
+          renderClubProgress(statsTeam || T[0]) + renderClubNeeds(statsTeam || T[0]),
+        );
+      }
     }
     function renderRoundHistory() {
       const round = selectedHistoryRound,
@@ -2343,6 +2423,7 @@ import { createTeamButtons } from './src/ui/team-buttons.js';
  )}</div></div>
  <div class="cd"><h2>Destaques da temporada</h2><div class="tile">${hl.map(([t, r, f]) => `<div>${lg(r.c)}<b style="font-size:.95rem">${NM[r.c]}</b><span>${t}: ${f(r)}</span></div>`).join('')}</div></div>
  <div class="cd"><h2>Desempenho detalhado do snapshot por time (clique no cabeçalho para ordenar)</h2><div class="sc"><table><tr><th class="l">Time</th>${th('pts', 'P')}${th('e', 'Emp.')}${th('pe', '% emp.')}${th('ph', 'Pts/jogo casa')}${th('pa', 'Pts/jogo fora')}${th('gh', 'GP casa')}${th('ch', 'GC casa')}${th('ga', 'GP fora')}${th('ca', 'GC fora')}${th('cs', 'Jogos sem sofrer gol')}<th>Forma</th></tr>${rows.map((r) => `<tr><td class="l"><span class="tn">${lg(r.c)}${NM[r.c]}</span></td><td class="n">${r.pts}</td><td>${r.e}</td><td>${Math.round(r.pe)}%</td><td>${f1(r.ph)}</td><td>${f1(r.pa)}</td><td>${f1(r.gh)}</td><td>${f1(r.ch)}</td><td>${f1(r.ga)}</td><td>${f1(r.ca)}</td><td>${r.cs}</td><td>${form(r.c, { [r.c]: { sim: [] } })}</td></tr>`).join('')}</table></div></div>`;
+      $('#v-est').firstElementChild?.insertAdjacentHTML('afterend', renderSplits());
     }
     function renderPerformance() {
       const completed = predictionHistory.filter((entry) => entry.actual),
@@ -2499,6 +2580,7 @@ import { createTeamButtons } from './src/ui/team-buttons.js';
  <div class="g2"><div class="cd"><h2>Linhas de corte projetadas x histórico</h2><div class="sc"><table><tr><th class="l">Posição final</th><th>Pontos: mediana (10–90%)</th><th>Referência histórica</th></tr>${cf(0, ['Campeão (1º)', 'média 77 · de 67 a 90 (2006–2025)'])}${cf(1, [`${Q.libertadoresLeaguePositions}º · limite da faixa Libertadores`, '—'])}${cf(2, [`${Q.sudamericanaLeagueEnd}º · limite da faixa Sul-Americana`, '—'])}${cf(3, [`${T.length - Q.relegationPlaces}º · último fora do Z${Q.relegationPlaces}`, Q.relegationPlaces === 4 ? 'média 43,2 · maior rebaixado: 45 · ninguém caiu com 46' : '—'])}</table></div><p class="mu sm" style="margin:6px 0 0">As faixas mudam conforme os placares que você definiu. Históricos: Olympics.com, Betway e No Ataque.</p></div>
  <div class="cd"><h2>Risco de rebaixamento por pontos finais</h2><div class="sc"><table><tr><th>Pontos</th><th>Histórico (UFMG)*</th><th>Este simulador</th></tr>${rel.join('')}</table></div><p class="mu sm" style="margin:6px 0 0">*Probabilidades divulgadas pelo Departamento de Matemática da UFMG, reproduzidas por No Ataque (2025). Fontes e metodologias diferem; "–" = poucas simulações com essa pontuação.</p></div></div>
  <div class="cd"><h2>Situação de cada clube no cenário atual</h2><div class="sc"><table><tr><th class="l">Time</th><th>P</th><th>Máx</th><th>Proj. (10–90%)</th><th>Tít.</th><th>G${Q.libertadoresLeaguePositions}</th><th>Z${Q.relegationPlaces}</th><th>Jogos restantes</th><th title="Média de pontos por jogo dos próximos adversários">Dificuldade</th><th class="l">Situação matemática</th></tr>${rowsC}</table></div><p class="mu sm" style="margin:6px 0 0">Dificuldade = média de pontos por jogo dos adversários que ainda faltam (maior = calendário mais duro). Situação: conta direta com pontos máximos, sem critérios de desempate (empates em pontos contam contra o clube).</p></div>`;
+      $('#v-cor').insertAdjacentHTML('beforeend', renderMapCard(o));
     }
     function renderSrc() {
       const S = SOURCES;
@@ -3184,6 +3266,10 @@ import { createTeamButtons } from './src/ui/team-buttons.js';
         updateEstSource();
       } else if (action === 'snapshot-stats-round') {
         snapshotStatsRound = input.value;
+        renderEst();
+        updateEstSource();
+      } else if (action === 'split-mode') {
+        splitMode = input.value;
         renderEst();
         updateEstSource();
       } else if (action === 'club-profile') {
