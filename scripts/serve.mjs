@@ -1,4 +1,4 @@
-import { createReadStream, statSync } from 'node:fs';
+import { createReadStream, readFileSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -27,8 +27,26 @@ const mimeTypes = new Map([
   ['.html', 'text/html; charset=utf-8'],
   ['.js', 'text/javascript; charset=utf-8'],
   ['.json', 'application/json; charset=utf-8'],
+  ['.webmanifest', 'application/manifest+json; charset=utf-8'],
+  ['.png', 'image/png'],
+  ['.svg', 'image/svg+xml'],
+  ['.ico', 'image/x-icon'],
   ['.webp', 'image/webp'],
 ]);
+
+// Somente o que o navegador precisa é publicado. Antes, qualquer arquivo da pasta
+// do projeto (incluindo .git/, package.json e scripts/) era entregue.
+const publicFiles = new Set(['index.html', 'app.js', 'styles.css', 'manifest.webmanifest', 'sw.js']);
+const publicDirectories = ['assets/', 'data/', 'src/'];
+const isPublicPath = (relative) => {
+  const normalized = relative.replace(/\\/g, '/');
+  if (normalized.split('/').some((part) => part === '' || part.startsWith('.'))) return false;
+  return publicFiles.has(normalized) || publicDirectories.some((directory) => normalized.startsWith(directory));
+};
+
+// URL pública do site (ex.: https://simulabr.com.br), usada nas tags de
+// compartilhamento (og:image exige URL absoluta). Sem SITE_URL, ficam caminhos relativos.
+const siteUrl = (process.env.SITE_URL || '').replace(/\/+$/, '');
 
 const server = createServer(async (request, response) => {
   if (!['GET', 'HEAD', 'DELETE'].includes(request.method || '')) {
@@ -149,7 +167,7 @@ const server = createServer(async (request, response) => {
   }
 
   const relative = pathname === '/' ? 'index.html' : pathname.replace(/^[/\\]+/, '');
-  if (relative.split(/[\\/]/).includes('.runtime')) {
+  if (!isPublicPath(relative)) {
     response.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Not found');
     return;
   }
@@ -161,6 +179,16 @@ const server = createServer(async (request, response) => {
 
   try {
     if (!statSync(filePath).isFile()) throw new Error('Not a file');
+    if (relative === 'index.html') {
+      const html = readFileSync(filePath, 'utf8').replaceAll('%SITE_URL%', siteUrl);
+      response.writeHead(200, {
+        'Cache-Control': 'no-store',
+        'Content-Type': mimeTypes.get('.html'),
+        'X-Content-Type-Options': 'nosniff',
+      });
+      response.end(request.method === 'HEAD' ? undefined : html);
+      return;
+    }
     response.writeHead(200, {
       'Cache-Control': 'no-store',
       'Content-Type': mimeTypes.get(path.extname(filePath).toLowerCase()) || 'application/octet-stream',
