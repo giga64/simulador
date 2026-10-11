@@ -25,6 +25,8 @@ import { SOURCES } from './src/ui/sources.js';
 import { TOUR_STEPS } from './src/ui/tour-steps.js';
 import { createTeamButtons } from './src/ui/team-buttons.js';
 import { buildClubNeeds } from './src/club-needs.js';
+import { createLivePoller } from './src/live-poller.js';
+import { createReloadScheduler } from './src/reload-scheduler.js';
 import { SPLIT_MODES, buildSplitTable } from './src/standings-splits.js';
 import { renderClubNeedsCard } from './src/ui/club-needs-card.js';
 import { renderSplitsCard } from './src/ui/splits-card.js';
@@ -1925,7 +1927,7 @@ import { renderPositionMap } from './src/ui/position-map.js';
       const section = (title, key) =>
         `<h2>${key === 'live' && groups.live.length ? '<span class="live-indicator"><i aria-hidden="true"></i>AO VIVO<span class="sr-only">: há partidas em andamento</span></span> ' : ''}${title} (${groups[key].length})</h2><div class="grid">${groups[key].length ? groups[key].map(card).join('') : '<p class="mu">Nenhuma partida nesta categoria.</p>'}</div>`;
       $('#v-live').innerHTML =
-        `<div class="cd"><h2>Central da rodada ${round}</h2><p class="mu">${liveFeed ? `Fonte: ${escapeHtml(liveFeed.source.name)} · última consulta ${formatLiveTime(liveFeed.fetchedAt)}${liveFeed.stale ? ' · DADOS DESATUALIZADOS' : ''}.` : `Feed ao vivo indisponível: ${escapeHtml(liveFeedError)}. Exibindo resultados conhecidos e calendário local.`} Atualização automática a cada 2 minutos enquanto a página estiver aberta.</p><button data-act="refresh-feed">Atualizar agora</button></div>${section('Em andamento', 'live')}<div class="cd">${section('Próximos jogos', 'upcoming')}</div><div class="cd">${section('Encerrados', 'finished')}</div>`;
+        `<div class="cd"><h2>Central da rodada ${round}</h2><p class="mu">${liveFeed ? `Fonte: ${escapeHtml(liveFeed.source.name)} · última consulta ${formatLiveTime(liveFeed.fetchedAt)}${liveFeed.stale ? ' · DADOS DESATUALIZADOS' : ''}.` : `Feed ao vivo indisponível: ${escapeHtml(liveFeedError)}. Exibindo resultados conhecidos e calendário local.`} Atualização automática: a cada 30 s durante jogos e a cada 2 min nos demais momentos, enquanto a página estiver aberta.</p><button data-act="refresh-feed">Atualizar agora</button></div>${section('Em andamento', 'live')}<div class="cd">${section('Próximos jogos', 'upcoming')}</div><div class="cd">${section('Encerrados', 'finished')}</div>`;
     }
     function renderClubProfile() {
       const code = statsTeam || T[0],
@@ -2921,6 +2923,41 @@ import { renderPositionMap } from './src/ui/position-map.js';
       setS('seed', seed);
       setSE();
     }
+    // ---- Atualização automática dos resultados ----
+    const RELOAD_STATE_KEY = 'br26-after-reload';
+    const userIsBusy = () => {
+      const el = document.activeElement;
+      const typing =
+        el &&
+        (el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && !/^(button|checkbox|radio|submit)$/i.test(el.type)));
+      return Boolean(typing || document.querySelector('dialog[open], #mod:not([hidden])'));
+    };
+    const requestReload = createReloadScheduler({
+      isBusy: userIsBusy,
+      announce: () => notify('Resultados novos! Atualizando a página…'),
+      reload: () => {
+        try {
+          // guarda onde o usuário estava para voltar ao mesmo ponto depois da recarga
+          sessionStorage.setItem(RELOAD_STATE_KEY, JSON.stringify({ view, y: window.scrollY, at: Date.now() }));
+        } catch {}
+        location.reload();
+      },
+    });
+    const livePoller = createLivePoller({
+      refresh: () => refreshLive(false),
+      isLive: () => Boolean(liveFeed?.matches?.some((match) => match.status === 'live')),
+      isVisible: () => document.visibilityState === 'visible',
+    });
+    function restoreAfterReload() {
+      let saved = null;
+      try {
+        saved = JSON.parse(sessionStorage.getItem(RELOAD_STATE_KEY) || 'null');
+        sessionStorage.removeItem(RELOAD_STATE_KEY);
+      } catch {}
+      if (!saved || Date.now() - saved.at > 60_000 || !TABS.some(([key]) => key === saved.view)) return;
+      show(saved.view);
+      requestAnimationFrame(() => window.scrollTo(0, saved.y || 0));
+    }
     async function refreshLive(force = false) {
       const button = $('#refreshLive');
       if (button) button.disabled = true;
@@ -2941,7 +2978,7 @@ import { renderPositionMap } from './src/ui/position-map.js';
           }
         }
         if (!liveFeed || payload.revision !== liveFeed.revision) {
-          location.reload();
+          requestReload();
           return;
         }
         liveFeed = payload;
@@ -3021,7 +3058,7 @@ import { renderPositionMap } from './src/ui/position-map.js';
       if (!sourceStatus) return;
       const coverage = historyCoverageMessage();
       if (liveFeed) {
-        sourceStatus.textContent = `Classificação e estatísticas por clube: ${liveFeed.source.name} · consultado em ${formatLiveTime(liveFeed.fetchedAt)} · rodada ${liveFeed.round.number}${liveFeed.stale ? ' · cache desatualizado' : ''}. ${liveFeed.stale ? liveFeed.warning : 'Atualização automática a cada 2 minutos.'}${liveFeed.historyWarning ? ` ${liveFeed.historyWarning}` : ''} ${coverage} Calendário completo e demais indicadores: snapshot de ${updatedLabel}. Fonte GE, não oficial da CBF.`;
+        sourceStatus.textContent = `Classificação e estatísticas por clube: ${liveFeed.source.name} · consultado em ${formatLiveTime(liveFeed.fetchedAt)} · rodada ${liveFeed.round.number}${liveFeed.stale ? ' · cache desatualizado' : ''}. ${liveFeed.stale ? liveFeed.warning : 'Atualização automática: a cada 30 s durante jogos e a cada 2 min nos demais momentos.'}${liveFeed.historyWarning ? ` ${liveFeed.historyWarning}` : ''} ${coverage} Calendário completo e demais indicadores: snapshot de ${updatedLabel}. Fonte GE, não oficial da CBF.`;
         if (sourceSummary)
           sourceSummary.textContent = `${liveFeed.stale ? 'Último dado válido' : 'GE atualizado'} · ${formatLiveTime(liveFeed.fetchedAt)}${liveFeed.stale ? ' · desatualizado' : ''}`;
       } else {
@@ -3465,11 +3502,16 @@ import { renderPositionMap } from './src/ui/position-map.js';
     });
     renderAll();
     renderHome();
+    restoreAfterReload();
+    // A atualização automática começa já, sem esperar a conta: um login lento não pode atrasar os resultados.
+    livePoller.start();
+    const pokePoller = () => livePoller.poke();
+    document.addEventListener('visibilitychange', pokePoller);
+    window.addEventListener('focus', pokePoller);
+    window.addEventListener('online', pokePoller);
+    window.addEventListener('pageshow', (event) => event.persisted && pokePoller());
     if (validationWarnings.length) notify(validationWarnings.join(' '));
     await initializeAccount();
-    setInterval(() => {
-      if (document.visibilityState === 'visible') refreshLive(false);
-    }, 120_000);
     setInterval(checkInSiteReminders, 60_000);
     document.addEventListener('visibilitychange', checkInSiteReminders);
     checkInSiteReminders();

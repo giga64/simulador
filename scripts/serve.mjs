@@ -224,12 +224,15 @@ server.listen(port, host, () => {
   console.log(`Preview server running at http://${host}:${port}`);
 });
 
-const refreshTimer = setInterval(() => {
-  readLiveFeed({ forceRefresh: true }).catch((error) => {
+// Atualiza o feed do GE sozinho: a cada 30 s enquanto há jogo em andamento e a cada 2 min nos demais momentos.
+let lastFeed = null;
+async function refreshFeedPeriodically() {
+  try {
+    lastFeed = await readLiveFeed({ forceRefresh: true });
+  } catch (error) {
     console.error(`Atualização periódica do GE falhou: ${error.message || String(error)}`);
-  });
-}, 120_000);
-refreshTimer.unref();
-readLiveFeed().catch((error) => {
-  console.error(`Consulta inicial do GE falhou: ${error.message || String(error)}`);
-});
+  }
+  const hasLiveMatch = lastFeed?.matches?.some((match) => match.status === 'live');
+  setTimeout(refreshFeedPeriodically, hasLiveMatch ? 30_000 : 120_000).unref();
+}
+refreshFeedPeriodically();
