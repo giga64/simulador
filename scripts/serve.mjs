@@ -196,7 +196,10 @@ const server = createServer(async (request, response) => {
   try {
     if (!statSync(filePath).isFile()) throw new Error('Not a file');
     if (relative === 'index.html') {
-      const html = readFileSync(filePath, 'utf8').replaceAll('%SITE_URL%', siteUrl);
+      const raw = readFileSync(filePath, 'utf8');
+      const html = siteUrl
+        ? raw.replaceAll('content="assets/og-image.png"', `content="${siteUrl}/assets/og-image.png"`)
+        : raw;
       response.writeHead(200, {
         'Cache-Control': 'no-store',
         'Content-Type': mimeTypes.get('.html'),

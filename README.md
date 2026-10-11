@@ -239,3 +239,14 @@ amostras pequenas não são evidência de desempenho futuro.
 Em telas estreitas, tabelas e relatórios rolam horizontalmente dentro de regiões
 identificadas. Os campos de placar e os controles principais têm alvos de toque
 maiores; as abas também aceitam navegação por setas, Home e End.
+
+## Configuração de publicação
+
+- **`SITE_URL`** (variável de ambiente do servidor): endereço público do site, por exemplo `https://simulabr.com.br`.
+  Com ela, as tags `og:image` e `twitter:image` saem com URL absoluta, o que o WhatsApp, o X e o Facebook exigem
+  para mostrar a pré-visualização ao compartilhar o link. Sem ela, o caminho fica relativo.
+- **`CONTACT_EMAIL`** (constante no início do `app.js`): e-mail exibido em Privacidade e Termos. Vazio, o site aponta
+  para o perfil do operador no GitHub.
+- **App instalável / offline:** `manifest.webmanifest` e `sw.js` funcionam em HTTPS ou `localhost`. Ao criar um módulo
+  novo em `src/`, inclua-o no `PRECACHE` de `sw.js` (o teste `test/pwa.test.js` avisa se esquecer).
+- **Formatação:** `npm run format` aplica o Prettier; `npm run format:check` só confere.

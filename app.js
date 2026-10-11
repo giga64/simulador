@@ -3379,6 +3379,10 @@ import { renderPositionMap } from './src/ui/position-map.js';
       show(TABS[next][0]);
     });
     document.querySelectorAll('[data-i]').forEach((e) => (e.innerHTML = ic(e.dataset.i)));
+    // Permite instalar o site e abrir offline (só funciona em HTTPS ou localhost).
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
     document.title = 'SimulaBR | Simulador do Brasileirão 2026';
     document.querySelector('header h1').textContent = 'SimulaBR';
     document.querySelector('header p').textContent = 'Acompanhe, simule e explore cada rodada.';
