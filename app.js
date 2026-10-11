@@ -31,6 +31,7 @@ import { SPLIT_MODES, buildSplitTable } from './src/standings-splits.js';
 import { renderClubNeedsCard } from './src/ui/club-needs-card.js';
 import { renderSplitsCard } from './src/ui/splits-card.js';
 import { renderPositionMap } from './src/ui/position-map.js';
+import { renderLandingPreview } from './src/ui/landing.js';
 
 (async () => {
   let validationWarnings = [];
@@ -2923,6 +2924,50 @@ import { renderPositionMap } from './src/ui/position-map.js';
       setS('seed', seed);
       setSE();
     }
+    // ---- Landing (primeira visita) ----
+    const LANDING_SEEN_KEY = 'br26-landing-seen';
+    function fillLanding() {
+      const target = $('#landing-preview');
+      if (!target) return;
+      const rows = LIVE_STANDINGS
+        ? [...LIVE_STANDINGS]
+            .sort((a, b) => a[1].position - b[1].position)
+            .slice(0, 5)
+            .map(([code, entry]) => ({ code, position: entry.position, points: entry.points }))
+        : rankTeams(base)
+            .slice(0, 5)
+            .map((code, index) => ({ code, position: index + 1, points: base[code].P }));
+      const next = ALL_FIXTURES.filter(
+        (fixture) =>
+          fixture.status !== 'played' &&
+          fixture.status !== 'postponed' &&
+          fixture.kickoff &&
+          Date.parse(fixture.kickoff) >= Date.now(),
+      ).sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff))[0];
+      target.innerHTML = renderLandingPreview({
+        rows,
+        nextMatch: next ? { title: `${NM[next.home]} x ${NM[next.away]}`, when: formatLiveTime(next.kickoff) } : null,
+        dataLabel: liveFeed
+          ? `atualizado ${formatLiveTime(liveFeed.fetchedAt)}${liveFeed.stale ? ' · desatualizado' : ''}`
+          : `dados de ${updatedLabel}`,
+        logo: lg,
+        nameOf: (code) => NM[code],
+        escape: escapeHtml,
+      });
+    }
+    function enterApp(target = 'home') {
+      try {
+        localStorage.setItem(LANDING_SEEN_KEY, '1');
+      } catch {}
+      document.documentElement.setAttribute('data-landing', '0');
+      show(target);
+      window.scrollTo(0, 0);
+    }
+    function showLanding() {
+      document.documentElement.setAttribute('data-landing', '1');
+      fillLanding();
+      window.scrollTo(0, 0);
+    }
     // ---- Atualização automática dos resultados ----
     const RELOAD_STATE_KEY = 'br26-after-reload';
     const userIsBusy = () => {
@@ -3067,6 +3112,7 @@ import { renderPositionMap } from './src/ui/position-map.js';
       }
       if (liveFeedCacheWarning) sourceStatus.textContent += ` ${liveFeedCacheWarning}`;
       if (view === 'home') renderHome();
+      fillLanding();
     }
     function runAction(button) {
       const { act } = button.dataset;
@@ -3503,6 +3549,17 @@ import { renderPositionMap } from './src/ui/position-map.js';
     renderAll();
     renderHome();
     restoreAfterReload();
+    fillLanding();
+    document.addEventListener('click', (event) => {
+      const go = event.target.closest?.('[data-landing-go]');
+      if (go) enterApp(go.dataset.landingGo);
+    });
+    const brandLogo = document.querySelector('main > header img');
+    if (brandLogo) {
+      brandLogo.style.cursor = 'pointer';
+      brandLogo.title = 'Ver a apresentação do SimulaBR';
+      brandLogo.addEventListener('click', showLanding);
+    }
     // A atualização automática começa já, sem esperar a conta: um login lento não pode atrasar os resultados.
     livePoller.start();
     const pokePoller = () => livePoller.poke();

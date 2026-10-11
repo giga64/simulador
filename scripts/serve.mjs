@@ -36,7 +36,7 @@ const mimeTypes = new Map([
 
 // Somente o que o navegador precisa é publicado. Antes, qualquer arquivo da pasta
 // do projeto (incluindo .git/, package.json e scripts/) era entregue.
-const publicFiles = new Set(['index.html', 'app.js', 'styles.css', 'manifest.webmanifest', 'sw.js']);
+const publicFiles = new Set(['index.html', 'app.js', 'styles.css', 'manifest.webmanifest', 'sw.js', 'boot.js']);
 const publicDirectories = ['assets/', 'data/', 'src/'];
 const isPublicPath = (relative) => {
   const normalized = relative.replace(/\\/g, '/');
