@@ -21,6 +21,7 @@ import {
 
 (async()=>{
   let validationWarnings=[];
+  const LIVE_FEED_CACHE_KEY='br26-last-good-live-feed';
   const showLoadError=(error)=>{const main=document.querySelector('main'),message=String(error.message||error).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));main.innerHTML=`<div class="cd warn" role="alert"><h1>N\u00e3o foi poss\u00edvel carregar os dados do simulador</h1><p>Confira se os arquivos <code>data/season-2026.json</code> e <code>assets/logos.json</code> foram publicados junto com esta p\u00e1gina. Detalhes: ${message}</p></div>`;};
   try {
     const [seasonResponse,logoResponse,backfillResponse]=await Promise.all([fetch('data/season-2026.json',{cache:'no-cache'}),fetch('assets/logos.json',{cache:'no-cache'}),fetch('data/historical-backfill-2026.json',{cache:'no-cache'})]);
@@ -31,18 +32,41 @@ import {
     const reconciledSnapshot=mergeVerifiedResults(snapshot,backfill);
     const reconciliationValidation=validateSeasonData(reconciledSnapshot,logoData);
     if(reconciliationValidation.errors.length)throw new Error(reconciliationValidation.errors.join(' '));
-    let liveFeed=null,liveFeedError='';
+    let liveFeed=null,liveFeedError='',liveFeedCacheWarning='';
     try{
       const response=await fetch('/api/live-season',{cache:'no-store'});
       if(!response.ok)throw new Error(`HTTP ${response.status}`);
       liveFeed=await response.json();
     }catch(error){liveFeedError=error.message||String(error)}
+    if(!liveFeed){
+      try{
+        const cachedValue=localStorage.getItem(LIVE_FEED_CACHE_KEY);
+        if(cachedValue){
+          const cachedFeed=JSON.parse(cachedValue);
+          if(!cachedFeed||typeof cachedFeed.fetchedAt!=='string'||!Number.isFinite(Date.parse(cachedFeed.fetchedAt))
+            ||typeof cachedFeed.source?.name!=='string')
+            throw new Error('A cópia local não tem data ou fonte válidas.');
+          const cachedSeason=mergeLiveSeason(reconciledSnapshot,cachedFeed);
+          const cachedValidation=validateSeasonData(cachedSeason.seasonData,logoData);
+          if(cachedValidation.errors.length)throw new Error(cachedValidation.errors.join(' '));
+          liveFeed={...cachedFeed,stale:true,checkedAt:new Date().toISOString(),warning:`Fonte indisponível; mostrando a última consulta bem-sucedida de ${cachedFeed.fetchedAt}.`};
+        }
+      }catch(error){
+        liveFeedCacheWarning=`Não foi possível usar o último feed salvo neste navegador: ${error.message||String(error)}`;
+        liveFeedError+=`${liveFeedError?'; ':''}${liveFeedCacheWarning}`;
+        console.error(liveFeedCacheWarning,error);
+      }
+    }
     let merged;
     try{
       merged=mergeLiveSeason(reconciledSnapshot,liveFeed);
       const liveValidation=validateSeasonData(merged.seasonData,logoData);
       if(liveValidation.errors.length)throw new Error(liveValidation.errors.join(' '));
       validationWarnings=[...snapshotValidation.warnings,...liveValidation.warnings,...merged.warnings];
+      if(liveFeed&&!liveFeed.stale){
+        try{localStorage.setItem(LIVE_FEED_CACHE_KEY,JSON.stringify(liveFeed))}
+        catch(error){liveFeedCacheWarning=`Feed atualizado, mas não foi possível guardar a última consulta neste navegador: ${error.message||String(error)}`;console.error(liveFeedCacheWarning,error)}
+      }
     }catch(error){
       liveFeed=null;
       liveFeedError=`Feed ignorado por validação: ${error.message||String(error)}`;
@@ -74,7 +98,7 @@ if(LIVE_STANDINGS)for(const [code,entry] of LIVE_STANDINGS)base[code]={...base[c
 const gH=RES.reduce((s,m)=>s+m.x,0)/RES.length,gA=RES.reduce((s,m)=>s+m.y,0)/RES.length;
 const LG=(()=>{const n=RES.length,o={n,gols:0,H:0,D:0,A:0,btts:0,o25:0,z:0,sc:{},dr:[],gr:[]};RES.forEach(m=>{o.gols+=m.x+m.y;m.x>m.y?o.H++:m.x<m.y?o.A++:o.D++;if(m.x&&m.y)o.btts++;if(m.x+m.y>2)o.o25++;if(!m.x&&!m.y)o.z++;const k=m.x+'-'+m.y;o.sc[k]=(o.sc[k]||0)+1});for(let r=0;r<38;r++){const L=RES.filter(m=>m.r==r);o.dr.push(L.filter(m=>m.x==m.y).length);o.gr.push(L.length?L.reduce((s,m)=>s+m.x+m.y,0)/L.length:0)}return o})();
 const METH={ml:['Resultado mais provável (modelo)','Para cada jogo, escolhe o resultado (vitória, empate ou derrota) com maior probabilidade no modelo e o placar mais provável dentro dele.'],sample:['Sorteio ponderado (modelo)','Sorteia o placar conforme as probabilidades do modelo: reproduz a incerteza e as zebras reais do futebol.'],fav:['Favoritos sempre vencem','Nunca empata: o time com maior chance de vencer (segundo o modelo) leva o jogo.'],home:['Mandante sempre vence','Todos os jogos terminam 1x0 para o mandante.'],draw:['Tudo empata','Todos os jogos terminam 1x1.']};
-const $=s=>document.querySelector(s),escapeHtml=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char])),formatLiveTime=value=>value?new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short',timeZone:'America/Sao_Paulo'}).format(new Date(value)):'indisponível';let SC={},tab=DEFAULT_ROUND,team='',MCR=null,tmr,view='sim',PG={},sortK='pts',sortD=-1,open={};
+const $=s=>document.querySelector(s),escapeHtml=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char])),formatLiveTime=value=>value?new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short',timeZone:'America/Sao_Paulo'}).format(new Date(value)):'indisponível';let SC={},tab=DEFAULT_ROUND,team='',MCR=null,tmr,view='home',PG={},sortK='pts',sortD=-1,open={};
 let opt={full:true,odds:true,meth:'ml'},SET={k:6,ha:1,rho:-.1,adj:{},seed:20261010};
 let storageWarningShown=false;
 let predictionHistory=[];
@@ -86,6 +110,7 @@ let accountDialog=null;
 let authMode='login';
 let authBusy=false;
 let authStatus='';
+let accountPrompt='';
 let savedScenarios=[];
 let favoriteTeams=[];
 let accountPreferences={inSiteReminders:false,reminderMinutes:30};
@@ -93,8 +118,6 @@ let selectedHistoryRound=Math.max(1,(LIVE_ROUND?.number||1)-1);
 let siteSearch='';
 let reminderStorageWarningShown=false;
 const remindedFixtures=new Set();
-try{favoriteTeams=JSON.parse(localStorage.getItem('br26-favorite-teams')||'[]').filter((code)=>T.includes(code))}
-catch(error){console.error('Preferências locais inválidas:',error)}
 const notify=(message)=>{const toast=$('#toast');if(!toast)return;toast.textContent=message;toast.hidden=false;clearTimeout(notify.timer);notify.timer=setTimeout(()=>{toast.hidden=true},5000)};
 const predictionStorageKey=()=>signedInUser?`br26predictionHistory:${signedInUser.id}`:'br26predictionHistory';
 let accountSaveTimer;
@@ -203,7 +226,9 @@ async function loadAccountWorkspace(user){
   inSiteReminders:preferences?.in_site_reminders===true,
   reminderMinutes:Number.isInteger(preferences?.reminder_minutes)?preferences.reminder_minutes:30,
  };
- if(view==='account'||view==='clubs')renderAccountWorkspace();
+ if(view==='account')renderAccountWorkspace();
+ if(view==='clubs')renderClubPage();
+ if(view==='home')renderHome();
 }
 async function saveAccountPreferences(){
  if(!signedInUser||!supabaseClient)throw new Error('Entre na conta para sincronizar suas preferências.');
@@ -245,14 +270,17 @@ async function removeSavedScenario(id){
 }
 async function toggleFavorite(code){
  if(!T.includes(code))throw new Error('Clube inválido.');
+ if(!signedInUser){
+  openAccountDialog('register','Entre ou crie uma conta para acompanhar clubes favoritos e sincronizá-los com seus lembretes.');
+  return;
+ }
  const previous=favoriteTeams;
  favoriteTeams=favoriteTeams.includes(code)?favoriteTeams.filter((item)=>item!==code):[...favoriteTeams,code];
- try{
-  if(signedInUser)await saveAccountPreferences();
-  else localStorage.setItem('br26-favorite-teams',JSON.stringify(favoriteTeams));
- }catch(error){favoriteTeams=previous;throw error}
+ try{await saveAccountPreferences()}
+ catch(error){favoriteTeams=previous;throw error}
  if(view==='clubs'||view==='account')renderAccountWorkspace();
  if(view==='clubs')renderClubPage();
+ if(view==='home')renderHome();
 }
 async function updateProfileName(event){
  event.preventDefault();
@@ -309,7 +337,7 @@ function renderAccountDialog(){
  const titles={login:'Entrar na sua conta',register:'Criar conta',forgot:'Recuperar senha',reset:'Definir nova senha'};
  const description={
   login:'Acesse seus palpites e snapshots do modelo em qualquer sessão.',
-  register:'Crie uma conta para manter seus palpites sincronizados.',
+   register:'Crie uma conta grátis para salvar palpites e cenários, escolher clubes favoritos e configurar lembretes.',
   forgot:'Enviaremos um link de recuperação para o e-mail informado.',
   reset:'Escolha uma nova senha para sua conta.',
  };
@@ -317,21 +345,30 @@ function renderAccountDialog(){
  const hasName=authMode==='register';
  const box=accountDialog.querySelector('.auth-box');
  box.innerHTML=`<button type="button" class="auth-close" data-auth-action="close" aria-label="Fechar">×</button><h2 id="account-title">${titles[authMode]}</h2><p>${description[authMode]}</p>${supabaseConfigError?`<p class="warn auth-message" role="alert">${escapeHtml(supabaseConfigError)}</p>`:''}<form id="accountForm"><label for="account-email">E-mail</label><input id="account-email" type="email" autocomplete="email" required ${authBusy||supabaseConfigError?'disabled':''}>${hasName?'<label for="account-name">Nome</label><input id="account-name" type="text" autocomplete="name" maxlength="80" required>':''}${hasPassword?`<label for="account-password">${authMode==='reset'?'Nova senha':'Senha'}</label><input id="account-password" type="password" autocomplete="${authMode==='register'||authMode==='reset'?'new-password':'current-password'}" minlength="8" required ${authBusy||supabaseConfigError?'disabled':''}>`:''}${authMode==='register'||authMode==='reset'?'<label for="account-confirm">Confirmar senha</label><input id="account-confirm" type="password" autocomplete="new-password" minlength="8" required>':''}<button type="submit" class="p" ${authBusy||supabaseConfigError?'disabled':''}>${authBusy?'Aguarde…':authMode==='login'?'Entrar':authMode==='register'?'Criar conta':authMode==='forgot'?'Enviar link':'Salvar nova senha'}</button></form><p class="auth-message" role="status" aria-live="polite">${escapeHtml(authStatus)}</p><div class="auth-links">${authMode!=='login'?'<button type="button" data-auth-action="login">Voltar ao login</button>':''}${authMode==='login'?'<button type="button" data-auth-action="register">Criar conta</button><button type="button" data-auth-action="forgot">Esqueci minha senha</button>':''}</div>`;
+ if(accountPrompt){
+  const prompt=document.createElement('p');
+  prompt.className='auth-message account-prompt';
+  prompt.setAttribute('role','status');
+  prompt.textContent=accountPrompt;
+  box.querySelector('#accountForm').before(prompt);
+ }
  box.querySelector('#accountForm').addEventListener('submit',submitAccountForm);
  box.querySelectorAll('[data-auth-action]').forEach((button)=>button.addEventListener('click',()=>{
-  if(button.dataset.authAction==='close'){closeAccountDialog();return}
+  if(button.dataset.authAction==='close'){accountPrompt='';closeAccountDialog();return}
   const email=box.querySelector('#account-email')?.value||'';
   authMode=button.dataset.authAction;
   authStatus='';
+  accountPrompt='';
   renderAccountDialog();
   const emailInput=accountDialog.querySelector('#account-email');
   if(emailInput)emailInput.value=email;
   box.querySelector('input:not([disabled])')?.focus();
  }));
 }
-function openAccountDialog(mode='login'){
+function openAccountDialog(mode='login',prompt=''){
  authMode=mode;
  authStatus='';
+ accountPrompt=prompt;
  renderAccountDialog();
  accountDialog.hidden=false;
  accountDialog.querySelector('input:not([disabled])')?.focus();
@@ -404,12 +441,13 @@ async function activateAccountSession(user){
  }else{
   predictionHistory=anonymousPredictionHistory;
   savedScenarios=[];
-  try{favoriteTeams=JSON.parse(localStorage.getItem('br26-favorite-teams')||'[]').filter((code)=>T.includes(code))}
-  catch(error){favoriteTeams=[];console.error('Preferências locais inválidas:',error)}
+  favoriteTeams=[];
   accountPreferences={inSiteReminders:false,reminderMinutes:30};
   renderAccountButton();
   if(view==='perf')renderPerformance();
-  if(view==='account'||view==='clubs')renderAccountWorkspace();
+  if(view==='account')renderAccountWorkspace();
+  if(view==='clubs')renderClubPage();
+  if(view==='home')renderHome();
  }
 }
 async function initializeAccount(){
@@ -552,7 +590,47 @@ function clr(w,only){targets(w).forEach(m=>{if(!only||(SC[m.k]&&SC[m.k][2]=='a')
 function allT(r){M.filter(m=>m.h==team||m.a==team).forEach(m=>{const home=m.h==team,w=r=='w'?(home?['2','0']:['0','2']):r=='l'?(home?['0','2']:['2','0']):['1','1'];SC[m.k]=[...w,'u'];recordPredictionSnapshot(m.k)});save();renderAll()}
 function setTeam(c){team=c;renderSide();renderTab();sched();if(c)scrollTo({top:0,behavior:'smooth'})}
 /* ---- abas ---- */
-const TABS=[['live','Ao vivo'],['sim','Simular'],['est','Estatísticas da temporada'],['clubs','Clubes'],['history','Rodadas'],['perf','Meus palpites'],['cor',`Corrida: título, G${Q.libertadoresLeaguePositions} e Z${Q.relegationPlaces}`],['search','Buscar'],['guide','Como funciona'],['account','Minha conta'],['src','Fontes']];
+const TABS=[['home','Início'],['live','Ao vivo'],['sim','Simular'],['est','Estatísticas da temporada'],['clubs','Clubes'],['history','Rodadas'],['perf','Meus palpites'],['cor',`Corrida: título, G${Q.libertadoresLeaguePositions} e Z${Q.relegationPlaces}`],['search','Buscar'],['guide','Como funciona'],['account','Minha conta'],['src','Fontes']];
+function renderFixtureCard(fixture,result,feed,favorite=false){
+ const isStaleLive=liveFeed?.stale&&feed?.status==='live'&&!result;
+ const isLive=!liveFeed?.stale&&feed?.status==='live'&&!result;
+ const finished=result||feed?.status==='finished';
+ const status=result||finished?'Encerrado':isLive?'<span class="live-indicator"><i aria-hidden="true"></i>AO VIVO<span class="sr-only">: partida em andamento</span></span>':isStaleLive?'Sem atualização · última consulta ao vivo':fixture.status==='postponed'?'Adiado':'Agendado';
+ const score=result?`<b class="result-score">${result.homeGoals}</b><span class="x">x</span><b class="result-score">${result.awayGoals}</b>`:feed?.score?.home!=null&&feed?.score?.away!=null?`<b class="result-score">${feed.score.home}</b><span class="x">x</span><b class="result-score">${feed.score.away}</b>`:'<span class="x">x</span>';
+ const kickoff=fixture.kickoff||feed?.dateTime;
+ const source=result?.source?.name||feed?.source?.name||liveFeed?.source?.name||dataSource.name;
+ const at=result?.source?.observedAt||feed?.observedAt||liveFeed?.fetchedAt;
+ return `<article class="mc live-fixture${isLive?' is-live':''}${isStaleLive?' is-stale':''}${favorite?' favorite-fixture':''}"><div class="meta"><span>${status}</span><span>${fixture.round}ª rodada${favorite?' · clube favorito':''}</span></div><div class="tt"><span class="t h">${ab(fixture.home)}</span>${lg(fixture.home)}${score}${lg(fixture.away)}<span class="t">${ab(fixture.away)}</span></div><div class="dt">${escapeHtml(NM[fixture.home])} x ${escapeHtml(NM[fixture.away])}<br>${kickoff?formatLiveTime(kickoff):'Horário não disponível'} · ${escapeHtml(fixture.stadium||feed?.venue||STD[fixture.home]||'Estádio não informado')}<br>Fonte: ${escapeHtml(source)}${at?` · ${isLive?'última consulta':isStaleLive?'última consulta válida':'consultado'} ${formatLiveTime(at)}`:''}</div></article>`;
+}
+function renderHome(){
+ const now=Date.now(),feedMatches=liveFeed?.matches||[];
+ const currentLiveMatches=liveFeed?.stale?[]:feedMatches.filter((match)=>match.status==='live');
+ const staleLiveMatches=liveFeed?.stale?feedMatches.filter((match)=>match.status==='live'):[];
+ const liveCards=currentLiveMatches.map((match)=>{
+  const fixture=ALL_FIXTURES.find((item)=>item.round===match.round&&item.home===match.homeTeam.shortName&&item.away===match.awayTeam.shortName);
+  return fixture?renderFixtureCard(fixture,null,match,favoriteTeams.includes(fixture.home)||favoriteTeams.includes(fixture.away)):'';
+ }).filter(Boolean);
+ const staleCards=staleLiveMatches.map((match)=>{
+  const fixture=ALL_FIXTURES.find((item)=>item.round===match.round&&item.home===match.homeTeam.shortName&&item.away===match.awayTeam.shortName);
+  return fixture?renderFixtureCard(fixture,null,match,favoriteTeams.includes(fixture.home)||favoriteTeams.includes(fixture.away)):'';
+ }).filter(Boolean);
+ let upcoming=ALL_FIXTURES.filter((fixture)=>fixture.status!=='played'&&fixture.status!=='postponed'&&fixture.kickoff&&Date.parse(fixture.kickoff)>=now)
+  .sort((a,b)=>Date.parse(a.kickoff)-Date.parse(b.kickoff));
+ if(!upcoming.length)upcoming=ALL_FIXTURES.filter((fixture)=>fixture.status!=='played'&&fixture.status!=='postponed'&&fixture.round>=(LIVE_ROUND?.number||DEFAULT_ROUND)).sort((a,b)=>a.round-b.round||(a.kickoff?Date.parse(a.kickoff):Infinity)-(b.kickoff?Date.parse(b.kickoff):Infinity));
+ const recentFixtures=upcoming.slice(0,3);
+ const favoriteFixtures=upcoming.filter((fixture)=>favoriteTeams.includes(fixture.home)||favoriteTeams.includes(fixture.away)).slice(0,4);
+ const standings=LIVE_STANDINGS?[...LIVE_STANDINGS].sort((a,b)=>a[1].position-b[1].position).slice(0,5).map(([code,entry])=>({code,entry})):rankTeams(base).slice(0,5).map((code,index)=>({code,entry:{position:index+1,points:base[code].P,matches:base[code].J}}));
+ const dataLabel=liveFeed?`${escapeHtml(liveFeed.source.name)} · consultado ${formatLiveTime(liveFeed.fetchedAt)}${liveFeed.stale?' · desatualizado':''}`:`Snapshot local · atualizado ${updatedLabel} · feed ao vivo indisponível`;
+ $('#v-home').innerHTML=`<div class="home-grid"><section class="cd"><div class="home-section-heading"><h2>Jogos ao vivo</h2>${liveCards.length?'<span class="live-indicator"><i aria-hidden="true"></i>AGORA<span class="sr-only">: jogos ao vivo</span></span>':''}</div>${liveCards.length?`<div class="grid">${liveCards.slice(0,4).join('')}</div>`:staleCards.length?`<p class="warn stale-notice">A última consulta válida encontrou estas partidas em andamento; o placar pode ter mudado.</p><div class="grid">${staleCards.slice(0,4).join('')}</div>`:`<p class="mu">Nenhuma partida em andamento neste momento.</p><button data-act="show-view" data-view="live">Ver central da rodada</button>`}</section>
+  <section class="cd"><h2>Próximos jogos</h2>${recentFixtures.length?`<div class="grid">${recentFixtures.map((fixture)=>renderFixtureCard(fixture,null,feedMatches.find((match)=>match.round===fixture.round&&match.homeTeam.shortName===fixture.home&&match.awayTeam.shortName===fixture.away),favoriteTeams.includes(fixture.home)||favoriteTeams.includes(fixture.away))).join('')}</div>`:'<p class="mu">Não há próximos jogos disponíveis no calendário.</p>'}<button data-act="show-view" data-view="live">Abrir calendário completo</button></section></div>
+  <div class="home-grid home-lower"><section class="cd"><div class="home-section-heading"><h2>Classificação atual</h2><span class="data-chip">${dataLabel}</span></div><p class="mu sm">${liveFeed?'Tabela consultada na fonte indicada; não é publicação oficial da CBF.':'Cálculo local com resultados conhecidos; pode haver partidas sem placar.'}</p><div class="home-standings">${standings.map(({code,entry})=>`<button class="home-standing-row" data-act="open-club" data-team="${code}"><span class="home-position">${entry.position}º</span>${lg(code)}<b>${escapeHtml(NM[code])}</b><span>${entry.points} pts</span></button>`).join('')}</div><button data-act="show-view" data-view="est">Ver estatísticas da temporada</button></section>
+  <section class="cd"><div class="home-section-heading"><h2>Seus clubes</h2><button data-act="show-view" data-view="clubs">Explorar clubes</button></div>${favoriteTeams.length?`<div class="favorite-list">${favoriteTeams.map((code)=>{const entry=LIVE_STANDINGS?.get(code),position=entry?.position||rankTeams(base).indexOf(code)+1,fixtures=upcoming.filter((fixture)=>fixture.home===code||fixture.away===code).slice(0,2);return`<article class="favorite-row"><button class="favorite-name" data-act="open-club" data-team="${code}">${lg(code)}<b>${escapeHtml(NM[code])}</b><span>${position}º${entry?` · ${entry.points} pts`:''}</span></button>${fixtures.length?fixtures.map((fixture)=>`<p class="mu sm">${fixture.round}ª rodada · ${escapeHtml(NM[fixture.home])} x ${escapeHtml(NM[fixture.away])} · ${fixture.kickoff?formatLiveTime(fixture.kickoff):'data a definir'}</p>`).join(''):'<p class="mu sm">Sem próximos jogos disponíveis.</p>'}</article>`}).join('')}</div>`:'<p class="mu">Escolha seus clubes favoritos para destacar posição e próximos jogos aqui.</p><button data-act="show-view" data-view="clubs">Escolher clubes favoritos</button>'}</section></div>
+  <section class="support-card"><div><span class="hero-kicker">PROJETO INDEPENDENTE</span><h2>Ajude o SimulaBR</h2><p>Se este projeto está sendo útil, você pode apoiar voluntariamente. O apoio é opcional; os recursos principais continuam disponíveis para todos.</p></div><a class="support-link support-link-large" href="https://ko-fi.com/simuladorbr" target="_blank" rel="noopener noreferrer">Apoiar pelo Ko-fi</a></section>`;
+ if(!signedInUser){
+  const favoritesSection=$('#v-home').querySelector('.home-lower > section:nth-child(2)');
+  favoritesSection.innerHTML=`<div class="home-section-heading"><h2>Clubes favoritos</h2></div><p class="mu">Crie uma conta para escolher seus clubes, acompanhar posição e próximos jogos e configurar lembretes personalizados.</p><button class="p" data-act="open-account" data-mode="register">Criar conta e escolher clubes</button>`;
+ }
+}
 function renderLiveHub(){
  const round=LIVE_ROUND?.number||DEFAULT_ROUND,fixtures=ALL_FIXTURES.filter((fixture)=>fixture.round===round);
  const feedMatches=new Map((liveFeed?.matches||[]).map((match)=>[`${match.round}:${match.homeTeam.shortName}:${match.awayTeam.shortName}`,match]));
@@ -560,29 +638,57 @@ function renderLiveHub(){
  for(const fixture of fixtures){
   const result=rawResults.find((item)=>item.round===fixture.round&&item.home===fixture.home&&item.away===fixture.away);
   const feed=feedMatches.get(`${fixture.round}:${fixture.home}:${fixture.away}`);
-  const status=result||feed?.status==='finished'?'finished':feed?.status==='live'?'live':'upcoming';
+  const status=result||feed?.status==='finished'?'finished':feed?.status==='live'&&!liveFeed?.stale?'live':'upcoming';
   groups[status].push({fixture,result,feed});
  }
- const card=({fixture,result,feed})=>{
-  const live=feed?.status==='live'&&!result;
-  const status=result?'Encerrado':live?'<span class="live-indicator"><i aria-hidden="true"></i>AO VIVO<span class="sr-only">: partida em andamento</span></span>':fixture.status==='postponed'?'Adiado':'Agendado';
-  const score=result?`<b class="result-score">${result.homeGoals}</b><span class="x">x</span><b class="result-score">${result.awayGoals}</b>`:
-   feed?.score?.home!=null&&feed?.score?.away!=null?`<b class="result-score">${feed.score.home}</b><span class="x">x</span><b class="result-score">${feed.score.away}</b>`:'<span class="x">x</span>';
-  const kickoff=fixture.kickoff||feed?.dateTime;
-  const source=result?.source?.name||liveFeed?.source?.name||dataSource.name;
-  const at=result?.source?.observedAt||liveFeed?.fetchedAt;
-  return `<article class="mc live-fixture${live?' is-live':''}"><div class="meta"><span>${status}</span><span>${fixture.round}ª rodada</span></div><div class="tt"><span class="t h">${ab(fixture.home)}</span>${lg(fixture.home)}${score}${lg(fixture.away)}<span class="t">${ab(fixture.away)}</span></div><div class="dt">${escapeHtml(NM[fixture.home])} x ${escapeHtml(NM[fixture.away])}<br>${kickoff?formatLiveTime(kickoff):'Horário não disponível'} · ${escapeHtml(fixture.stadium||feed?.venue||STD[fixture.home]||'Estádio não informado')}<br>Fonte: ${escapeHtml(source)}${at?` · consultado ${formatLiveTime(at)}`:''}</div></article>`;
- };
+ const card=({fixture,result,feed})=>renderFixtureCard(fixture,result,feed,favoriteTeams.includes(fixture.home)||favoriteTeams.includes(fixture.away));
  const section=(title,key)=>`<h2>${key==='live'&&groups.live.length?'<span class="live-indicator"><i aria-hidden="true"></i>AO VIVO<span class="sr-only">: há partidas em andamento</span></span> ':''}${title} (${groups[key].length})</h2><div class="grid">${groups[key].length?groups[key].map(card).join(''):'<p class="mu">Nenhuma partida nesta categoria.</p>'}</div>`;
  $('#v-live').innerHTML=`<div class="cd"><h2>Central da rodada ${round}</h2><p class="mu">${liveFeed?`Fonte: ${escapeHtml(liveFeed.source.name)} · última consulta ${formatLiveTime(liveFeed.fetchedAt)}${liveFeed.stale?' · DADOS DESATUALIZADOS':''}.`:`Feed ao vivo indisponível: ${escapeHtml(liveFeedError)}. Exibindo resultados conhecidos e calendário local.`} Atualização automática a cada 2 minutos enquanto a página estiver aberta.</p><button data-act="refresh-feed">Atualizar agora</button></div>${section('Em andamento','live')}<div class="cd">${section('Próximos jogos','upcoming')}</div><div class="cd">${section('Encerrados','finished')}</div>`;
 }
-function renderClubPage(){
+function renderClubProfile(){
  const code=statsTeam||T[0],entry=LIVE_STANDINGS?.get(code),matches=ALL_FIXTURES.filter((fixture)=>fixture.home===code||fixture.away===code);
  const played=matches.map((fixture)=>({fixture,result:rawResults.find((r)=>r.round===fixture.round&&r.home===fixture.home&&r.away===fixture.away)})).filter((item)=>item.result).sort((a,b)=>b.fixture.round-a.fixture.round);
  const upcoming=matches.filter((fixture)=>fixture.status!=='played').sort((a,b)=>(a.kickoff?Date.parse(a.kickoff):Infinity)-(b.kickoff?Date.parse(b.kickoff):Infinity));
  const current=project()[code],position=rankTeams(project()).indexOf(code)+1,probability=od(code);
- $('#v-clubs').innerHTML=`<div class="cd"><h2>Perfil do clube</h2><label for="clubProfileSelect">Escolha um clube</label> <select id="clubProfileSelect" data-change="club-profile">${T.map((club)=>`<option value="${club}" ${club===code?'selected':''}>${escapeHtml(NM[club])} (${club})</option>`).join('')}</select> <button data-act="favorite-team" data-team="${code}" aria-pressed="${favoriteTeams.includes(code)}">${favoriteTeams.includes(code)?'★ Acompanhando':'☆ Acompanhar clube'}</button><p class="mu sm">Perfil público, disponível sem login. Favoritos ficam neste navegador; entre para sincronizá-los com sua conta.</p><div class="tile"><div><b>${entry?.position||position}º</b><span>Posição atual</span></div><div><b>${entry?.points??current.P}</b><span>Pontos</span></div><div><b>${entry?.wins??current.V}/${entry?.draws??current.E}/${entry?.losses??current.D}</b><span>V/E/D</span></div><div><b>${entry?`${entry.goalsFor}–${entry.goalsAgainst}`:`${current.GP}–${current.GC}`}</b><span>Gols pró/contra</span></div><div><b>${probability?pc(probability.t):'–'}</b><span>Chance simulada de título</span></div><div><b>${probability?pc(probability.z):'–'}</b><span>Chance simulada de Z${Q.relegationPlaces}</span></div></div><p class="mu sm">${entry?`Tabela consultada no GE em ${formatLiveTime(liveFeed?.fetchedAt)}; o GE não é fonte oficial da CBF.`:'Classificação calculada dos resultados locais disponíveis; pode haver lacunas históricas.'}</p></div><div class="g2"><div class="cd"><h2>Resultados conhecidos</h2>${played.length?`<div class="sc"><table><thead><tr><th>Rodada</th><th class="l">Partida</th><th>Placar</th><th class="l">Fonte declarada</th></tr></thead><tbody>${played.slice(0,10).map(({fixture,result})=>`<tr><td>${fixture.round}</td><td class="l">${escapeHtml(NM[fixture.home])} x ${escapeHtml(NM[fixture.away])}</td><td>${result.homeGoals}–${result.awayGoals}</td><td class="l">${escapeHtml(result.source?.name||dataSource.name)}</td></tr>`).join('')}</tbody></table></div>`:'<p class="mu">Nenhum resultado detalhado disponível.</p>'}</div><div class="cd"><h2>Próximos jogos</h2>${upcoming.length?`<div class="sc"><table><thead><tr><th>Rodada</th><th class="l">Partida</th><th>Data</th><th>Estádio</th></tr></thead><tbody>${upcoming.slice(0,8).map((fixture)=>`<tr><td>${fixture.round}</td><td class="l">${escapeHtml(NM[fixture.home])} x ${escapeHtml(NM[fixture.away])}</td><td>${fixture.kickoff?formatLiveTime(fixture.kickoff):'A definir'}</td><td>${escapeHtml(fixture.stadium||STD[fixture.home]||'–')}</td></tr>`).join('')}</tbody></table></div>`:'<p class="mu">Não há jogos futuros conhecidos no calendário local.</p>'}</div></div>`;
+ $('#v-clubs').innerHTML=`<div class="cd"><h2>Perfil do clube</h2><label for="clubProfileSelect">Escolha um clube</label> <select id="clubProfileSelect" data-change="club-profile">${T.map((club)=>`<option value="${club}" ${club===code?'selected':''}>${escapeHtml(NM[club])} (${club})</option>`).join('')}</select> <button data-act="favorite-team" data-team="${code}" aria-pressed="${favoriteTeams.includes(code)}">${favoriteTeams.includes(code)?'★ Acompanhando':signedInUser?'☆ Acompanhar clube':'Criar conta para acompanhar'}</button><p class="mu sm">Perfil público, disponível sem login.</p><div class="tile"><div><b>${entry?.position||position}º</b><span>Posição atual</span></div><div><b>${entry?.points??current.P}</b><span>Pontos</span></div><div><b>${entry?.wins??current.V}/${entry?.draws??current.E}/${entry?.losses??current.D}</b><span>V/E/D</span></div><div><b>${entry?`${entry.goalsFor}–${entry.goalsAgainst}`:`${current.GP}–${current.GC}`}</b><span>Gols pró/contra</span></div><div><b>${probability?pc(probability.t):'–'}</b><span>Chance simulada de título</span></div><div><b>${probability?pc(probability.z):'–'}</b><span>Chance simulada de Z${Q.relegationPlaces}</span></div></div><p class="mu sm">${entry?`Tabela consultada no GE em ${formatLiveTime(liveFeed?.fetchedAt)}; o GE não é fonte oficial da CBF.`:'Classificação calculada dos resultados locais disponíveis; pode haver lacunas históricas.'}</p></div><div class="g2"><div class="cd"><h2>Resultados conhecidos</h2>${played.length?`<div class="sc"><table><thead><tr><th>Rodada</th><th class="l">Partida</th><th>Placar</th><th class="l">Fonte declarada</th></tr></thead><tbody>${played.slice(0,10).map(({fixture,result})=>`<tr><td>${fixture.round}</td><td class="l">${escapeHtml(NM[fixture.home])} x ${escapeHtml(NM[fixture.away])}</td><td>${result.homeGoals}–${result.awayGoals}</td><td class="l">${escapeHtml(result.source?.name||dataSource.name)}</td></tr>`).join('')}</tbody></table></div>`:'<p class="mu">Nenhum resultado detalhado disponível.</p>'}</div><div class="cd"><h2>Próximos jogos</h2>${upcoming.length?`<div class="sc"><table><thead><tr><th>Rodada</th><th class="l">Partida</th><th>Data</th><th>Estádio</th></tr></thead><tbody>${upcoming.slice(0,8).map((fixture)=>`<tr><td>${fixture.round}</td><td class="l">${escapeHtml(NM[fixture.home])} x ${escapeHtml(NM[fixture.away])}</td><td>${fixture.kickoff?formatLiveTime(fixture.kickoff):'A definir'}</td><td>${escapeHtml(fixture.stadium||STD[fixture.home]||'–')}</td></tr>`).join('')}</tbody></table></div>`:'<p class="mu">Não há jogos futuros conhecidos no calendário local.</p>'}</div></div>`;
+ const favoriteButton=$('#v-clubs [data-act="favorite-team"]');
+ favoriteButton.setAttribute('aria-label',signedInUser?'Alternar clube favorito':`Criar uma conta para acompanhar ${NM[code]}`);
+ const favoriteHelp=$('#v-clubs .cd p.mu.sm');
+ if(favoriteHelp)favoriteHelp.textContent=signedInUser?'Perfil público. Seus clubes favoritos e lembretes são salvos na sua conta.':'Perfil público, disponível sem login. Entre ou crie uma conta para salvar clubes favoritos e receber lembretes personalizados.';
 }
+function clubPositionHistory(code){
+ const stats=Object.fromEntries(T.map((club)=>[club,{points:0,wins:0,goalsFor:0,goalsAgainst:0,matches:0}]));
+ const maximumRound=Math.max(0,...rawResults.map((result)=>result.round)),history=[];
+ for(let round=1;round<=maximumRound;round++){
+  rawResults.filter((result)=>result.round===round).forEach((result)=>{
+   const home=stats[result.home],away=stats[result.away];
+   home.matches++;away.matches++;home.goalsFor+=result.homeGoals;home.goalsAgainst+=result.awayGoals;
+   away.goalsFor+=result.awayGoals;away.goalsAgainst+=result.homeGoals;
+   if(result.homeGoals>result.awayGoals){home.points+=3;home.wins++}else if(result.homeGoals<result.awayGoals){away.points+=3;away.wins++}else{home.points++;away.points++}
+  });
+  const ranking=T.slice().sort((a,b)=>stats[b].points-stats[a].points||stats[b].wins-stats[a].wins||(stats[b].goalsFor-stats[b].goalsAgainst)-(stats[a].goalsFor-stats[a].goalsAgainst)||stats[b].goalsFor-stats[a].goalsFor);
+  if(stats[code].matches)history.push({round,position:ranking.indexOf(code)+1,points:stats[code].points});
+ }
+ return history;
+}
+function renderClubProgress(code){
+ const history=clubPositionHistory(code),form=rawResults.filter((result)=>result.home===code||result.away===code).sort((a,b)=>b.round-a.round).slice(0,5).reverse();
+ const chart=history.length>1?(()=>{
+  const width=720,height=210,padding={left:38,right:14,top:14,bottom:26},innerWidth=width-padding.left-padding.right,innerHeight=height-padding.top-padding.bottom;
+  const x=(index)=>padding.left+index*innerWidth/(history.length-1),y=(position)=>padding.top+(position-1)*innerHeight/(T.length-1);
+  const path=history.map((entry,index)=>`${index?'L':'M'}${x(index).toFixed(1)},${y(entry.position).toFixed(1)}`).join(' ');
+  const grid=[1,5,10,15,20].map((position)=>`<line x1="${padding.left}" x2="${width-padding.right}" y1="${y(position)}" y2="${y(position)}" class="chart-grid"/><text x="${padding.left-8}" y="${y(position)+3}" text-anchor="end">${position}º</text>`).join('');
+  const points=history.map((entry,index)=>`<circle cx="${x(index)}" cy="${y(entry.position)}" r="3.5"><title>${entry.round}ª rodada · ${entry.position}º lugar · ${entry.points} pontos</title></circle>`).join('');
+  return `<svg class="ch club-progress-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Posição aproximada de ${escapeHtml(NM[code])} por rodada, reconstruída dos resultados locais disponíveis"><g>${grid}</g><path d="${path}" class="chart-line"/>${points}<text x="${padding.left}" y="${height-4}">1ª rodada</text><text x="${width-padding.right}" y="${height-4}" text-anchor="end">${history.at(-1).round}ª rodada conhecida</text></svg>`;
+ })():'<p class="mu">Ainda não há resultados suficientes para desenhar a evolução.</p>';
+ const outcomes=form.map((result)=>{
+  const isHome=result.home===code,forGoals=isHome?result.homeGoals:result.awayGoals,againstGoals=isHome?result.awayGoals:result.homeGoals;
+  return forGoals>againstGoals?'V':forGoals<againstGoals?'D':'E';
+ }).join(' · ');
+ const pointsChart=history.length>1?`<h3>Pontos acumulados por rodada conhecida</h3>${bars(history.map((entry)=>entry.points),history.map((entry)=>entry.round),{h:70,col:()=>'#5B9BE6',fmt:(value)=>`${value} pontos`,step:Math.max(1,Math.ceil(history.length/10))})}`:'';
+ return `<div class="cd"><h2>Evolução na tabela e forma recente</h2><h3>Posição reconstruída por rodada</h3>${chart}${pointsChart}<p class="mu sm">Posições e pontos reconstruídos apenas dos placares conhecidos até cada rodada, com desempate simplificado. Podem faltar jogos e a ordem pode divergir da tabela oficial.</p><p>Últimos resultados conhecidos: <span class="fm" role="img" aria-label="${escapeHtml(outcomes||'Sem resultados recentes')}">${form.map((result,index)=>`<i class="${outcomes.split(' · ')[index]}" title="${escapeHtml(outcomes.split(' · ')[index])} · rodada ${result.round}"></i>`).join('')}</span> <span class="mu sm">${escapeHtml(outcomes||'Sem resultados recentes')}</span></p></div>`;
+}
+function renderClubPage(){renderClubProfile();const profile=$('#v-clubs').firstElementChild;if(profile)profile.insertAdjacentHTML('afterend',renderClubProgress(statsTeam||T[0]))}
 function renderRoundHistory(){
  const round=selectedHistoryRound,fixtures=ALL_FIXTURES.filter((fixture)=>fixture.round===round),results=rawResults.filter((result)=>result.round===round);
  const stats=Object.fromEntries(T.map((code)=>[code,{P:0,V:0,E:0,D:0,GP:0,GC:0,J:0}]));
@@ -607,7 +713,7 @@ function renderGuide(){
 }
 function renderAccountWorkspace(){
  const root=$('#v-account');if(!root)return;
- if(!signedInUser){root.innerHTML=`<div class="cd"><h2>Minha conta</h2><p>Entre ou crie uma conta para salvar cenários entre dispositivos, sincronizar clubes favoritos e manter os palpites.</p><button class="p" data-act="open-account">Entrar / criar conta</button><p class="mu sm">Cenários e perfis de clubes também podem ser explorados sem login.</p></div>`;return}
+ if(!signedInUser){root.innerHTML=`<div class="cd"><h2>Minha conta</h2><p>Crie uma conta grátis para salvar cenários e favoritos na nuvem, sincronizar seus palpites e configurar lembretes de clubes. O simulador, os perfis e os dados públicos continuam disponíveis sem login.</p><button class="p" data-act="open-account" data-mode="register">Criar conta</button> <button data-act="open-account">Já tenho conta</button></div>`;return}
  const name=signedInUser.user_metadata?.display_name||signedInUser.user_metadata?.name||'';
  root.innerHTML=`<div class="cd"><h2>Minha conta</h2><p>Conectado como <b>${escapeHtml(signedInUser.email||'')}</b></p><form id="profileNameForm"><label for="profileName">Nome exibido</label><input id="profileName" maxlength="80" required value="${escapeHtml(name)}"><button class="p" type="submit">Salvar nome</button></form><form id="passwordChangeForm"><h3>Alterar senha</h3><label for="currentPassword">Senha atual</label><input id="currentPassword" type="password" autocomplete="current-password" required><label for="newPassword">Nova senha (mínimo 8 caracteres)</label><input id="newPassword" type="password" autocomplete="new-password" minlength="8" required><button type="submit">Atualizar senha</button></form><hr><button data-act="sign-out">Sair da conta</button></div><div class="cd"><h2>Cenários salvos</h2><p>Salve o cenário atual com seus placares, semente, método e ajustes para abrir em outro dispositivo ou comparar.</p><button class="p" data-act="save-current-scenario">Salvar cenário atual</button><div class="grid" style="margin-top:10px">${savedScenarios.length?savedScenarios.map((item)=>`<article class="mc"><h3>${escapeHtml(item.name)}</h3><p class="mu sm">Atualizado ${formatLiveTime(item.updatedAt)}</p><div class="row"><button data-act="load-saved-scenario" data-id="${escapeHtml(item.id)}">Abrir</button><button data-act="duplicate-saved-scenario" data-id="${escapeHtml(item.id)}">Duplicar</button><button data-act="compare-saved-scenario" data-id="${escapeHtml(item.id)}">Comparar</button><button data-act="delete-saved-scenario" data-id="${escapeHtml(item.id)}">Excluir</button></div></article>`).join(''):'<p class="mu">Você ainda não salvou cenários.</p>'}</div></div><div class="cd"><h2>Clubes favoritos e lembretes no site</h2><p>Lembretes aparecem dentro do simulador enquanto esta página está aberta; não enviamos e-mail ou notificações quando o site está fechado.</p><div class="ctl"><label for="reminderEnabled"><input id="reminderEnabled" type="checkbox" data-change="reminder-enabled" ${accountPreferences.inSiteReminders?'checked':''}> Avisar antes dos próximos jogos dos clubes favoritos</label><label for="reminderMinutes">Avisar com antecedência<select id="reminderMinutes" data-change="reminder-minutes">${[5,15,30,60,120].map((minutes)=>`<option value="${minutes}" ${minutes===accountPreferences.reminderMinutes?'selected':''}>${minutes} minutos</option>`).join('')}</select></label></div><div class="ctl">${T.map((code)=>`<label><input type="checkbox" data-change="favorite-preference" data-team="${code}" ${favoriteTeams.includes(code)?'checked':''}> ${escapeHtml(NM[code])}</label>`).join('')}</div></div><div class="cd warn"><h2>Excluir conta</h2><p>Esta ação remove permanentemente a conta, palpites e cenários sincronizados. É irreversível e exige a senha atual. O serviço de exclusão precisa estar configurado no servidor de hospedagem.</p><form id="deleteAccountForm"><label for="deletePassword">Confirme sua senha</label><input id="deletePassword" type="password" autocomplete="current-password" required><label for="deleteConfirm">Digite EXCLUIR</label><input id="deleteConfirm" required pattern="EXCLUIR"><button type="submit">Excluir conta e dados</button></form></div>`;
  root.querySelector('[data-act="save-current-scenario"]')?.insertAdjacentHTML('beforebegin','<label for="scenarioName">Nome do novo cenário (até 60 caracteres)</label><input id="scenarioName" maxlength="60" placeholder="Ex.: Rodada 30 — cenário otimista">');
@@ -615,7 +721,7 @@ function renderAccountWorkspace(){
  if(scenarios){const description=scenarios.querySelector('p');if(description)description.textContent='Guarde seus placares, semente, método e ajustes para continuar sua simulação em outro dispositivo.';scenarios.querySelectorAll('[data-act="compare-saved-scenario"]').forEach((button)=>button.remove())}
 }
 function nav(){for(const[key]of TABS)if(!$('#v-'+key)){const panel=document.createElement('section');panel.id='v-'+key;panel.setAttribute('role','tabpanel');panel.hidden=true;$('#nav').after(panel)}$('#nav').innerHTML=TABS.map(([k,t])=>`<button role="tab" id="tab-${k}" aria-controls="v-${k}" aria-selected="${view==k}" tabindex="${view==k?'0':'-1'}" class="${view==k?'on':''}" data-act="show-view" data-view="${k}">${t}</button>`).join('')}
-function show(v){view=v;TABS.forEach(([k])=>{$('#v-'+k).hidden=k!=v;$('#v-'+k).setAttribute('aria-labelledby','tab-'+k)});nav();if(v=='perf')renderPerformance();if(v=='est'){renderEst();updateEstSource()}if(v=='cor')renderCor();if(v=='src'){renderSrc();updateSourceAndRules()}if(v=='sim')renderAll();if(v=='live')renderLiveHub();if(v=='clubs')renderClubPage();if(v=='history')renderRoundHistory();if(v=='search')renderSearch();if(v=='guide')renderGuide();if(v=='account')renderAccountWorkspace();scrollTo(0,0);$('#tab-'+v)?.focus({preventScroll:true})}
+function show(v){view=v;TABS.forEach(([k])=>{$('#v-'+k).hidden=k!=v;$('#v-'+k).setAttribute('aria-labelledby','tab-'+k)});nav();if(v=='home')renderHome();if(v=='perf')renderPerformance();if(v=='est'){renderEst();updateEstSource()}if(v=='cor')renderCor();if(v=='src'){renderSrc();updateSourceAndRules()}if(v=='sim')renderAll();if(v=='live')renderLiveHub();if(v=='clubs')renderClubPage();if(v=='history')renderRoundHistory();if(v=='search')renderSearch();if(v=='guide')renderGuide();if(v=='account')renderAccountWorkspace();scrollTo(0,0);$('#tab-'+v)?.focus({preventScroll:true})}
 function updateEstSource(){const paragraph=Array.from($('#v-est').querySelectorAll('p')).find((element)=>element.textContent.includes('Referência histórica 2025'));if(paragraph)paragraph.textContent=`Estes indicadores são calculados dos resultados detalhados disponíveis no snapshot local, atualizado em ${updatedLabel}; a API anexada informa somente a rodada atual, não o histórico completo. Referência histórica 2025 (ogol): 50% mandante, 26% empates, 24% visitante e 2,52 gols por jogo.`}
 function renderEst(){const L=LG,n=L.n,ps=x=>f1(x/n*100)+'%';
  const rows=T.map(c=>{const t=TS[c],e=t.h.d+t.a.d,J=t.h.n+t.a.n;return{c,e,pe:e/J*100,ph:(3*t.h.w+t.h.d)/t.h.n,pa:(3*t.a.w+t.a.d)/t.a.n,gh:t.h.gf/t.h.n,ch:t.h.ga/t.h.n,ga:t.a.gf/t.a.n,ca:t.a.ga/t.a.n,cs:t.cs,gf:(t.h.gf+t.a.gf)/J,gc:(t.h.ga+t.a.ga)/J,pts:3*(t.h.w+t.a.w)+t.h.d+t.a.d}});
@@ -697,11 +803,11 @@ function payloadFromCode(value){if(value.length>30000)throw new Error('O c\u00f3
 function applyPayload(payload){SC=payload.scores;SET={k:payload.settings.k,ha:payload.settings.ha,rho:payload.settings.rho,seed:payload.settings.seed,adj:payload.settings.adjustments};opt={full:payload.options.full,odds:payload.options.odds,meth:payload.options.method};Object.keys(SC).forEach(recordPredictionSnapshot);save();renderAll();closeModal()}
 function importCode(){try{applyPayload(payloadFromCode($('#imp').value.trim()));notify('Cen\u00e1rio importado.')}catch(error){$('#out').textContent=error.message;$('#out').setAttribute('role','alert')}}
 async function importBackup(file){try{if(file.size>100000)throw new Error('O arquivo de backup \u00e9 grande demais.');const backup=JSON.parse(await file.text());if(backup.format!=='brasileirao-simulator-backup'||backup.version!==1)throw new Error('Formato de backup inv\u00e1lido.');applyPayload(validatedPayload(backup));notify('Backup restaurado.')}catch(error){$('#out').textContent=error.message;$('#out').setAttribute('role','alert')}}
-function exportBackup(){const blob=new Blob([JSON.stringify(makeBackup(payloadFromState()),null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),anchor=document.createElement('a');anchor.href=url;anchor.download='brasileirao-2026-cenario.json';anchor.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
-async function txt(){const s=project(),o=rankTeams(s),text='Brasileirão 2026 · classificação de um cenário personalizado (não é previsão oficial)\n'+o.map((c,i)=>`${i+1}. ${NM[c]} - ${s[c].P} pts, SG ${s[c].GP-s[c].GC}`).join('\n');await copyText(text,'Tabela copiada.')}
+function exportBackup(){const blob=new Blob([JSON.stringify(makeBackup(payloadFromState()),null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),anchor=document.createElement('a');anchor.href=url;anchor.download='simulabr-brasileirao-2026-cenario.json';anchor.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+async function txt(){const s=project(),o=rankTeams(s),text='SimulaBR · Brasileirão 2026 · classificação de um cenário personalizado (não é previsão oficial)\n'+o.map((c,i)=>`${i+1}. ${NM[c]} - ${s[c].P} pts, SG ${s[c].GP-s[c].GC}`).join('\n');await copyText(text,'Tabela copiada.')}
 const li=c=>new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=LOGO[c]});
 async function mkimg(){const s=project(),o=rankTeams(s),done=M.filter(m=>val(m.k)).length,W=860,rh=40,H=130+o.length*rh+36,cv=document.createElement('canvas');cv.width=W*2;cv.height=H*2;const x=cv.getContext('2d');x.scale(2,2);const ims={};await Promise.all(o.map(async c=>ims[c]=await li(c)));
- x.fillStyle='#0A0F0D';x.fillRect(0,0,W,H);x.fillStyle='#EAF1ED';x.font='700 24px system-ui,sans-serif';x.fillText('Brasileirão 2026 · cenário personalizado',28,48);x.fillStyle='#8CA297';x.font='13px system-ui,sans-serif';x.fillText(done+' de '+M.length+' jogos definidos por simulação do usuário · não é previsão oficial',28,70);
+ x.fillStyle='#0A0F0D';x.fillRect(0,0,W,H);x.fillStyle='#EAF1ED';x.font='700 24px system-ui,sans-serif';x.fillText('SimulaBR · Brasileirão 2026 · cenário personalizado',28,48);x.fillStyle='#8CA297';x.font='13px system-ui,sans-serif';x.fillText(done+' de '+M.length+' jogos definidos por simulação do usuário · não é previsão oficial',28,70);
  const cx=[430,480,530,590,650,720,790];x.font='600 11px system-ui,sans-serif';x.textAlign='center';['P','J','V','E','D','SG','GP'].forEach((t,i)=>x.fillText(t,cx[i],110));x.textAlign='left';
  o.forEach((c,i)=>{const y=122+i*rh,t=s[c],z=i<Q.libertadoresLeaguePositions?'#38C98B':i<Q.sudamericanaLeagueEnd?'#5B9BE6':i>=T.length-Q.relegationPlaces?'#EC6A57':'#22332B';x.fillStyle=i%2?'#0E1511':'#111A16';x.fillRect(20,y,W-40,rh);x.fillStyle=z;x.fillRect(20,y,4,rh);x.fillStyle='#EAF1ED';x.font='700 15px system-ui,sans-serif';x.fillText(i+1,40,y+25);if(ims[c])x.drawImage(ims[c],76,y+6,28,28);x.font='600 15px system-ui,sans-serif';x.fillText(NM[c],116,y+25);
   x.textAlign='center';const sg=t.GP-t.GC;[t.P,t.J,t.V,t.E,t.D,sg>0?'+'+sg:sg,t.GP].forEach((v,j)=>{x.font=(j==0?'800 ':'500 ')+'15px system-ui,sans-serif';x.fillStyle=j==0?'#D9B65C':'#EAF1ED';x.fillText(v,cx[j],y+25)});x.textAlign='left'});
@@ -714,6 +820,12 @@ async function refreshLive(force=false){
  try{
   const response=await fetch(`/api/live-season${force?'?refresh=1':''}`,{cache:'no-store'}),payload=await response.json();
   if(!response.ok)throw new Error(payload.details||payload.error||`HTTP ${response.status}`);
+  const checkedSeason=mergeLiveSeason(reconciledSnapshot,payload),checked=validateSeasonData(checkedSeason.seasonData,logoData);
+  if(checked.errors.length)throw new Error(checked.errors.join(' '));
+  if(!payload.stale){
+   try{localStorage.setItem(LIVE_FEED_CACHE_KEY,JSON.stringify(payload))}
+   catch(error){liveFeedCacheWarning=`Não foi possível guardar a última consulta válida neste navegador: ${error.message||String(error)}`;console.error(liveFeedCacheWarning,error);notify(`Feed atualizado, mas não foi possível guardar uma cópia local: ${error.message||String(error)}`)}
+  }
   if(!liveFeed||payload.revision!==liveFeed.revision){location.reload();return}
   liveFeed=payload;liveFeedError='';updateSourceStatus();
   if(view==='live')renderLiveHub();
@@ -743,7 +855,20 @@ function checkInSiteReminders(){
  if(due.length)notify(`Próximo${due.length===1?'':'s'} jogo${due.length===1?'':'s'} de clube favorito: ${due.join('; ')}`);
 }
 function historyCoverageMessage(){if(HISTORY_COVERAGE.status==='unavailable')return'Não foi possível comparar o histórico com uma classificação ao vivo.';const gap=HISTORY_COVERAGE.missingMatches,affected=HISTORY_COVERAGE.clubs.slice(0,3).map(club=>`${club.name} (${club.missingMatches>0?`+${club.missingMatches} jogo(s) sem placar conhecido`:'totais divergentes'})`).join(', ');if(HISTORY_COVERAGE.status==='consistent')return`Os ${HISTORY_COVERAGE.knownMatches} placares locais conferem com os totais atuais da tabela GE; isso não certifica cada partida como fonte oficial.`;return`Histórico ${HISTORY_COVERAGE.status==='incomplete'?'incompleto':'divergente'}: tabela GE indica ${HISTORY_COVERAGE.expectedMatches} partidas contabilizadas e há ${HISTORY_COVERAGE.knownMatches} placares locais${gap?`; diferença estimada: ${gap} jogo(s)`:''}${affected?`. Verificar: ${affected}`:''}. Confira e importe resultados verificados pela aba Fontes e método.`}
-function updateSourceStatus(){const sourceStatus=$('#sourceStatus');if(!sourceStatus)return;const coverage=historyCoverageMessage();if(liveFeed){sourceStatus.textContent=`Classificação e estatísticas por clube: ${liveFeed.source.name} · consultado em ${formatLiveTime(liveFeed.fetchedAt)} · rodada ${liveFeed.round.number}${liveFeed.stale?' · cache desatualizado':''}. ${liveFeed.stale?liveFeed.warning:'Atualização automática a cada 2 minutos.'}${liveFeed.historyWarning?` ${liveFeed.historyWarning}`:''} ${coverage} Calendário completo e demais indicadores: snapshot de ${updatedLabel}. Fonte GE, não oficial da CBF.`}else{sourceStatus.textContent=`Feed GE indisponível (${liveFeedError||'sem resposta'}). Mostrando o snapshot de ${dataSource.name}, atualizado em ${updatedLabel}; os dados podem estar desatualizados. ${coverage} O site tentará novamente automaticamente.`}}
+function updateSourceStatus(){
+ const sourceStatus=$('#sourceStatus'),sourceSummary=$('#sourceSummary');
+ if(!sourceStatus)return;
+ const coverage=historyCoverageMessage();
+ if(liveFeed){
+  sourceStatus.textContent=`Classificação e estatísticas por clube: ${liveFeed.source.name} · consultado em ${formatLiveTime(liveFeed.fetchedAt)} · rodada ${liveFeed.round.number}${liveFeed.stale?' · cache desatualizado':''}. ${liveFeed.stale?liveFeed.warning:'Atualização automática a cada 2 minutos.'}${liveFeed.historyWarning?` ${liveFeed.historyWarning}`:''} ${coverage} Calendário completo e demais indicadores: snapshot de ${updatedLabel}. Fonte GE, não oficial da CBF.`;
+  if(sourceSummary)sourceSummary.textContent=`${liveFeed.stale?'Último dado válido':'GE atualizado'} · ${formatLiveTime(liveFeed.fetchedAt)}${liveFeed.stale?' · desatualizado':''}`;
+ }else{
+  sourceStatus.textContent=`Feed GE indisponível (${liveFeedError||'sem resposta'}). Mostrando o snapshot de ${dataSource.name}, atualizado em ${updatedLabel}; os dados podem estar desatualizados. ${coverage} O site tentará novamente automaticamente.`;
+  if(sourceSummary)sourceSummary.textContent=`Feed indisponível · dados locais de ${updatedLabel}`;
+ }
+ if(liveFeedCacheWarning)sourceStatus.textContent+=` ${liveFeedCacheWarning}`;
+ if(view==='home')renderHome();
+}
 function runAction(button){const {act}=button.dataset;switch(act){
  case'share':shareM();break;
  case'toggle-full':opt.full=!opt.full;save();renderAll();break;
@@ -765,7 +890,7 @@ function runAction(button){const {act}=button.dataset;switch(act){
  case'open-club':statsTeam=button.dataset.team;show('clubs');break;
  case'open-round':team='';tab=Number(button.dataset.round);show('sim');break;
  case'show-view':show(button.dataset.view);break;
- case'open-account':openAccountDialog();break;
+ case'open-account':openAccountDialog(button.dataset.mode==='register'?'register':'login');break;
  case'sign-out':supabaseClient.auth.signOut().then(({error})=>{if(error)throw error;notify('Você saiu da conta.')}).catch((error)=>notify(`Não foi possível sair da conta: ${error.message}`));break;
  case'refresh-feed':refreshLive(true);break;
  case'favorite-team':toggleFavorite(button.dataset.team).catch((error)=>notify(error.message));break;
@@ -790,12 +915,16 @@ document.addEventListener('change',(event)=>{const input=event.target,action=inp
 document.addEventListener('submit',(event)=>{const handlers=Object.assign(Object.create(null),{profileNameForm:updateProfileName,passwordChangeForm:updateAccountPassword,deleteAccountForm:deleteSignedInAccount}),handler=handlers[event.target.id];if(!handler)return;event.preventDefault();handler(event).catch((error)=>notify(error.message||String(error)))});
 document.addEventListener('keydown',(event)=>{if(event.key==='Escape'&&accountDialog&&!accountDialog.hidden){closeAccountDialog();return}if(event.key==='Escape'&&!$('#mod').hidden){closeModal();return}if(accountDialog&&!accountDialog.hidden&&event.key==='Tab'){const focusable=Array.from(accountDialog.querySelectorAll('button,input,[href],[tabindex]:not([tabindex="-1"])')).filter((element)=>!element.disabled);if(!focusable.length)return;const first=focusable[0],last=focusable[focusable.length-1];if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}return}if(!$('#mod').hidden&&event.key==='Tab'){const focusable=Array.from($('#mod').querySelectorAll('button,input,textarea,[href],[tabindex]:not([tabindex="-1"])')).filter((element)=>!element.disabled);if(!focusable.length)return;const first=focusable[0],last=focusable[focusable.length-1];if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}return}const tabButton=event.target.closest('[role="tab"]');if(!tabButton)return;const current=TABS.findIndex(([key])=>key===tabButton.dataset.view);let next;if(event.key==='ArrowRight')next=(current+1)%TABS.length;else if(event.key==='ArrowLeft')next=(current-1+TABS.length)%TABS.length;else if(event.key==='Home')next=0;else if(event.key==='End')next=TABS.length-1;else return;event.preventDefault();show(TABS[next][0])});
 document.querySelectorAll('[data-i]').forEach(e=>e.innerHTML=ic(e.dataset.i));
-document.title='Brasileirão em Jogo | Simulador 2026';
-document.querySelector('header h1').textContent='Brasileirão em Jogo';
+document.title='SimulaBR | Simulador do Brasileirão 2026';
+document.querySelector('header h1').textContent='SimulaBR';
 document.querySelector('header p').textContent='Acompanhe, simule e explore cada rodada.';
 const updatedLabel=new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short',timeZone:'America/Sao_Paulo'}).format(new Date(dataUpdatedAt));
-const refreshButton=document.createElement('button');refreshButton.id='refreshLive';refreshButton.type='button';refreshButton.textContent='Atualizar agora';refreshButton.setAttribute('aria-label','Consultar agora a classificação e os resultados atuais');$('#sourceStatus').insertAdjacentElement('afterend',refreshButton);refreshButton.addEventListener('click',()=>refreshLive(true));
-const accountButton=document.createElement('button');accountButton.id='accountButton';accountButton.type='button';accountButton.textContent='Carregando conta…';accountButton.disabled=true;refreshButton.insertAdjacentElement('afterend',accountButton);accountButton.addEventListener('click',async()=>{
+const sourceStatus=$('#sourceStatus'),sourceDetails=document.createElement('details'),sourceSummary=document.createElement('summary');
+sourceDetails.className='source-details';sourceSummary.id='sourceSummary';sourceSummary.textContent='Status das fontes e atualização';sourceStatus.replaceWith(sourceDetails);sourceDetails.append(sourceSummary,sourceStatus);
+const headerActions=document.querySelector('header .row');
+const supportButton=document.createElement('a');supportButton.className='support-link';supportButton.href='https://ko-fi.com/simuladorbr';supportButton.target='_blank';supportButton.rel='noopener noreferrer';supportButton.textContent='Apoie o projeto';headerActions.prepend(supportButton);
+const refreshButton=document.createElement('button');refreshButton.id='refreshLive';refreshButton.type='button';refreshButton.textContent='Atualizar agora';refreshButton.setAttribute('aria-label','Consultar agora a classificação e os resultados atuais');headerActions.append(refreshButton);refreshButton.addEventListener('click',()=>refreshLive(true));
+const accountButton=document.createElement('button');accountButton.id='accountButton';accountButton.type='button';accountButton.textContent='Carregando conta…';accountButton.disabled=true;headerActions.append(accountButton);accountButton.addEventListener('click',async()=>{
  if(!signedInUser){openAccountDialog();return}
  try{const{error}=await supabaseClient.auth.signOut();if(error)throw error;notify('Você saiu da conta.')}
  catch(error){notify(`Não foi possível sair da conta: ${error.message}`)}
@@ -807,7 +936,7 @@ $('#leg-sud').textContent=`${Q.sudamericanaLeagueStart}º–${Q.sudamericanaLeag
 $('#leg-releg').textContent=`${T.length-Q.relegationPlaces+1}º–${T.length}º · rebaixamento`;
 const sharedCode=new URLSearchParams(location.search).get('scenario');
 if(sharedCode){try{const payload=payloadFromCode(`B28:${sharedCode}`);SC=payload.scores;SET={k:payload.settings.k,ha:payload.settings.ha,rho:payload.settings.rho,seed:payload.settings.seed,adj:payload.settings.adjustments};opt={full:payload.options.full,odds:payload.options.odds,meth:payload.options.method};Object.keys(SC).forEach(recordPredictionSnapshot);save()}catch(error){notify(`Link de cenário ignorado: ${error.message}`)}}
-nav();renderAll();
+nav();TABS.forEach(([key])=>{$('#v-'+key).hidden=key!=='home';$('#v-'+key).setAttribute('aria-labelledby',`tab-${key}`)});renderAll();renderHome();
 if(validationWarnings.length)notify(validationWarnings.join(' '));
 await initializeAccount();
 setInterval(()=>{if(document.visibilityState==='visible')refreshLive(false)},120_000);

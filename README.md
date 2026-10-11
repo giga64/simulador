@@ -1,7 +1,12 @@
-# Brasileirão em Jogo
+# SimulaBR
 
-Um jeito simples de acompanhar a temporada, explorar estatísticas e simular
-as rodadas do Brasileirão 2026.
+O SimulaBR ajuda a acompanhar a temporada, explorar estatísticas e simular as
+rodadas do Brasileirão 2026.
+
+A identidade visual do site usa o logo em `assets/simulabr-logo.png`.
+
+O apoio ao projeto é opcional e pode ser feito pelo [Ko-fi](https://ko-fi.com/simuladorbr).
+O site apenas abre a página externa do Ko-fi; não coleta nem processa pagamentos.
 
 Site servido por Node.js. A página usa um snapshot local como contingência e
 consulta automaticamente a classificação e a rodada ativa do GE por meio do
@@ -44,8 +49,9 @@ a configuração mais simples para manter o histórico observado.
 O cenário ativo fica no navegador. Após configurar Supabase, os palpites
 preenchidos e a fotografia do modelo são sincronizados por conta em
 `prediction_snapshots`; cenários nomeados e clubes favoritos ficam em
-`saved_scenarios` e `user_preferences`. Sem login, favoritos ficam neste
-navegador, mas cenários nomeados não são sincronizados. Quando uma partida é
+`saved_scenarios` e `user_preferences`. Favoritos e lembretes personalizados
+exigem login e não são exibidos para visitantes; cenários nomeados também
+exigem conta para sincronização entre dispositivos. Quando uma partida é
 concluída, o palpite arquivado mantém placar, instante, semente, parâmetros,
 probabilidades e revisão dos dados usados. A calibração compara essas
 probabilidades aos resultados reais e mostra contagem e Brier score por rodada;
@@ -86,6 +92,17 @@ erros de tabela/política são exibidos e os dados locais não são apagados.
 
 ### Recursos do site e da conta
 
+- **Início:** reúne partidas ao vivo, próximos jogos, primeiros colocados e,
+  para usuários conectados, próximos compromissos dos clubes favoritos.
+  Visitantes recebem a opção de criar conta para configurar favoritos e
+  lembretes. Os rótulos distinguem a fonte consultada das estimativas do modelo.
+- **Disponibilidade dos dados:** mantém uma cópia local da última consulta
+  válida ao feed para mostrar a classificação com seu horário quando a fonte
+  fica indisponível. A cópia é identificada como desatualizada e atualizada
+  quando uma nova consulta válida chega.
+- **Perfis dos clubes:** incluem gráfico reconstruído da posição rodada a
+  rodada e forma recente. A série usa somente resultados locais disponíveis e
+  declara as limitações do histórico e dos critérios de desempate.
 - **Ao vivo:** separa jogos em andamento, próximos e encerrados da rodada
   consultada, informa horário e origem, e sinaliza quando o feed está
   desatualizado. Os dados seguem os limites da fonte GE acima.
@@ -95,8 +112,8 @@ erros de tabela/política são exibidos e os dados locais não são apagados.
 - **Cenários salvos e favoritos:** usuários autenticados podem nomear, abrir,
   duplicar e excluir cenários entre dispositivos. Links públicos continuam
   compartilhando um cenário sem incluir dados pessoais. Favoritos e
-  lembretes internos também sincronizam pela conta. Sem login, a marcação de
-  favoritos fica no armazenamento local.
+  lembretes internos sincronizam pela conta; visitantes são convidados a entrar
+  ou criar uma conta e não veem dados de favoritos.
 - **Lembretes:** são avisos dentro do site para jogos futuros dos clubes
   favoritos; exigem a página aberta e não são enviados por e-mail nem exibidos
   quando o site está fechado.
