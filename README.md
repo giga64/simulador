@@ -1,4 +1,7 @@
-# Simulador do Brasileirão 2026
+# Brasileirão em Jogo
+
+Um jeito simples de acompanhar a temporada, explorar estatísticas e simular
+as rodadas do Brasileirão 2026.
 
 Site servido por Node.js. A página usa um snapshot local como contingência e
 consulta automaticamente a classificação e a rodada ativa do GE por meio do
@@ -89,11 +92,9 @@ erros de tabela/política são exibidos e os dados locais não são apagados.
 - **Clubes e histórico:** perfis públicos mostram campanha, resultados
   conhecidos, próximos jogos e projeções. A tabela histórica é reconstruída
   somente com placares disponíveis e explicita que pode divergir da oficial.
-- **Comparar cenários:** cole um código ou link público para comparar tabela e
-  chances estimadas. Links incluem somente placares e configurações do cenário,
-  nunca e-mail, nome, favoritos ou histórico da conta.
 - **Cenários salvos e favoritos:** usuários autenticados podem nomear, abrir,
-  duplicar, comparar e excluir cenários entre dispositivos. Favoritos e
+  duplicar e excluir cenários entre dispositivos. Links públicos continuam
+  compartilhando um cenário sem incluir dados pessoais. Favoritos e
   lembretes internos também sincronizam pela conta. Sem login, a marcação de
   favoritos fica no armazenamento local.
 - **Lembretes:** são avisos dentro do site para jogos futuros dos clubes

@@ -61,11 +61,28 @@ form label{font-size:.8rem;color:var(--mu)}
 form button{justify-self:start}
 .live-fixture{min-width:0}
 .live-fixture .tt{min-height:40px}
-#scenarioComparisonResult{margin-top:12px}
-#scenarioComparisonResult .sc{max-height:70vh}
 #v-search input[type=search]{width:min(100%,560px);margin-top:8px}
 #v-search p{margin:6px 0}
 #v-account hr{width:100%;border:0;border-top:1px solid var(--ln);margin:10px 0}
 input[type=checkbox]{width:18px;height:18px;vertical-align:middle;accent-color:var(--ac)}
 label:has(input[type=checkbox]){display:flex;gap:8px;align-items:center}
 @media(max-width:640px){main{padding:10px}.nav button{min-height:44px}.qk button{min-width:40px;min-height:40px}.tt input{width:44px;height:44px}.tile{grid-template-columns:repeat(2,minmax(0,1fr))}.source-status{font-size:.72rem}}
+main{max-width:1380px;padding:clamp(12px,2.3vw,30px)}
+header{padding:4px 4px 18px;gap:16px}
+header img{width:54px;height:54px}
+header h1{font-size:clamp(1.45rem,2vw,1.9rem);letter-spacing:-.045em}
+header p{font-size:.9rem}
+#sourceStatus{flex-basis:100%;margin-left:70px}
+.hero{display:flex;align-items:center;justify-content:space-between;gap:24px;margin:4px 0 16px;padding:clamp(22px,4vw,42px);border:1px solid var(--ln);border-radius:22px;background:radial-gradient(ellipse at 85% 0%,rgba(217,182,92,.18),transparent 42%),linear-gradient(125deg,var(--s1),var(--s2));box-shadow:0 16px 50px #0002}
+.hero-copy{max-width:690px}
+.hero-kicker{color:var(--ac);font-size:.68rem;font-weight:800;letter-spacing:.14em}
+.hero h2{margin:10px 0 6px;color:var(--tx);font-size:clamp(1.7rem,4vw,2.8rem);line-height:1.08;letter-spacing:-.05em;text-transform:none}
+.hero p{margin:0;color:var(--mu);font-size:clamp(.9rem,1.5vw,1.05rem)}
+.hero-actions{display:flex;flex-wrap:wrap;gap:9px}
+.hero-actions button{min-height:44px;padding:10px 16px}
+.nav{display:flex;flex-wrap:wrap;gap:6px;overflow:visible;margin:0 0 16px;padding:8px;border:1px solid var(--ln);border-radius:14px;background:var(--s1)}
+.nav button{min-height:40px;padding:8px 14px;border-color:transparent;background:transparent;color:var(--mu)}
+.nav button:hover{background:var(--s2);color:var(--tx)}
+.nav button.on{background:var(--ac);color:#14120A;border-color:var(--ac)}
+.cd{box-shadow:0 8px 26px #0000000c}
+@media(max-width:680px){header{gap:12px}header img{width:44px;height:44px}#sourceStatus{margin-left:0}.hero{align-items:flex-start;flex-direction:column;gap:18px;border-radius:16px}.hero-actions{width:100%}.hero-actions button{flex:1}.nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;padding:6px}.nav button{justify-content:center;padding:8px 5px;font-size:.76rem}}
