@@ -145,6 +145,8 @@ try{
   if(savedScores.removed){save();queueMicrotask(()=>notify(`${savedScores.removed} palpite(s) de partidas já concluídas foram removidos; os demais foram mantidos.`))}
  }
 }catch(error){SC={};storageWarningShown=true;queueMicrotask(()=>notify(`N\u00e3o foi poss\u00edvel restaurar o cen\u00e1rio salvo: ${error.message}`))}
+let tableCollapsed=false;try{tableCollapsed=localStorage.getItem('br26c-tab-collapsed')==='1'}catch{}
+function applyTableCollapse(){const body=$('#tabBody'),btn=$('#bMin');if(!body||!btn)return;body.hidden=tableCollapsed;btn.innerHTML=ic(tableCollapsed?'down':'up')+(tableCollapsed?'Expandir':'Minimizar');btn.setAttribute('aria-expanded',String(!tableCollapsed));btn.setAttribute('aria-label',tableCollapsed?'Expandir a classificação projetada':'Minimizar a classificação projetada');btn.closest('.cd')?.classList.toggle('collapsed',tableCollapsed)}
 const save=()=>{try{localStorage.setItem('br26c',JSON.stringify({SC,SET,opt}))}catch(error){if(!storageWarningShown){storageWarningShown=true;notify(`N\u00e3o foi poss\u00edvel salvar neste navegador: ${error.message}`)}}};
 function predictionToRow(entry,userId){return{
  user_id:userId,fixture_id:entry.fixtureId,round:entry.round,home_team:entry.home,away_team:entry.away,
@@ -485,6 +487,7 @@ async function initializeAccount(){
  }
 }
 const IC={dice:'<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8.5 8.5h.01M15.5 8.5h.01M12 12h.01M8.5 15.5h.01M15.5 15.5h.01"/>',wand:'<path d="M5 3v4M3 5h4M6 17v4M4 19h4M13 3l2.2 5.8L21 11l-5.8 2.2L13 19l-2.2-5.8L5 11l5.8-2.2z"/>',trash:'<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/>',share:'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.5l6.8-4M8.6 13.5l6.8 4"/>',cl:'<path d="M15 18l-6-6 6-6"/>',cr:'<path d="M9 18l6-6-6-6"/>',x:'<path d="M18 6L6 18M6 6l12 12"/>',cols:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16"/>',chart:'<path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/>',copy:'<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/>',img:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 8h.01M21 15l-5-5L5 21"/>',list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',down:'<path d="M12 3v12m0 0l-5-5m5 5l5-5M4 21h16"/>',info:'<circle cx="12" cy="12" r="9"/><path d="M12 16v-5M12 8h.01"/>',alert:'<path d="M12 3l10 18H2zM12 10v5M12 18h.01"/>'};
+IC.up='<path d="M6 15l6-6 6 6"/>';IC.down='<path d="M6 9l6 6 6-6"/>';
 const ic=n=>`<svg class="i" viewBox="0 0 24 24">${IC[n]}</svg>`;
 const stl=document.createElement('style');stl.textContent=Object.keys(LOGO).map(c=>`.lg.${c}{background-image:url(${LOGO[c]})}`).join('');document.head.appendChild(stl);
 const lg=c=>`<i class="lg ${c}"></i>`,f1=n=>n.toFixed(1).replace('.',','),pc=v=>v<1?'<1%':Math.round(v)+'%';
@@ -521,7 +524,7 @@ function renderTab(){const s=project(),o=rankTeams(s),done=M.filter(m=>val(m.k))
  let h=`<table><thead><tr><th class="c1">#</th><th class="c2">Classificação</th><th>P</th><th>J</th><th>V</th>${f?'<th>E</th><th>D</th><th>GP</th><th>GC</th>':''}<th>SG</th>${f?'<th>%</th><th>Máx</th><th>Forma</th>':''}${odn?`<th>Proj.</th><th>Tít.</th><th>G${Q.libertadoresLeaguePositions}</th><th>Z${Q.relegationPlaces}</th>`:''}</tr></thead><tbody>`;
  o.forEach((c,i)=>{const t=s[c],mv=realPos[c]-i,z=i<Q.libertadoresLeaguePositions?'g':i>=Q.sudamericanaLeagueStart-1&&i<Q.sudamericanaLeagueEnd?'b':i>=T.length-Q.relegationPlaces?'r':'n',sg=t.GP-t.GC,x=od(c)||{t:0,g:0,z:0,mean:0,lo:0,hi:0};
   h+=`<tr class="r${z} ${c==team?'hl':''}"><td class="c1"><span class="ps z${z}">${i+1}</span>${mv>0?`<span class="up">▲${mv}</span>`:mv<0?`<span class="dn">▼${-mv}</span>`:''}</td><td class="c2"><button class="tn team-link" data-act="select-team" data-team="${c}" aria-label="Ver detalhes de ${NM[c]}">${lg(c)}<span class="fn">${NM[c]}</span><span class="ab">${ab(c)}</span></button></td><td class="n">${t.P}${t.gain?`<span class="gain">+${t.gain}</span>`:''}</td><td>${t.J}</td><td>${t.V}</td>${f?`<td>${t.E}</td><td>${t.D}</td><td>${t.GP}</td><td>${t.GC}</td>`:''}<td>${sg>0?'+'+sg:sg}</td>${f?`<td>${Math.round(t.P/(t.J*3)*100)}%</td><td class="mu">${t.P+3*(38-t.J)}</td><td>${form(c,s)}</td>`:''}${odn?`<td class="${MCR?'':'dim'}" title="faixa 10–90%: ${x.lo}–${x.hi}">${MCR?Math.round(x.mean):'–'}</td>`+oc(x.t,'ac')+oc(x.g,'g')+oc(x.z,'r'):''}</tr>`});
- $('#tab').innerHTML=h+'</tbody></table>';$('#bF').innerHTML=ic('cols')+(f?'Colunas: completa':'Colunas: básica');$('#bO').innerHTML=ic('chart')+(odn?'Chances: ligadas':'Chances: ocultas');$('#bF').className=f?'on':'';$('#bO').className=odn?'on':'';$('#bF').setAttribute('aria-pressed',String(f));$('#bO').setAttribute('aria-pressed',String(odn));
+ $('#tab').innerHTML=h+'</tbody></table>';$('#bF').innerHTML=ic('cols')+(f?'Colunas: completa':'Colunas: básica');$('#bO').innerHTML=ic('chart')+(odn?'Chances: ligadas':'Chances: ocultas');$('#bF').className=f?'on':'';$('#bO').className=odn?'on':'';$('#bF').setAttribute('aria-pressed',String(f));$('#bO').setAttribute('aria-pressed',String(odn));applyTableCollapse();
  }
 function renderAviso(){const A=$('#aviso');A.innerHTML=`<details class="cd warn sim-info"${modelPanelOpen?' open':''}><summary><b>Sobre a simulação e o modelo</b><span class="mu"> · ${METH[opt.meth][0]}</span></summary><div class="sim-info-body"><p><b>Cenário personalizado, não é previsão oficial.</b> Os placares digitados são hipóteses; jogos em branco entram nas chances por um modelo estatístico simples. Não considera lesões, suspensões, escalações nem calendário continental. As vagas continentais são aproximações: outras competições podem alterar os cortes.</p>
  <div class="row" style="margin-top:10px"><label for="method">Ao preencher automaticamente, usar:</label><select id="method" data-change="method">${Object.keys(METH).map(k=>`<option value="${k}" ${opt.meth==k?'selected':''}>${METH[k][0]}</option>`).join('')}</select><button data-act="toggle-advanced" aria-expanded="${advOpen}">${ic('cols')}Ajustes do modelo</button></div><div class="sm mu" style="margin-top:6px">${METH[opt.meth][1]}</div>
@@ -902,7 +905,8 @@ function updateSourceStatus(){
 }
 function runAction(button){const {act}=button.dataset;switch(act){
  case'share':shareM();break;
- case'toggle-full':opt.full=!opt.full;save();renderAll();break;
+ case'toggle-table':tableCollapsed=!tableCollapsed;try{localStorage.setItem('br26c-tab-collapsed',tableCollapsed?'1':'0')}catch{}applyTableCollapse();break;
+case'toggle-full':opt.full=!opt.full;save();renderAll();break;
  case'toggle-odds':opt.odds=!opt.odds;save();renderAll();break;
  case'toggle-advanced':advOpen=!advOpen;renderAviso();break;
  case'start-tour':startTour();break;

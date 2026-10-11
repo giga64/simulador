@@ -176,3 +176,5 @@ header .row{gap:7px}
 .club-progress-chart circle{fill:var(--ac);stroke:var(--s1);stroke-width:2}
 @media(max-width:680px){.source-details{margin-left:0}.home-grid,.home-spotlight,.help-columns{grid-template-columns:minmax(0,1fr)}.home-spotlight{gap:14px;border-radius:16px}.spotlight-actions{display:grid;grid-template-columns:1fr 1fr}.spotlight-actions button{justify-content:center;padding-inline:8px;font-size:.75rem}.site-footer{align-items:flex-start;flex-direction:column}.site-footer nav{width:100%}.site-footer nav button{flex:1;justify-content:center}.help-legal summary{align-items:flex-start;flex-wrap:wrap}.help-legal summary span:nth-child(2){flex-basis:100%;text-align:left}.support-card{align-items:flex-start;flex-direction:column}.support-card .support-link{width:100%}header .row{width:100%;flex-wrap:wrap}header .row>*{flex:1}.home-section-heading{align-items:flex-start;flex-wrap:wrap}.home-section-heading .data-chip{max-width:100%}}
 @media(prefers-reduced-motion:reduce){.nav{scroll-behavior:auto}}
+
+#bMin{margin-left:auto}#tabBody[hidden]{display:none}.cd.collapsed .row:first-child{margin-bottom:0!important}
