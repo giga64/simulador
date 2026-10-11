@@ -23,13 +23,17 @@ export function validateScenarioPayload(payload, matchIds, teamCodes) {
         fail(`O cenário contém uma partida desconhecida (${id}).`);
         continue;
       }
-      if (!Array.isArray(value) || value.length !== 3
-        || !value.slice(0, 2).every(
-          (score) => score === '' || (typeof score === 'string'
-            && SCORE_PATTERN.test(score) && Number(score) <= 20),
-        )
-        || value.slice(0, 2).every((score) => score === '')
-        || !['a', 'u'].includes(value[2])) {
+      if (
+        !Array.isArray(value) ||
+        value.length !== 3 ||
+        !value
+          .slice(0, 2)
+          .every(
+            (score) => score === '' || (typeof score === 'string' && SCORE_PATTERN.test(score) && Number(score) <= 20),
+          ) ||
+        value.slice(0, 2).every((score) => score === '') ||
+        !['a', 'u'].includes(value[2])
+      ) {
         fail(`O placar da partida ${id} é inválido.`);
       }
     }
@@ -50,22 +54,25 @@ export function validateScenarioPayload(payload, matchIds, teamCodes) {
     if (!Number.isInteger(settings.seed) || settings.seed < 0 || settings.seed > 0xffffffff) {
       fail('A semente precisa ser um inteiro entre 0 e 4.294.967.295.');
     }
-    if (!settings.adjustments || typeof settings.adjustments !== 'object'
-      || Array.isArray(settings.adjustments)) {
+    if (!settings.adjustments || typeof settings.adjustments !== 'object' || Array.isArray(settings.adjustments)) {
       fail('Os ajustes por clube são inválidos.');
     } else {
       for (const [club, adjustment] of Object.entries(settings.adjustments)) {
-        if (!allowedTeams.has(club) || !Number.isFinite(adjustment)
-          || adjustment < -30 || adjustment > 30) {
+        if (!allowedTeams.has(club) || !Number.isFinite(adjustment) || adjustment < -30 || adjustment > 30) {
           fail(`Ajuste inválido para o clube ${club}.`);
         }
       }
     }
   }
 
-  if (!options || typeof options !== 'object' || Array.isArray(options)
-    || typeof options.full !== 'boolean' || typeof options.odds !== 'boolean'
-    || !METHODS.has(options.method)) {
+  if (
+    !options ||
+    typeof options !== 'object' ||
+    Array.isArray(options) ||
+    typeof options.full !== 'boolean' ||
+    typeof options.odds !== 'boolean' ||
+    !METHODS.has(options.method)
+  ) {
     fail('As opções de exibição ou o método de simulação são inválidos.');
   }
 
@@ -110,9 +117,10 @@ export function pruneCompletedScenarioScores(scores, fixtures, currentRound, act
 
   for (const [matchId, score] of Object.entries(scores)) {
     const fixture = byId.get(matchId);
-    const completed = fixture && !active.has(matchId)
-      && (fixture.status === 'played'
-        || (currentRound && fixture.round < currentRound && fixture.status !== 'postponed'));
+    const completed =
+      fixture &&
+      !active.has(matchId) &&
+      (fixture.status === 'played' || (currentRound && fixture.round < currentRound && fixture.status !== 'postponed'));
     if (completed) removed++;
     else keptScores[matchId] = score;
   }

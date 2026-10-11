@@ -49,13 +49,18 @@ test('completed match predictions are removed while postponed and future predict
     { id: 'postponed', round: 3, status: 'postponed' },
     { id: 'future', round: 8, status: 'scheduled' },
   ];
-  const result = pruneCompletedScenarioScores({
-    'old-round': ['1', '0', 'u'],
-    finished: ['0', '0', 'u'],
-    postponed: ['2', '0', 'u'],
-    future: ['1', '1', 'u'],
-    unknown: ['0', '0', 'u'],
-  }, fixtures, 5, ['postponed', 'future']);
+  const result = pruneCompletedScenarioScores(
+    {
+      'old-round': ['1', '0', 'u'],
+      finished: ['0', '0', 'u'],
+      postponed: ['2', '0', 'u'],
+      future: ['1', '1', 'u'],
+      unknown: ['0', '0', 'u'],
+    },
+    fixtures,
+    5,
+    ['postponed', 'future'],
+  );
 
   assert.equal(result.removed, 2);
   assert.deepEqual(Object.keys(result.scores), ['postponed', 'future', 'unknown']);

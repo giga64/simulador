@@ -3,13 +3,8 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { validateSeasonData } from '../src/season-data.js';
 
-const loadJson = async (relativePath) => JSON.parse(
-  await readFile(new URL(relativePath, import.meta.url), 'utf8'),
-);
-const [season, logos] = await Promise.all([
-  loadJson('../data/season-2026.json'),
-  loadJson('../assets/logos.json'),
-]);
+const loadJson = async (relativePath) => JSON.parse(await readFile(new URL(relativePath, import.meta.url), 'utf8'));
+const [season, logos] = await Promise.all([loadJson('../data/season-2026.json'), loadJson('../assets/logos.json')]);
 
 test('the season snapshot has a complete and consistent 380-match calendar', () => {
   const result = validateSeasonData(season, logos);

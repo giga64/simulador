@@ -20,7 +20,7 @@ const addToHistory = createLiveHistoryStore(
 const readLiveFeed = createLiveFeedCache(async () => {
   const competition = await getCompetition('a', { signal: AbortSignal.timeout(12_000) });
   const feed = normalizeLiveCompetition(competition);
-  return { ...feed, ...await addToHistory(feed) };
+  return { ...feed, ...(await addToHistory(feed)) };
 });
 const mimeTypes = new Map([
   ['.css', 'text/css; charset=utf-8'],
@@ -70,13 +70,15 @@ const server = createServer(async (request, response) => {
       return;
     }
     if (!supabaseConfig.authConfigured || !isSupabaseServiceRoleKey(supabaseServiceRoleKey)) {
-      response.writeHead(503, { 'Content-Type': 'application/json; charset=utf-8' })
+      response
+        .writeHead(503, { 'Content-Type': 'application/json; charset=utf-8' })
         .end(JSON.stringify({ error: 'Exclusão de conta não está configurada no servidor.' }));
       return;
     }
     const token = /^Bearer ([A-Za-z0-9._-]+)$/.exec(request.headers.authorization || '')?.[1];
     if (!token) {
-      response.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' })
+      response
+        .writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' })
         .end(JSON.stringify({ error: 'Sessão inválida. Entre novamente para excluir a conta.' }));
       return;
     }
@@ -86,7 +88,8 @@ const server = createServer(async (request, response) => {
       });
       const { data, error: authError } = await authClient.auth.getUser(token);
       if (authError || !data.user) {
-        response.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' })
+        response
+          .writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' })
           .end(JSON.stringify({ error: 'Sessão inválida ou expirada. Entre novamente.' }));
         return;
       }
@@ -95,14 +98,17 @@ const server = createServer(async (request, response) => {
       });
       const { error } = await adminClient.auth.admin.deleteUser(data.user.id);
       if (error) throw error;
-      response.writeHead(200, {
-        'Cache-Control': 'no-store',
-        'Content-Type': 'application/json; charset=utf-8',
-        'X-Content-Type-Options': 'nosniff',
-      }).end(JSON.stringify({ deleted: true }));
+      response
+        .writeHead(200, {
+          'Cache-Control': 'no-store',
+          'Content-Type': 'application/json; charset=utf-8',
+          'X-Content-Type-Options': 'nosniff',
+        })
+        .end(JSON.stringify({ deleted: true }));
     } catch (error) {
       console.error('Supabase account deletion failed:', error instanceof Error ? error.message : error);
-      response.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' })
+      response
+        .writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' })
         .end(JSON.stringify({ error: 'O provedor não conseguiu excluir a conta. Tente novamente.' }));
     }
     return;
@@ -120,30 +126,38 @@ const server = createServer(async (request, response) => {
     }
     try {
       const liveFeed = await readLiveFeed({ forceRefresh });
-      response.writeHead(200, {
-        'Cache-Control': 'no-store',
-        'Content-Type': 'application/json; charset=utf-8',
-        'X-Content-Type-Options': 'nosniff',
-      }).end(JSON.stringify(liveFeed));
+      response
+        .writeHead(200, {
+          'Cache-Control': 'no-store',
+          'Content-Type': 'application/json; charset=utf-8',
+          'X-Content-Type-Options': 'nosniff',
+        })
+        .end(JSON.stringify(liveFeed));
     } catch (error) {
-      response.writeHead(502, {
-        'Cache-Control': 'no-store',
-        'Content-Type': 'application/json; charset=utf-8',
-        'X-Content-Type-Options': 'nosniff',
-      }).end(JSON.stringify({
-        error: 'Não foi possível consultar a fonte GE neste momento.',
-        details: error instanceof Error ? error.message : 'Erro externo desconhecido.',
-      }));
+      response
+        .writeHead(502, {
+          'Cache-Control': 'no-store',
+          'Content-Type': 'application/json; charset=utf-8',
+          'X-Content-Type-Options': 'nosniff',
+        })
+        .end(
+          JSON.stringify({
+            error: 'Não foi possível consultar a fonte GE neste momento.',
+            details: error instanceof Error ? error.message : 'Erro externo desconhecido.',
+          }),
+        );
     }
     return;
   }
 
   if (pathname === '/api/config') {
-    response.writeHead(200, {
-      'Cache-Control': 'no-store',
-      'Content-Type': 'application/json; charset=utf-8',
-      'X-Content-Type-Options': 'nosniff',
-    }).end(JSON.stringify(supabaseConfig));
+    response
+      .writeHead(200, {
+        'Cache-Control': 'no-store',
+        'Content-Type': 'application/json; charset=utf-8',
+        'X-Content-Type-Options': 'nosniff',
+      })
+      .end(JSON.stringify(supabaseConfig));
     return;
   }
 
@@ -158,10 +172,12 @@ const server = createServer(async (request, response) => {
       if (request.method === 'HEAD') response.end();
       else createReadStream(supabaseSdkPath).pipe(response);
     } catch {
-      response.writeHead(503, {
-        'Cache-Control': 'no-store',
-        'Content-Type': 'text/plain; charset=utf-8',
-      }).end('Supabase client SDK unavailable');
+      response
+        .writeHead(503, {
+          'Cache-Control': 'no-store',
+          'Content-Type': 'text/plain; charset=utf-8',
+        })
+        .end('Supabase client SDK unavailable');
     }
     return;
   }
@@ -207,10 +223,10 @@ server.listen(port, host, () => {
 
 const refreshTimer = setInterval(() => {
   readLiveFeed({ forceRefresh: true }).catch((error) => {
-    console.error(`Atualização periódica do GE falhou: ${error.message||String(error)}`);
+    console.error(`Atualização periódica do GE falhou: ${error.message || String(error)}`);
   });
 }, 120_000);
 refreshTimer.unref();
 readLiveFeed().catch((error) => {
-  console.error(`Consulta inicial do GE falhou: ${error.message||String(error)}`);
+  console.error(`Consulta inicial do GE falhou: ${error.message || String(error)}`);
 });

@@ -2,8 +2,14 @@ function validProjectUrl(value) {
   if (typeof value !== 'string') return '';
   try {
     const url = new URL(value);
-    return url.protocol === 'https:' && url.hostname.endsWith('.supabase.co')
-      && url.pathname === '/' && !url.port && !url.username && !url.password && !url.search && !url.hash
+    return url.protocol === 'https:' &&
+      url.hostname.endsWith('.supabase.co') &&
+      url.pathname === '/' &&
+      !url.port &&
+      !url.username &&
+      !url.password &&
+      !url.search &&
+      !url.hash
       ? url.origin
       : '';
   } catch {

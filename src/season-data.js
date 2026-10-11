@@ -21,7 +21,7 @@ export function validateSeasonData(data, logoData) {
   if (!teamCodes || teamCodes.length !== CLUBS_PER_LEAGUE) {
     fail(`A temporada deve ter ${CLUBS_PER_LEAGUE} clubes.`);
   }
-  if (!Array.isArray(fixtures) || fixtures.length !== CLUBS_PER_LEAGUE * MATCHES_PER_CLUB / 2) {
+  if (!Array.isArray(fixtures) || fixtures.length !== (CLUBS_PER_LEAGUE * MATCHES_PER_CLUB) / 2) {
     fail('O calendário deve conter 380 partidas.');
   }
   if (!Array.isArray(results)) {
@@ -40,19 +40,22 @@ export function validateSeasonData(data, logoData) {
     fail('A data de atualização dos dados é inválida.');
   }
   const qualification = data.qualificationModel;
-  if (!qualification || !Number.isInteger(qualification.libertadoresLeaguePositions)
-    || qualification.libertadoresLeaguePositions < 1
-    || !Number.isInteger(qualification.sudamericanaLeagueStart)
-    || !Number.isInteger(qualification.sudamericanaLeagueEnd)
-    || qualification.sudamericanaLeagueStart < 1
-    || qualification.sudamericanaLeagueEnd < qualification.sudamericanaLeagueStart
-    || qualification.libertadoresLeaguePositions >= qualification.sudamericanaLeagueStart
-    || qualification.libertadoresLeaguePositions > CLUBS_PER_LEAGUE
-    || qualification.sudamericanaLeagueStart > CLUBS_PER_LEAGUE
-    || qualification.sudamericanaLeagueEnd >= CLUBS_PER_LEAGUE - qualification.relegationPlaces + 1
-    || !Number.isInteger(qualification.relegationPlaces)
-    || qualification.relegationPlaces < 1
-    || qualification.relegationPlaces >= CLUBS_PER_LEAGUE) {
+  if (
+    !qualification ||
+    !Number.isInteger(qualification.libertadoresLeaguePositions) ||
+    qualification.libertadoresLeaguePositions < 1 ||
+    !Number.isInteger(qualification.sudamericanaLeagueStart) ||
+    !Number.isInteger(qualification.sudamericanaLeagueEnd) ||
+    qualification.sudamericanaLeagueStart < 1 ||
+    qualification.sudamericanaLeagueEnd < qualification.sudamericanaLeagueStart ||
+    qualification.libertadoresLeaguePositions >= qualification.sudamericanaLeagueStart ||
+    qualification.libertadoresLeaguePositions > CLUBS_PER_LEAGUE ||
+    qualification.sudamericanaLeagueStart > CLUBS_PER_LEAGUE ||
+    qualification.sudamericanaLeagueEnd >= CLUBS_PER_LEAGUE - qualification.relegationPlaces + 1 ||
+    !Number.isInteger(qualification.relegationPlaces) ||
+    qualification.relegationPlaces < 1 ||
+    qualification.relegationPlaces >= CLUBS_PER_LEAGUE
+  ) {
     fail('As faixas de classificação e rebaixamento são inválidas.');
   }
   if (!logoData?.logos || Object.keys(logoData.logos).length !== CLUBS_PER_LEAGUE) {
@@ -140,9 +143,7 @@ export function validateSeasonData(data, logoData) {
     if (fixture.status !== 'played') {
       fail(`A partida ${key} tem resultado, mas não está marcada como disputada.`);
     }
-    if (![result.homeGoals, result.awayGoals].every(
-      (score) => Number.isInteger(score) && score >= 0 && score <= 20,
-    )) {
+    if (![result.homeGoals, result.awayGoals].every((score) => Number.isInteger(score) && score >= 0 && score <= 20)) {
       fail(`Resultado ${key}: placar inválido.`);
     }
   }

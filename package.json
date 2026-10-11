@@ -6,10 +6,15 @@
     "test": "node --test",
     "validate:data": "node scripts/validate-season.mjs",
     "import:results": "node scripts/import-verified-results.mjs",
-    "start": "node scripts/serve.mjs"
+    "start": "node scripts/serve.mjs",
+    "format": "prettier --write app.js styles.css src scripts test",
+    "format:check": "prettier --check app.js styles.css src scripts test"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.90.0",
     "campeonato-brasileiro-api": "git+https://github.com/ezefranca/campeonato-brasileiro-api.git#c4080b7c7b2647bea73caf7713103cf48cb71edf"
+  },
+  "devDependencies": {
+    "prettier": "^3.9.10"
   }
 }

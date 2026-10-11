@@ -23,12 +23,25 @@ const resultSource = {
 };
 
 test('archives completed exact and automatic predictions with result provenance', () => {
-  const archived = archiveCompletedPredictions([], {
-    played: ['2', '1', 'u'],
-    scheduled: ['1', '0', 'a'],
-  }, fixtures, [{
-    round: 1, home: 'FLA', away: 'PAL', homeGoals: 2, awayGoals: 1, source: resultSource,
-  }], '2026-10-10T15:00:00.000Z');
+  const archived = archiveCompletedPredictions(
+    [],
+    {
+      played: ['2', '1', 'u'],
+      scheduled: ['1', '0', 'a'],
+    },
+    fixtures,
+    [
+      {
+        round: 1,
+        home: 'FLA',
+        away: 'PAL',
+        homeGoals: 2,
+        awayGoals: 1,
+        source: resultSource,
+      },
+    ],
+    '2026-10-10T15:00:00.000Z',
+  );
 
   assert.equal(archived.added, 1);
   assert.deepEqual(archived.history[0].prediction, { home: 2, away: 1, type: 'u' });
@@ -42,17 +55,21 @@ test('calibration trend reports evaluated snapshot count and Brier score per rou
     actual: { home: actualHome, away: 0 },
     modelSnapshot: { probabilities: { home: confidence, draw: 0.1, away: 0.1 } },
   });
-  const trend=summarizeCalibrationByRound([
+  const trend = summarizeCalibrationByRound([
     entry(2, 1),
     entry(1, 0),
     entry(2, 1, 0.7),
     { round: 3, actual: { home: 1, away: 0 } },
   ]);
-  assert.deepEqual(trend.map(({round,matches})=>({round,matches})),[
-    {round:1,matches:1},{round:2,matches:2},
-  ]);
-  assert.ok(Math.abs(trend[0].brierScore-1.46)<1e-12);
-  assert.ok(Math.abs(trend[1].brierScore-0.085)<1e-12);
+  assert.deepEqual(
+    trend.map(({ round, matches }) => ({ round, matches })),
+    [
+      { round: 1, matches: 1 },
+      { round: 2, matches: 2 },
+    ],
+  );
+  assert.ok(Math.abs(trend[0].brierScore - 1.46) < 1e-12);
+  assert.ok(Math.abs(trend[1].brierScore - 0.085) < 1e-12);
 });
 
 test('deduplicates saved predictions and updates corrected result provenance', () => {
@@ -66,11 +83,24 @@ test('deduplicates saved predictions and updates corrected result provenance', (
     resultSource: { name: 'Snapshot', url: null, type: 'snapshot' },
     recordedAt: '2026-10-10T12:00:00.000Z',
   };
-  const archived = archiveCompletedPredictions([existing], {
-    played: ['1', '0', 'u'],
-  }, fixtures, [{
-    round: 1, home: 'FLA', away: 'PAL', homeGoals: 0, awayGoals: 1, source: resultSource,
-  }], '2026-10-10T15:00:00.000Z');
+  const archived = archiveCompletedPredictions(
+    [existing],
+    {
+      played: ['1', '0', 'u'],
+    },
+    fixtures,
+    [
+      {
+        round: 1,
+        home: 'FLA',
+        away: 'PAL',
+        homeGoals: 0,
+        awayGoals: 1,
+        source: resultSource,
+      },
+    ],
+    '2026-10-10T15:00:00.000Z',
+  );
 
   assert.equal(archived.added, 0);
   assert.equal(archived.history.length, 1);
@@ -79,25 +109,28 @@ test('deduplicates saved predictions and updates corrected result provenance', (
 });
 
 test('summarizes exact scores, outcomes, and points for each club', () => {
-  const history = [{
-    fixtureId: 'played',
-    round: 1,
-    home: 'FLA',
-    away: 'PAL',
-    prediction: { home: 2, away: 1, type: 'u' },
-    actual: { home: 3, away: 1 },
-    resultSource,
-    recordedAt: '2026-10-10T15:00:00.000Z',
-  }, {
-    fixtureId: 'other',
-    round: 2,
-    home: 'PAL',
-    away: 'FLA',
-    prediction: { home: 0, away: 0, type: 'a' },
-    actual: { home: 1, away: 0 },
-    resultSource,
-    recordedAt: '2026-10-10T15:00:00.000Z',
-  }];
+  const history = [
+    {
+      fixtureId: 'played',
+      round: 1,
+      home: 'FLA',
+      away: 'PAL',
+      prediction: { home: 2, away: 1, type: 'u' },
+      actual: { home: 3, away: 1 },
+      resultSource,
+      recordedAt: '2026-10-10T15:00:00.000Z',
+    },
+    {
+      fixtureId: 'other',
+      round: 2,
+      home: 'PAL',
+      away: 'FLA',
+      prediction: { home: 0, away: 0, type: 'a' },
+      actual: { home: 1, away: 0 },
+      resultSource,
+      recordedAt: '2026-10-10T15:00:00.000Z',
+    },
+  ];
   const summary = summarizePredictionPerformance(history, teams);
 
   assert.equal(summary.matches, 2);
@@ -106,11 +139,18 @@ test('summarizes exact scores, outcomes, and points for each club', () => {
   assert.equal(summary.outcomeRate, 0.5);
   assert.equal(summary.predictedGoals, 3);
   assert.equal(summary.actualGoals, 5);
-  assert.deepEqual(summary.clubs.map(({ code, predictedPoints, actualPoints, pointsDifference }) =>
-    ({ code, predictedPoints, actualPoints, pointsDifference })), [
-    { code: 'FLA', predictedPoints: 4, actualPoints: 3, pointsDifference: 1 },
-    { code: 'PAL', predictedPoints: 1, actualPoints: 3, pointsDifference: -2 },
-  ]);
+  assert.deepEqual(
+    summary.clubs.map(({ code, predictedPoints, actualPoints, pointsDifference }) => ({
+      code,
+      predictedPoints,
+      actualPoints,
+      pointsDifference,
+    })),
+    [
+      { code: 'FLA', predictedPoints: 4, actualPoints: 3, pointsDifference: 1 },
+      { code: 'PAL', predictedPoints: 1, actualPoints: 3, pointsDifference: -2 },
+    ],
+  );
 });
 
 test('rejects malformed and duplicate prediction-history entries', () => {
@@ -126,8 +166,19 @@ test('rejects malformed and duplicate prediction-history entries', () => {
   };
   assert.deepEqual(validatePredictionHistory([entry], fixtures, teams), [entry]);
   assert.throws(() => validatePredictionHistory([entry, entry], fixtures, teams), /inválido/);
-  assert.throws(() => validatePredictionHistory([{ ...entry, resultSource: { ...resultSource, url: 'javascript:alert(1)' } }], fixtures, teams), /inválido/);
-  assert.throws(() => validatePredictionHistory([{ ...entry, actual: { home: -1, away: 1 } }], fixtures, teams), /inválido/);
+  assert.throws(
+    () =>
+      validatePredictionHistory(
+        [{ ...entry, resultSource: { ...resultSource, url: 'javascript:alert(1)' } }],
+        fixtures,
+        teams,
+      ),
+    /inválido/,
+  );
+  assert.throws(
+    () => validatePredictionHistory([{ ...entry, actual: { home: -1, away: 1 } }], fixtures, teams),
+    /inválido/,
+  );
 });
 
 test('captures immutable model settings and forecast probabilities with the chosen score', () => {
@@ -144,11 +195,15 @@ test('captures immutable model settings and forecast probabilities with the chos
 
   assert.deepEqual(history[0].modelSnapshot.settings.adjustments, { home: -5, away: 10 });
   assert.deepEqual(history[0].modelSnapshot.probabilities, { home: 0.5, draw: 0.25, away: 0.25 });
-  assert.throws(() => createModelSnapshot({
-    probabilities: { home: 0.5, draw: 0.5, away: 0.5 },
-    settings: { seed: 1, k: 6, ha: 1, rho: 0 },
-    teams: { home: 'FLA', away: 'PAL' },
-  }), /somar 100/);
+  assert.throws(
+    () =>
+      createModelSnapshot({
+        probabilities: { home: 0.5, draw: 0.5, away: 0.5 },
+        settings: { seed: 1, k: 6, ha: 1, rho: 0 },
+        teams: { home: 'FLA', away: 'PAL' },
+      }),
+    /somar 100/,
+  );
 });
 
 test('archives a pending snapshot when the real result arrives and computes calibration', () => {
@@ -159,24 +214,29 @@ test('archives a pending snapshot when the real result arrives and computes cali
     recordedAt: '2026-10-10T15:00:00.000Z',
   });
   const pending = upsertPredictionSnapshot([], fixtures[1], ['1', '0', 'u'], snapshot);
-  const archived = archiveCompletedPredictions(pending, {}, fixtures, [{
-    round: 2,
-    home: 'PAL',
-    away: 'FLA',
-    homeGoals: 0,
-    awayGoals: 1,
-    source: resultSource,
-  }]);
+  const archived = archiveCompletedPredictions(pending, {}, fixtures, [
+    {
+      round: 2,
+      home: 'PAL',
+      away: 'FLA',
+      homeGoals: 0,
+      awayGoals: 1,
+      source: resultSource,
+    },
+  ]);
   const calibration = summarizePredictionCalibration(archived.history);
   assert.equal(archived.added, 0);
   assert.deepEqual(archived.history[0].actual, { home: 0, away: 1 });
   assert.equal(calibration.matches, 1);
   assert.ok(Math.abs(calibration.brierScore - 1.04) < 1e-12);
-  assert.deepEqual(calibration.bins.map((bin) => ({
-    matches: bin.matches,
-    meanConfidence: bin.meanConfidence,
-    observedAccuracy: bin.observedAccuracy,
-  })), [{ matches: 1, meanConfidence: 0.6, observedAccuracy: 0 }]);
+  assert.deepEqual(
+    calibration.bins.map((bin) => ({
+      matches: bin.matches,
+      meanConfidence: bin.meanConfidence,
+      observedAccuracy: bin.observedAccuracy,
+    })),
+    [{ matches: 1, meanConfidence: 0.6, observedAccuracy: 0 }],
+  );
 });
 
 test('accuracy and points summaries exclude predictions that do not have results yet', () => {

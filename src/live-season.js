@@ -25,10 +25,14 @@ export function mergeLiveSeason(snapshot, liveFeed) {
     };
   }
 
-  if (liveFeed.season !== snapshot.season || !Number.isInteger(liveFeed.round?.number)
-    || !Array.isArray(liveFeed.standings) || liveFeed.standings.length !== 20
-    || !Array.isArray(liveFeed.matches)
-    || (liveFeed.history != null && !Array.isArray(liveFeed.history))) {
+  if (
+    liveFeed.season !== snapshot.season ||
+    !Number.isInteger(liveFeed.round?.number) ||
+    !Array.isArray(liveFeed.standings) ||
+    liveFeed.standings.length !== 20 ||
+    !Array.isArray(liveFeed.matches) ||
+    (liveFeed.history != null && !Array.isArray(liveFeed.history))
+  ) {
     throw new Error('O feed ao vivo não corresponde ao formato esperado da Série A.');
   }
 
@@ -44,12 +48,23 @@ export function mergeLiveSeason(snapshot, liveFeed) {
     if (!code || standingsByCode.has(code)) {
       throw new Error('Não foi possível associar todos os clubes do feed à temporada local.');
     }
-    if (![entry.points, entry.matches, entry.wins, entry.draws, entry.losses,
-      entry.goalsFor, entry.goalsAgainst, entry.goalDifference].every(Number.isInteger)
-      || entry.matches < 0 || entry.matches > 38
-      || entry.wins + entry.draws + entry.losses !== entry.matches
-      || entry.points !== entry.wins * 3 + entry.draws
-      || entry.goalDifference !== entry.goalsFor - entry.goalsAgainst) {
+    if (
+      ![
+        entry.points,
+        entry.matches,
+        entry.wins,
+        entry.draws,
+        entry.losses,
+        entry.goalsFor,
+        entry.goalsAgainst,
+        entry.goalDifference,
+      ].every(Number.isInteger) ||
+      entry.matches < 0 ||
+      entry.matches > 38 ||
+      entry.wins + entry.draws + entry.losses !== entry.matches ||
+      entry.points !== entry.wins * 3 + entry.draws ||
+      entry.goalDifference !== entry.goalsFor - entry.goalsAgainst
+    ) {
       throw new Error(`Estatísticas inválidas para ${snapshot.teams[code]}.`);
     }
     standingsByCode.set(code, { ...entry, code });
@@ -75,8 +90,12 @@ export function mergeLiveSeason(snapshot, liveFeed) {
   }
 
   for (const match of observedMatches.values()) {
-    if (!Number.isInteger(match.round) || match.round < 1 || match.round > 38
-      || !['finished', 'live', 'scheduled'].includes(match.status)) {
+    if (
+      !Number.isInteger(match.round) ||
+      match.round < 1 ||
+      match.round > 38 ||
+      !['finished', 'live', 'scheduled'].includes(match.status)
+    ) {
       throw new Error('O feed contém uma partida histórica inválida.');
     }
     if (match.status !== 'finished' && match.round !== liveFeed.round.number) continue;
@@ -87,18 +106,22 @@ export function mergeLiveSeason(snapshot, liveFeed) {
       continue;
     }
 
-    const fixture = seasonData.fixtures.find((item) => item.round === match.round
-      && item.home === home && item.away === away);
+    const fixture = seasonData.fixtures.find(
+      (item) => item.round === match.round && item.home === home && item.away === away,
+    );
     if (!fixture) {
-      warnings.push(`Partida ${seasonData.teams[home]} x ${seasonData.teams[away]} não encontrada no calendário local.`);
+      warnings.push(
+        `Partida ${seasonData.teams[home]} x ${seasonData.teams[away]} não encontrada no calendário local.`,
+      );
       continue;
     }
 
     if (fixture.status === 'played') continue;
 
-    const kickoff = typeof match.dateTime === 'string' && !/(?:Z|[+-]\d{2}:\d{2})$/i.test(match.dateTime)
-      ? `${match.dateTime}-03:00`
-      : match.dateTime;
+    const kickoff =
+      typeof match.dateTime === 'string' && !/(?:Z|[+-]\d{2}:\d{2})$/i.test(match.dateTime)
+        ? `${match.dateTime}-03:00`
+        : match.dateTime;
     if (typeof kickoff === 'string' && Number.isFinite(Date.parse(kickoff))) {
       fixture.kickoff = kickoff;
     }
@@ -123,8 +146,9 @@ export function mergeLiveSeason(snapshot, liveFeed) {
         type: 'feed-observed',
       },
     };
-    const existing = seasonData.results.find((item) => item.round === result.round
-      && item.home === home && item.away === away);
+    const existing = seasonData.results.find(
+      (item) => item.round === result.round && item.home === home && item.away === away,
+    );
     if (existing) Object.assign(existing, result);
     else seasonData.results.push(result);
   }
