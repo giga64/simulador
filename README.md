@@ -100,6 +100,16 @@ erros de tabela/política são exibidos e os dados locais não são apagados.
   válida ao feed para mostrar a classificação com seu horário quando a fonte
   fica indisponível. A cópia é identificada como desatualizada e atualizada
   quando uma nova consulta válida chega.
+- **Fluxo de simulação:** o painel sobre o modelo começa recolhido; a rodada
+  mostra quantos palpites estão definidos, permite completar somente os jogos
+  vazios e limpar os placares. As opções Casa/Empate/Fora têm nomes acessíveis,
+  e as mudanças de posição e as chances atuais aparecem em um resumo do cenário.
+- **Estatísticas filtráveis:** explore os resultados do snapshot por clube e
+  rodada. Cada recorte exibe o número de partidas da amostra; a tabela da
+  temporada completa continua disponível abaixo dos filtros.
+- **Visita guiada opcional:** disponível na página inicial e na central de
+  ajuda, apresenta o painel, a simulação, as estatísticas e os recursos de
+  conta sem interromper quem prefere navegar por conta própria.
 - **Perfis dos clubes:** incluem gráfico reconstruído da posição rodada a
   rodada e forma recente. A série usa somente resultados locais disponíveis e
   declara as limitações do histórico e dos critérios de desempate.
@@ -120,8 +130,13 @@ erros de tabela/política são exibidos e os dados locais não são apagados.
 - **Conta:** permite alterar nome e senha, sair e, se o endpoint estiver
   configurado com `SUPABASE_SERVICE_ROLE_KEY`, excluir a conta e os dados
   associados após confirmação da senha.
-- **Busca e guia:** a busca encontra clubes e jogos; “Como funciona” resume
-  fontes, limites, regras aproximadas e interpretação das probabilidades.
+- **Busca:** encontra clubes e jogos por nome, sigla, estádio ou rodada.
+- **Ajuda, privacidade e termos:** a central de ajuda resume os fluxos
+  principais e apresenta divulgações sobre categorias de dados, armazenamento
+  local e sincronizado, provedores externos, exclusão da conta e condições de
+  uso. Antes de publicar comercialmente, revise o texto legal com os dados de
+  contato do operador e as configurações efetivas de retenção da hospedagem e
+  do Supabase.
 
 ## Fonte e limites da atualização
 
