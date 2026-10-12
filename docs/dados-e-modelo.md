@@ -88,8 +88,9 @@ devem ser apresentados como oficiais até que a fonte seja adicionada e conferid
 
 ## Modelo
 
-O código do modelo fica em `src/model/`, em funções puras e testadas
-(`test/model.test.js`):
+O código do modelo fica em `src/model/`, em funções puras e testadas. O
+navegador e o servidor usam exatamente o mesmo código (`season-model.js`), então
+as chances da página, do histórico e da imagem de compartilhamento coincidem.
 
 - `expected-goals.js`: gols esperados de cada lado a partir de ataque e defesa
   relativos à média da liga, com `k` jogos fictícios de regressão à média,
@@ -100,12 +101,47 @@ O código do modelo fica em `src/model/`, em funções puras e testadas
 - `monte-carlo.js`: 10.000 simulações do restante do campeonato. Elas rodam
   em um Web Worker (`monte-carlo.worker.js`) para não travar a página; sem
   suporte a workers de módulo, rodam na thread principal;
-- `live-matches.js`: jogos em andamento.
+- `live-matches.js`: jogos em andamento;
+- `backtest.js` e `team-ratings.js`: avaliação do modelo fora da amostra.
+
+### Por que k = 14
+
+`npm run backtest` prevê cada rodada desde a 8ª usando só os jogos anteriores a
+ela e mede o erro com o Brier score (menor é melhor). Na temporada 2026:
+
+| Configuração                                       | Brier  |
+| -------------------------------------------------- | ------ |
+| Referência ingênua (só a frequência casa/empate/fora) | 0,6435 |
+| k = 6 (padrão anterior)                            | 0,6365 |
+| **k = 14 (padrão atual)**                          | 0,6315 |
+| Peso maior para jogos recentes (meia-vida 6–20 rodadas) | pior em todos os k testados |
+
+As diferenças são pequenas e o k foi escolhido pelo mesmo teste, então é um
+ajuste fino, não uma garantia. Rode o backtest de novo com mais rodadas antes de
+mudar o padrão. A aba **Chances › Qualidade do modelo** mostra esse teste com os
+ajustes escolhidos pelo usuário.
+
+### Histórico de chances
+
+`npm run build:history` reconstrói, para cada rodada já disputada, as chances
+calculadas só com os resultados até ela, e grava em
+`data/probability-history-2026.json`. Depois, o servidor tira uma nova foto a
+cada resultado novo (`RUNTIME_DIR/probability-history.json`). A aba
+**Chances › Evolução** e o perfil de cada clube mostram esses dados. As rodadas
+antigas usam o modelo atual: mostram o que ele diria naquele momento, não o
+que o site publicou na época.
+
+### Modelo x casas de apostas
+
+Com `ODDS_API_KEY`, o servidor guarda as odds de cada jogo antes do início,
+remove a margem das casas (normalizando 1/odd) e registra a probabilidade do
+modelo no mesmo instante. Depois do jogo, os dois são comparados pelo Brier
+score em **Chances › Qualidade do modelo**.
 
 Cada simulação Monte Carlo usa a semente configurável do cenário. Com os mesmos
 dados, palpites, ajustes e semente, as chances são reproduzíveis. A aba
-**Corrida** mostra a chance de título de todos os clubes, calculada pelo mesmo
-modelo e número de simulações.
+**Chances** mostra a classificação final provável, o mapa de posições, a
+evolução ao longo da temporada e a qualidade do modelo.
 
 Na visão de um clube, **Jogos que mais mexem nas chances** usa as mesmas
 simulações. Para cada jogo ao vivo e das duas próximas rodadas, compara a
@@ -121,9 +157,12 @@ Partidas com status `live` no feed:
   um chip ● ao lado dos dois clubes;
 - não aceitam palpite: o card mostra o placar, o minuto e as chances de casa,
   empate e fora a partir do placar atual. Um palpite feito antes do início
-  continua guardado e é avaliado em **Meus palpites** quando o jogo termina;
+  continua guardado e é avaliado em **Palpites** quando o jogo termina;
 - nas simulações, partem do placar atual e sorteiam só os gols do tempo que
-  falta (gols esperados multiplicados pela fração restante da partida).
+  falta (gols esperados multiplicados pela fração restante da partida);
+- o card do jogo mostra quanto o placar atual mudou a chance de cada time na
+  meta mais em disputa (por exemplo, "Sul-Americana 41% → 58%"). Para isso, uma
+  segunda simulação trata o jogo como se ainda não tivesse começado.
 
 O feed não informa o minuto. Ele é estimado pelo horário de início: 1º tempo de
 cerca de 47 minutos de relógio, 15 minutos de intervalo e depois o 2º tempo.
@@ -139,7 +178,7 @@ com a aba escondida e é feita na hora em que a página volta a ficar visível. 
 cenário, a rolagem e o campo em edição são preservados. Gols, inícios e fins de
 jogo aparecem como aviso. O servidor segue o mesmo ritmo na consulta ao GE.
 
-A aba **Meus palpites** também calcula calibração das probabilidades salvas em
+A aba **Palpites** também calcula calibração das probabilidades salvas em
 cada previsão. O Brier score de três resultados é a média da soma dos erros
 quadráticos para casa/empate/fora (0 é perfeito; menor é melhor), e a tabela de
 confiabilidade compara confiança média com frequência observada por faixas.

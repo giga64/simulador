@@ -1,8 +1,14 @@
 # SimulaBR
 
 O SimulaBR ajuda a acompanhar a temporada, explorar estatísticas e simular as
-rodadas do Brasileirão 2026: jogos ao vivo na tabela, 10.000 simulações do
-restante do campeonato e os jogos que mais mexem nas chances de cada clube.
+rodadas do Brasileirão 2026:
+
+- classificação com os jogos ao vivo e o efeito de cada placar nas chances;
+- 10.000 simulações do restante do campeonato, com mapa de posições finais e a
+  evolução das chances rodada a rodada;
+- simulador de placares com link curto e imagem de prévia para compartilhar;
+- notificações de gol dos clubes favoritos e comparação do modelo com as casas
+  de apostas (opcionais).
 
 O apoio ao projeto é opcional e pode ser feito pelo [Ko-fi](https://ko-fi.com/simuladorbr).
 O site apenas abre a página externa do Ko-fi; não coleta nem processa pagamentos.
@@ -37,6 +43,9 @@ nenhuma, mantém o snapshot local e avisa que os dados podem estar desatualizado
 | `npm run validate:data`  | Valida o snapshot da temporada e as correções importadas     |
 | `npm run import:results` | Importa resultados conferidos (ver `docs/dados-e-modelo.md`) |
 | `npm run check`          | Lint, formatação, testes e validação: o mesmo que a CI roda  |
+| `npm run backtest`       | Mede o erro do modelo rodada a rodada (escolha do `k`)       |
+| `npm run build:history`  | Reconstrói o histórico de chances após atualizar o snapshot  |
+| `npm run vapid`          | Gera as chaves das notificações push                         |
 
 A CI (`.github/workflows/ci.yml`) roda `lint`, `format:check`, `test` e
 `validate:data` em cada push e pull request.
@@ -46,14 +55,17 @@ A CI (`.github/workflows/ci.yml`) roda `lint`, `format:check`, `test` e
 ```
 index.html, app.js, styles.css   página e interface
 sw.js, manifest.webmanifest      app instalável (PWA) e abertura sem conexão
-src/model/                       modelo: gols esperados, placares, desempate,
-                                 Monte Carlo (Web Worker) e jogos ao vivo
-src/client/                      código só do navegador (fila de simulações)
+src/model/                       modelo (compartilhado com o servidor): gols
+                                 esperados, placares, desempate, Monte Carlo
+                                 (Web Worker), jogos ao vivo, backtest
+src/client/                      código só do navegador (simulações, componentes)
+src/server/                      rotas, segurança, histórico, push, imagens, odds
 src/live-sources/                fontes do feed ao vivo (hoje: GE)
 src/*.js                         validação dos dados, cenários, palpites, feed
 scripts/serve.mjs                servidor Node: arquivos públicos e API
 data/                            snapshot da temporada e correções conferidas
 assets/                          escudos (assets/escudos/*.webp), ícones, logo
+server-assets/                   fontes e escudos PNG usados só pelo servidor
 design/                          arquivos de origem do logo
 supabase/migrations/             tabelas e políticas de acesso das contas
 test/                            testes
@@ -65,5 +77,5 @@ respondem 404.
 
 ## Documentação
 
-- [Publicar e configurar contas (Supabase)](docs/deploy.md)
+- [Publicar, variáveis de ambiente, Supabase e segurança](docs/deploy.md)
 - [Dados, fontes, modelo e jogos ao vivo](docs/dados-e-modelo.md)

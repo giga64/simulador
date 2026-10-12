@@ -10,11 +10,16 @@
     "validate:data": "node scripts/validate-season.mjs",
     "import:results": "node scripts/import-verified-results.mjs",
     "start": "node scripts/serve.mjs",
-    "check": "npm run lint && npm run format:check && npm test && npm run validate:data"
+    "check": "npm run lint && npm run format:check && npm test && npm run validate:data",
+    "backtest": "node scripts/backtest-model.mjs",
+    "build:history": "node scripts/build-probability-history.mjs",
+    "vapid": "web-push generate-vapid-keys"
   },
   "dependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "@supabase/supabase-js": "^2.90.0",
-    "campeonato-brasileiro-api": "git+https://github.com/ezefranca/campeonato-brasileiro-api.git#c4080b7c7b2647bea73caf7713103cf48cb71edf"
+    "campeonato-brasileiro-api": "git+https://github.com/ezefranca/campeonato-brasileiro-api.git#c4080b7c7b2647bea73caf7713103cf48cb71edf",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",

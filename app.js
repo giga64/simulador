@@ -1,11 +1,13 @@
 import { validateSeasonData } from './src/season-data.js';
-import { scoreGrid, cumulative } from './src/model/poisson.js';
-import { expectedGoals } from './src/model/expected-goals.js';
 import { pickScore } from './src/model/pick-score.js';
 import { addHeadToHeadResult, emptyHeadToHead, rankTeams as rankByCriteria } from './src/model/standings.js';
 import { DEFAULT_ITERATIONS, conditionalChances, histogramQuantile } from './src/model/monte-carlo.js';
-import { collectLiveMatches, remainingFraction, standingsWithoutLiveMatches } from './src/model/live-matches.js';
+import { buildSimulationInput, createMatchModel, DEFAULT_SETTINGS } from './src/model/season-model.js';
+import { collectLiveMatches, standingsWithoutLiveMatches } from './src/model/live-matches.js';
 import { createSimulationRunner } from './src/client/simulation-runner.js';
+import { lineChart, meter, positionMap, safeUrl, segmented, signed } from './src/client/ui.js';
+import { backtestModel } from './src/model/backtest.js';
+import { buildSplitTable, SPLIT_MODES } from './src/model/standings-splits.js';
 import {
   decodeScenarioPayload,
   encodeScenarioPayload,
@@ -330,13 +332,15 @@ import {
       MCR = null,
       tmr,
       view = 'home',
-      PG = {},
+      MCR_PRE_LIVE = null,
       sortK = 'pts',
       sortD = -1,
       open = {};
-    let opt = { full: true, odds: true, meth: 'ml' },
-      SET = { k: 6, ha: 1, rho: -0.1, adj: {}, seed: 20261010 };
+    let opt = { full: false, odds: true, meth: 'ml' },
+      SET = { ...DEFAULT_SETTINGS, adj: {} };
     let storageWarningShown = false;
+    // Configuração pública do servidor (/api/config): links curtos, push, odds.
+    let PUBLIC_CONFIG = {};
     let predictionHistory = [];
     let anonymousPredictionHistory = [];
     let signedInUser = null;
@@ -410,6 +414,8 @@ import {
           savePredictionHistory();
         }
         const savedSettings = { ...SET, ...saved.SET, adj: saved.SET?.adj || {} };
+        // k=6 era o padrão antigo; quem não mexeu no ajuste passa ao padrão atual (k=14).
+        if (!saved.settingsVersion && savedSettings.k === 6) savedSettings.k = DEFAULT_SETTINGS.k;
         if (saved.SET && !Number.isInteger(saved.SET.seed)) savedSettings.seed = SET.seed;
         const savedScores = pruneCompletedScenarioScores(
           saved.SC || {},
@@ -453,7 +459,7 @@ import {
     }
     const save = () => {
       try {
-        localStorage.setItem('br26c', JSON.stringify({ SC, SET, opt }));
+        localStorage.setItem('br26c', JSON.stringify({ SC, SET, opt, settingsVersion: 2 }));
       } catch (error) {
         if (!storageWarningShown) {
           storageWarningShown = true;
@@ -836,8 +842,11 @@ import {
     function renderAccountButton() {
       const button = $('#accountButton');
       if (!button) return;
-      button.textContent = signedInUser ? `Sair · ${signedInUser.email}` : 'Entrar / criar conta';
-      button.setAttribute('aria-label', signedInUser ? `Sair da conta ${signedInUser.email}` : 'Entrar ou criar conta');
+      const name = signedInUser?.user_metadata?.display_name || signedInUser?.email || '';
+      button.innerHTML = signedInUser ? escapeHtml(name.trim().charAt(0).toUpperCase() || '?') : ic('user');
+      button.classList.toggle('signed', Boolean(signedInUser));
+      button.setAttribute('aria-label', signedInUser ? `Minha conta (${signedInUser.email})` : 'Entrar ou criar conta');
+      button.title = signedInUser ? `Minha conta · ${signedInUser.email}` : 'Entrar ou criar conta';
       button.disabled = !supabaseClient && !supabaseConfigError;
     }
     async function submitAccountForm(event) {
@@ -930,6 +939,7 @@ import {
         const response = await fetch('/api/config', { cache: 'no-store' });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const config = await response.json();
+        PUBLIC_CONFIG = config;
         if (!config.authConfigured) {
           supabaseConfigError =
             'Login ainda não configurado no servidor. Defina SUPABASE_URL e SUPABASE_PUBLISHABLE_KEY após configurar o projeto e a tabela.';
@@ -969,6 +979,9 @@ import {
       }
     }
     const IC = {
+      search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
+      user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>',
+      bell: '<path d="M6 8a6 6 0 0112 0c0 7 3 8 3 8H3s3-1 3-8M10 20a2 2 0 004 0"/>',
       dice: '<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8.5 8.5h.01M15.5 8.5h.01M12 12h.01M8.5 15.5h.01M15.5 15.5h.01"/>',
       wand: '<path d="M5 3v4M3 5h4M6 17v4M4 19h4M13 3l2.2 5.8L21 11l-5.8 2.2L13 19l-2.2-5.8L5 11l5.8-2.2z"/>',
       trash: '<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/>',
@@ -995,29 +1008,20 @@ import {
     const lg = (c) => `<i class="lg ${c}"></i>`,
       f1 = (n) => n.toFixed(1).replace('.', ','),
       pc = (v) => (v < 1 ? '<1%' : Math.round(v) + '%');
-    function lamb(h, a) {
-      return expectedGoals({
-        home: h,
-        away: a,
-        settings: SET,
-        standings: LIVE_STANDINGS,
-        teamSplits: TS,
-        homeGoalsAverage: gH,
-        awayGoalsAverage: gA,
-      });
-    }
-    function grid(h, a) {
-      const key = h + a;
-      if (PG[key]) return PG[key];
-      const [lh, la] = lamb(h, a);
-      return (PG[key] = scoreGrid(lh, la, SET.rho));
-    }
+    // Modelo de partidas (gols esperados e placares), recriado quando os dados
+    // ou os ajustes mudam. É o mesmo código usado pelo servidor.
+    let MATCH_MODEL = null;
+    const matchModel = () =>
+      MATCH_MODEL ||
+      (MATCH_MODEL = createMatchModel({ teams: T, results: rawResults, standings: LIVE_STANDINGS, settings: SET }));
+    const resetModel = () => {
+      MATCH_MODEL = null;
+    };
+    const grid = (h, a) => matchModel().grid(h, a);
     // Jogo ao vivo: placar atual + distribuição dos gols do tempo que falta.
     function liveGrid(m) {
       const live = LIVE_BY_ID.get(m.k),
-        [lh, la] = lamb(m.h, m.a),
-        fraction = remainingFraction(live.minute),
-        rest = scoreGrid(lh * fraction, la * fraction, 0);
+        rest = matchModel().remainingGrid(m.h, m.a, live.minute);
       let H = 0,
         D = 0,
         A = 0;
@@ -1113,55 +1117,30 @@ import {
       const upcoming = [...new Set(M.filter((m) => !m.late).map((m) => m.r))].sort((a, b) => a - b);
       return new Set(upcoming.slice(0, 2));
     }
-    function monteCarloInput() {
-      const s = project({ includeLive: false }),
-        idx = {},
-        tracked = [],
-        rounds = leverageRounds();
-      T.forEach((c, i) => (idx[c] = i));
-      const fixtures = M.filter((m) => !val(m.k)).map((m) => {
-        const live = LIVE_BY_ID.get(m.k);
-        let G = grid(m.h, m.a),
-          baseHome = 0,
-          baseAway = 0;
-        if (live) {
-          const [lh, la] = lamb(m.h, m.a),
-            fraction = remainingFraction(live.minute);
-          G = scoreGrid(lh * fraction, la * fraction, 0);
-          baseHome = live.homeGoals;
-          baseAway = live.awayGoals;
-        }
-        let track = -1;
-        if (live || rounds.has(m.r)) {
-          track = tracked.length;
-          tracked.push(m.k);
-        }
-        return { home: idx[m.h], away: idx[m.a], size: G.n, cumulative: cumulative(G.g), baseHome, baseAway, track };
+    // liveFromStart: simula os jogos ao vivo desde o início, para comparar a
+    // chance "antes do jogo" com a chance com o placar atual.
+    function monteCarloInput({ liveFromStart = false } = {}) {
+      const rounds = leverageRounds(),
+        scores = new Map();
+      M.forEach((m) => {
+        const score = val(m.k);
+        if (score) scores.set(m.k, score);
       });
-      const table = h2hTable({ includeLive: false });
-      return {
-        idx,
-        tracked,
-        input: {
-          teamCount: T.length,
-          points: T.map((c) => s[c].P),
-          wins: T.map((c) => s[c].V),
-          goalDifference: T.map((c) => s[c].GP - s[c].GC),
-          goalsFor: T.map((c) => s[c].GP),
-          headToHead: T.map((c) => T.map((o) => table[c][o])),
-          fixtures,
-          cutPositions: [
-            0,
-            Q.libertadoresLeaguePositions - 1,
-            Q.sudamericanaLeagueEnd - 1,
-            T.length - Q.relegationPlaces,
-          ],
-          relegationPlaces: Q.relegationPlaces,
-          iterations: SIMULATIONS,
-          seed: SET.seed,
-          trackedCount: tracked.length,
-        },
-      };
+      const { index, tracked, input } = buildSimulationInput({
+        teams: T,
+        base,
+        results: rawResults,
+        openFixtures: M.map((m) => ({ id: m.k, home: m.h, away: m.a, round: m.r })),
+        scores,
+        live: LIVE_BY_ID,
+        matchModel: matchModel(),
+        settings: SET,
+        qualification: Q,
+        iterations: SIMULATIONS,
+        isTracked: (fixture) => !liveFromStart && (LIVE_BY_ID.has(fixture.id) || rounds.has(fixture.round)),
+        liveFromStart,
+      });
+      return { idx: index, tracked, input };
     }
     const runSimulation = createSimulationRunner(new URL('./src/model/monte-carlo.worker.js', import.meta.url));
     const pct = histogramQuantile;
@@ -1196,6 +1175,13 @@ import {
           const result = await runSimulation(input);
           if (!result) return;
           MCR = { ...result, idx, tracked };
+          // Com jogos ao vivo, calcula também as chances "antes do jogo" para mostrar a variação.
+          if (LIVE_MATCHES.length) {
+            const before = monteCarloInput({ liveFromStart: true });
+            const preLive = await runSimulation(before.input);
+            if (!preLive) return;
+            MCR_PRE_LIVE = { ...preLive, idx: before.idx };
+          } else MCR_PRE_LIVE = null;
           paint();
         } catch (error) {
           console.error('Falha na simulação:', error);
@@ -1216,7 +1202,9 @@ import {
           input?.select();
         }
       }
-      if (view == 'cor') renderCor();
+      if (view == 'cor') renderChances();
+      if (view == 'clubs') renderClubPage();
+      if (view == 'home') renderHome();
     }
     function form(c, s) {
       const a = TS[c].f.concat(s[c].sim).slice(-5),
@@ -1277,15 +1265,16 @@ import {
     }
     function renderAviso() {
       const A = $('#aviso');
-      A.innerHTML = `<details class="cd warn sim-info"${modelPanelOpen ? ' open' : ''}><summary><b>Sobre a simulação e o modelo</b><span class="mu"> · ${METH[opt.meth][0]}</span></summary><div class="sim-info-body"><p><b>Cenário personalizado, não é previsão oficial.</b> Os placares digitados são hipóteses; jogos em branco entram nas chances por um modelo estatístico simples. Não considera lesões, suspensões, escalações nem calendário continental. As vagas continentais são aproximações: outras competições podem alterar os cortes.</p>
- <div class="row" style="margin-top:10px"><label for="method">Ao preencher automaticamente, usar:</label><select id="method" data-change="method">${Object.keys(
-   METH,
- )
-   .map((k) => `<option value="${k}" ${opt.meth == k ? 'selected' : ''}>${METH[k][0]}</option>`)
-   .join(
-     '',
-   )}</select><button data-act="toggle-advanced" aria-expanded="${advOpen}">${ic('cols')}Ajustes do modelo</button></div><div class="sm mu" style="margin-top:6px">${METH[opt.meth][1]}</div>
- <div id="adv" ${advOpen ? '' : 'hidden'}><div class="ctl"><label>Peso dos dados da temporada (k): <b id="l-k">${SET.k}</b> jogos de prior · menor = confia mais na campanha atual<br><input type="range" min="1" max="20" value="${SET.k}" data-input="model-setting" data-setting="k"></label><label>Força do mando: <b id="l-ha">×${SET.ha.toFixed(2)}</b> · 1,00 = como na temporada<br><input type="range" min="0.8" max="1.25" step="0.01" value="${SET.ha}" data-input="model-setting" data-setting="ha"></label><label>Correção de empates (Dixon-Coles ρ): <b id="l-rho">${SET.rho.toFixed(2)}</b> · mais negativo = mais 0x0 e 1x1<br><input type="range" min="-0.25" max="0" step="0.01" value="${SET.rho}" data-input="model-setting" data-setting="rho"></label><label>Semente das simulações: <b id="l-seed">${SET.seed}</b> · mesmos dados e semente = mesmos resultados<br><input type="number" min="0" max="4294967295" step="1" value="${SET.seed}" inputmode="numeric" data-input="model-seed"></label></div><div class="row" style="margin-top:8px"><button data-act="reset-model">Restaurar padrão</button></div></div></div></details>`;
+      const range = (setting, label, value, hint, min, max, step) =>
+        `<label>${label}: <b id="l-${setting}">${value}</b><span class="mu xs"> · ${hint}</span><input type="range" min="${min}" max="${max}" step="${step}" value="${SET[setting]}" data-input="model-setting" data-setting="${setting}"></label>`;
+      A.innerHTML = `<details class="cd sim-info"${modelPanelOpen ? ' open' : ''}><summary><b>Ajustes</b><span class="mu sm">Preenchimento automático: ${METH[opt.meth][0]} · k ${SET.k} · mando ×${SET.ha.toFixed(2)}</span></summary><div class="sim-info-body">
+      <div class="row"><label for="method">Preencher jogos com</label><select id="method" data-change="method">${Object.keys(
+        METH,
+      )
+        .map((k) => `<option value="${k}" ${opt.meth == k ? 'selected' : ''}>${METH[k][0]}</option>`)
+        .join('')}</select></div><p class="mu sm">${METH[opt.meth][1]}</p>
+      <div class="ctl">${range('k', 'Peso da média da liga (k)', SET.k, 'menor = confia mais na campanha atual', 1, 30, 1)}${range('ha', 'Força do mando', `×${SET.ha.toFixed(2)}`, '1,00 = como na temporada', 0.8, 1.25, 0.01)}${range('rho', 'Correção de empates (ρ)', SET.rho.toFixed(2), 'mais negativo = mais 0x0 e 1x1', -0.25, 0, 0.01)}<label>Semente: <b id="l-seed">${SET.seed}</b><span class="mu xs"> · mesma semente = mesmas chances</span><input type="number" min="0" max="4294967295" step="1" value="${SET.seed}" inputmode="numeric" data-input="model-seed"></label></div>
+      <div class="row"><button data-act="reset-model">Restaurar padrão</button><span class="mu xs">Os placares são hipóteses suas. O modelo não sabe de lesões, suspensões nem escalações.</span></div></div></details>`;
       const details = A.querySelector('details');
       details.addEventListener('toggle', () => {
         modelPanelOpen = details.open;
@@ -1294,7 +1283,7 @@ import {
     let advOpen = false;
     function setS(k, v) {
       SET[k] = v;
-      PG = {};
+      resetModel();
       save();
       const e = $('#l-' + k);
       if (e) e.textContent = k == 'ha' ? '×' + v.toFixed(2) : k == 'rho' ? v.toFixed(2) : v;
@@ -1306,7 +1295,7 @@ import {
     }
     function adjL(v) {
       SET.adj[team] = +v;
-      PG = {};
+      resetModel();
       save();
       $('#l-adj').textContent = (v > 0 ? '+' : '') + v + '%';
     }
@@ -1336,8 +1325,8 @@ import {
         au = v[2] == 'a',
         when = d ? matchDateParts(d) : null;
       const meta = d
-        ? `<span><b>${when.weekday}</b> ${when.day}/${when.month}/2026</span><span class="sd">${m.st}</span><b>${when.hour}:${when.minute} BRT</b>`
-        : `<span><b>Jogo atrasado</b></span><span class="sd">${m.st}</span><b>A definir</b>`;
+        ? `<span><b>${when.weekday}</b> ${when.day}/${when.month}/2026</span><span class="sd">${escapeHtml(m.st || '')}</span><b>${when.hour}:${when.minute} BRT</b>`
+        : `<span><b>Jogo atrasado</b></span><span class="sd">${escapeHtml(m.st || '')}</span><b>A definir</b>`;
       const inp = (i) =>
           `<input type="number" min="0" max="20" step="1" inputmode="numeric" value="${v[i]}" aria-label="Gols de ${NM[i ? m.a : m.h]} na partida contra ${NM[i ? m.h : m.a]}" data-input="score" data-match="${m.k}" data-side="${i}">`,
         ida = RM[m.a + '-' + m.h],
@@ -1360,10 +1349,10 @@ import {
             : sourceInfo?.type === 'feed-observed' && sourceInfo.observedAt
               ? ` · observado no GE em ${formatLiveTime(sourceInfo.observedAt)}`
               : '';
-      return `<div class="mc result-card"><div class="meta"><span>Resultado registrado</span><span class="sd">${fixture.stadium || STD[fixture.home] || ''}</span><span>${escapeHtml(source)}</span></div><div class="tt"><span class="t h">${ab(fixture.home)}</span>${lg(fixture.home)}<b class="result-score">${result.homeGoals}</b><span class="x">x</span><b class="result-score">${result.awayGoals}</b>${lg(fixture.away)}<span class="t">${ab(fixture.away)}</span></div><div class="dt">${NM[fixture.home]} ${result.homeGoals} x ${result.awayGoals} ${NM[fixture.away]}${stamp}</div></div>`;
+      return `<div class="mc result-card"><div class="meta"><span>Resultado registrado</span><span class="sd">${escapeHtml(fixture.stadium || STD[fixture.home] || '')}</span><span>${escapeHtml(source)}</span></div><div class="tt"><span class="t h">${ab(fixture.home)}</span>${lg(fixture.home)}<b class="result-score">${result.homeGoals}</b><span class="x">x</span><b class="result-score">${result.awayGoals}</b>${lg(fixture.away)}<span class="t">${ab(fixture.away)}</span></div><div class="dt">${NM[fixture.home]} ${result.homeGoals} x ${result.awayGoals} ${NM[fixture.away]}${stamp}</div></div>`;
     }
     function missingResultCard(fixture) {
-      return `<div class="mc result-card"><div class="meta"><span>Resultado não disponível</span><span class="sd">${fixture.stadium || STD[fixture.home] || ''}</span><span>${fixture.status === 'postponed' ? 'Partida adiada' : 'Sem placar confirmado'}</span></div><div class="tt"><span class="t h">${ab(fixture.home)}</span>${lg(fixture.home)}<span class="x">x</span>${lg(fixture.away)}<span class="t">${ab(fixture.away)}</span></div><div class="dt">${NM[fixture.home]} x ${NM[fixture.away]} · ${fixture.status === 'postponed' ? 'Data a definir.' : 'Este jogo não tem resultado disponível no snapshot.'}</div></div>`;
+      return `<div class="mc result-card"><div class="meta"><span>Resultado não disponível</span><span class="sd">${escapeHtml(fixture.stadium || STD[fixture.home] || '')}</span><span>${fixture.status === 'postponed' ? 'Partida adiada' : 'Sem placar confirmado'}</span></div><div class="tt"><span class="t h">${ab(fixture.home)}</span>${lg(fixture.home)}<span class="x">x</span>${lg(fixture.away)}<span class="t">${ab(fixture.away)}</span></div><div class="dt">${NM[fixture.home]} x ${NM[fixture.away]} · ${fixture.status === 'postponed' ? 'Data a definir.' : 'Este jogo não tem resultado disponível no snapshot.'}</div></div>`;
     }
     let leverageGoal = 'auto';
     function leverageGoals() {
@@ -1465,12 +1454,12 @@ import {
             h: 70,
             col: (k) =>
               k < Q.libertadoresLeaguePositions
-                ? '#38C98B'
+                ? 'var(--g)'
                 : k >= Q.sudamericanaLeagueStart - 1 && k < Q.sudamericanaLeagueEnd
-                  ? '#5B9BE6'
+                  ? 'var(--b)'
                   : k >= T.length - Q.relegationPlaces
-                    ? '#EC6A57'
-                    : '#8CA297',
+                    ? 'var(--r)'
+                    : 'var(--mu2)',
             fmt: (v) => pc(v),
           },
         )}`
@@ -1550,11 +1539,11 @@ import {
       return `<svg class="ch" viewBox="0 0 ${W} ${H + 14}">${v
         .map((x, i) => {
           const hh = (x / mx) * H;
-          return `<rect x="${i * bw + 1}" y="${H - hh}" width="${bw - 2}" height="${hh}" rx="1.5" fill="${o.col ? o.col(i) : '#D9B65C'}" opacity="${(o.op && o.op(i)) || 1}"><title>${lab[i]}: ${o.fmt ? o.fmt(x) : x}</title></rect>`;
+          return `<rect x="${i * bw + 1}" y="${H - hh}" width="${bw - 2}" height="${hh}" rx="1.5" style="fill:${o.col ? o.col(i) : 'var(--ac)'};opacity:${(o.op && o.op(i)) || 1}"><title>${lab[i]}: ${o.fmt ? o.fmt(x) : x}</title></rect>`;
         })
         .join(
           '',
-        )}${lab.map((l, i) => (n <= 40 && i % (o.step || 1) == 0 ? `<text x="${i * bw + bw / 2}" y="${H + 10}" text-anchor="middle">${l}</text>` : '')).join('')}${o.ref != null ? `<line x1="0" x2="${W}" y1="${H - (o.ref / mx) * H}" y2="${H - (o.ref / mx) * H}" stroke="#D9B65C" stroke-dasharray="3 3"/>` : ''}</svg>`;
+        )}${lab.map((l, i) => (n <= 40 && i % (o.step || 1) == 0 ? `<text x="${i * bw + bw / 2}" y="${H + 10}" text-anchor="middle">${l}</text>` : '')).join('')}${o.ref != null ? `<line x1="0" x2="${W}" y1="${H - (o.ref / mx) * H}" y2="${H - (o.ref / mx) * H}" style="stroke:var(--ac)" stroke-dasharray="3 3"/>` : ''}</svg>`;
     }
     function renderAll() {
       renderAviso();
@@ -1705,207 +1694,206 @@ import {
       if (c) scrollTo({ top: 0, behavior: 'smooth' });
     }
     /* ---- abas ---- */
+    // Abas do menu. Busca, conta, ajuda e fontes ficam no cabeçalho e no rodapé.
     const TABS = [
       ['home', 'Início'],
       ['live', 'Ao vivo'],
       ['sim', 'Simular'],
-      ['est', 'Estatísticas da temporada'],
+      ['cor', 'Chances'],
       ['clubs', 'Clubes'],
-      ['history', 'Rodadas'],
-      ['perf', 'Meus palpites'],
-      ['cor', `Corrida: título, G${Q.libertadoresLeaguePositions} e Z${Q.relegationPlaces}`],
-      ['search', 'Buscar'],
-      ['guide', 'Ajuda e privacidade'],
-      ['account', 'Minha conta'],
-      ['src', 'Fontes'],
+      ['est', 'Estatísticas'],
+      ['perf', 'Palpites'],
     ];
+    const VIEWS = [...TABS.map(([key]) => key), 'search', 'guide', 'account', 'src'];
+    // Sub-abas de Chances e Estatísticas.
+    const subView = { cor: 'race', est: 'season' };
+    // Chances (%) de um clube num resultado de simulação.
+    function chancesIn(result, code) {
+      if (!result) return null;
+      const counts = result.PC[result.idx[code]],
+        sum = (first, last) => {
+          let total = 0;
+          for (let position = first; position <= last; position++) total += counts[position];
+          return (total / result.N) * 100;
+        };
+      return {
+        title: sum(0, 0),
+        lib: sum(0, Q.libertadoresLeaguePositions - 1),
+        sud: sum(Q.sudamericanaLeagueStart - 1, Q.sudamericanaLeagueEnd - 1),
+        safe: 100 - sum(T.length - Q.relegationPlaces, T.length - 1),
+      };
+    }
+    const GOAL_LABELS = () => ({
+      title: 'título',
+      lib: `G${Q.libertadoresLeaguePositions}`,
+      sud: 'Sul-Americana',
+      safe: `escapar do Z${Q.relegationPlaces}`,
+    });
+    // Para cada time de um jogo ao vivo: a meta cuja chance mais mudou com o placar atual.
+    function liveDeltas(fixtureId) {
+      const live = LIVE_BY_ID.get(fixtureId);
+      if (!live || !MCR || !MCR_PRE_LIVE) return '';
+      const labels = GOAL_LABELS();
+      const rows = [live.home, live.away]
+        .map((code) => {
+          const now = chancesIn(MCR, code),
+            before = chancesIn(MCR_PRE_LIVE, code);
+          const [key] = Object.keys(labels)
+            .filter((goal) => before[goal] > 0.5 && before[goal] < 99.5)
+            .sort((a, b) => Math.abs(now[b] - before[b]) - Math.abs(now[a] - before[a]));
+          if (!key) return '';
+          const change = now[key] - before[key];
+          return `<span class="who">${lg(code)}<b>${escapeHtml(NM[code])}</b></span><span class="what">${labels[key]} ${pc(before[key])} → <b>${pc(now[key])}</b> <span class="delta ${change >= 0.5 ? 'up' : change <= -0.5 ? 'dn' : ''}">${signed(change, ' p.p.')}</span></span>`;
+        })
+        .filter(Boolean);
+      return rows.length
+        ? `<div class="live-deltas" aria-label="Como o placar atual muda as chances">${rows.join('')}</div>`
+        : '';
+    }
     function renderFixtureCard(fixture, result, feed, favorite = false) {
       const isStaleLive = liveFeed?.stale && feed?.status === 'live' && !result;
-      const isLive = !liveFeed?.stale && feed?.status === 'live' && !result;
+      const liveNow = !liveFeed?.stale && feed?.status === 'live' && !result;
       const finished = result || feed?.status === 'finished';
       const liveInfo = LIVE_BY_ID.get(fixture.id);
-      const status =
-        result || finished
-          ? 'Encerrado'
-          : isLive
-            ? `<span class="live-indicator"><i aria-hidden="true"></i>AO VIVO<span class="sr-only">: partida em andamento</span></span>${liveInfo ? ` · ${liveClock(liveInfo)}` : ''}`
-            : isStaleLive
-              ? 'Sem atualização · última consulta ao vivo'
-              : fixture.status === 'postponed'
-                ? 'Adiado'
-                : 'Agendado';
-      const score = result
-        ? `<b class="result-score">${result.homeGoals}</b><span class="x">x</span><b class="result-score">${result.awayGoals}</b>`
-        : feed?.score?.home != null && feed?.score?.away != null
-          ? `<b class="result-score">${feed.score.home}</b><span class="x">x</span><b class="result-score">${feed.score.away}</b>`
-          : '<span class="x">x</span>';
       const kickoff = fixture.kickoff || feed?.dateTime;
-      const source = result?.source?.name || feed?.source?.name || dataSource.name;
-      const at = result?.source?.observedAt || feed?.observedAt;
-      return `<article class="mc live-fixture${isLive ? ' is-live' : ''}${isStaleLive ? ' is-stale' : ''}${favorite ? ' favorite-fixture' : ''}"><div class="meta"><span>${status}</span><span>${fixture.round}ª rodada${favorite ? ' · clube favorito' : ''}</span></div><div class="tt"><span class="t h">${ab(fixture.home)}</span>${lg(fixture.home)}${score}${lg(fixture.away)}<span class="t">${ab(fixture.away)}</span></div><div class="dt">${escapeHtml(NM[fixture.home])} x ${escapeHtml(NM[fixture.away])}<br>${kickoff ? formatLiveTime(kickoff) : 'Horário não disponível'} · ${escapeHtml(fixture.stadium || feed?.venue || STD[fixture.home] || 'Estádio não informado')}<br>Fonte: ${escapeHtml(source)}${at ? ` · ${isLive ? 'última consulta' : isStaleLive ? 'última consulta válida' : 'consultado'} ${formatLiveTime(at)}` : ''}</div></article>`;
+      const when = kickoff ? matchDateParts(new Date(kickoff)) : null;
+      const status = finished
+        ? 'Encerrado'
+        : liveNow
+          ? `<span class="live-indicator"><i aria-hidden="true"></i>AO VIVO</span>${liveInfo ? ` · ${liveClock(liveInfo)}` : ''}`
+          : isStaleLive
+            ? 'Sem atualização recente'
+            : fixture.status === 'postponed'
+              ? 'Adiado'
+              : when
+                ? `${when.weekday} ${when.day}/${when.month} · <b>${when.hour}:${when.minute}</b>`
+                : 'A definir';
+      const scoreValues = result
+        ? [result.homeGoals, result.awayGoals]
+        : feed?.score?.home != null && feed?.score?.away != null && (liveNow || isStaleLive || finished)
+          ? [feed.score.home, feed.score.away]
+          : null;
+      const score = scoreValues
+        ? `<b class="result-score">${scoreValues[0]}</b><span class="x">x</span><b class="result-score">${scoreValues[1]}</b>`
+        : '<span class="x">x</span>';
+      const stadium = fixture.stadium || feed?.venue || STD[fixture.home] || '';
+      return `<article class="mc${liveNow ? ' is-live' : ''}${isStaleLive ? ' is-stale' : ''}${favorite ? ' hl' : ''}" aria-label="${escapeHtml(`${NM[fixture.home]} x ${NM[fixture.away]}`)}"><div class="meta"><span>${status}</span><span class="sd">${escapeHtml(stadium)}</span></div><div class="tt"><span class="t h">${ab(fixture.home)}</span>${lg(fixture.home)}${score}${lg(fixture.away)}<span class="t">${ab(fixture.away)}</span></div>${liveNow ? liveDeltas(fixture.id) : ''}</article>`;
     }
-    function renderHome() {
-      const now = Date.now(),
-        feedMatches = liveFeed?.matches || [];
-      const currentLiveMatches = liveFeed?.stale ? [] : feedMatches.filter((match) => match.status === 'live');
-      const staleLiveMatches = liveFeed?.stale ? feedMatches.filter((match) => match.status === 'live') : [];
-      const liveCards = currentLiveMatches
-        .map((match) => {
-          const fixture = ALL_FIXTURES.find(
-            (item) =>
-              item.round === match.round &&
-              item.home === teamCode(match.homeTeam) &&
-              item.away === teamCode(match.awayTeam),
-          );
-          return fixture
-            ? renderFixtureCard(
-                fixture,
-                null,
-                match,
-                favoriteTeams.includes(fixture.home) || favoriteTeams.includes(fixture.away),
-              )
-            : '';
-        })
-        .filter(Boolean);
-      const staleCards = staleLiveMatches
-        .map((match) => {
-          const fixture = ALL_FIXTURES.find(
-            (item) =>
-              item.round === match.round &&
-              item.home === teamCode(match.homeTeam) &&
-              item.away === teamCode(match.awayTeam),
-          );
-          return fixture
-            ? renderFixtureCard(
-                fixture,
-                null,
-                match,
-                favoriteTeams.includes(fixture.home) || favoriteTeams.includes(fixture.away),
-              )
-            : '';
-        })
-        .filter(Boolean);
-      let upcoming = ALL_FIXTURES.filter(
+    function feedMatchFor(fixture) {
+      return (liveFeed?.matches || []).find(
+        (match) =>
+          match.round === fixture.round &&
+          teamCode(match.homeTeam) === fixture.home &&
+          teamCode(match.awayTeam) === fixture.away,
+      );
+    }
+    function upcomingFixtures() {
+      const now = Date.now();
+      return ALL_FIXTURES.filter(
         (fixture) =>
           fixture.status !== 'played' &&
           fixture.status !== 'postponed' &&
-          fixture.kickoff &&
-          Date.parse(fixture.kickoff) >= now,
-      ).sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff));
-      if (!upcoming.length)
-        upcoming = ALL_FIXTURES.filter(
-          (fixture) =>
-            fixture.status !== 'played' &&
-            fixture.status !== 'postponed' &&
-            fixture.round >= (LIVE_ROUND?.number || DEFAULT_ROUND),
-        ).sort(
-          (a, b) =>
-            a.round - b.round ||
-            (a.kickoff ? Date.parse(a.kickoff) : Infinity) - (b.kickoff ? Date.parse(b.kickoff) : Infinity),
-        );
-      const recentFixtures = upcoming.slice(0, 3);
-      const spotlightMatch = currentLiveMatches[0] || staleLiveMatches[0] || null;
-      const spotlightFixture = spotlightMatch
-        ? ALL_FIXTURES.find(
-            (item) =>
-              item.round === spotlightMatch.round &&
-              item.home === teamCode(spotlightMatch.homeTeam) &&
-              item.away === teamCode(spotlightMatch.awayTeam),
-          ) || recentFixtures[0]
-        : recentFixtures[0];
-      const spotlightFeed =
-        spotlightMatch ||
-        feedMatches.find(
-          (match) =>
-            match.round === spotlightFixture?.round &&
-            teamCode(match.homeTeam) === spotlightFixture.home &&
-            teamCode(match.awayTeam) === spotlightFixture.away,
-        );
-      const spotlightLive = Boolean(spotlightMatch && !liveFeed?.stale);
-      const spotlightHeading = spotlightLive
-        ? 'Partida em andamento'
-        : spotlightMatch
-          ? 'Última partida consultada'
-          : spotlightFixture
-            ? 'Próxima partida'
-            : 'Temporada em andamento';
-      const spotlightStatus = liveFeed
-        ? liveFeed.stale
-          ? `Dados desatualizados · última consulta ${formatLiveTime(liveFeed.fetchedAt)}`
-          : `Dados atualizados · ${escapeHtml(liveFeed.source.name)} · ${formatLiveTime(liveFeed.fetchedAt)}`
-        : `Feed ao vivo indisponível · snapshot de ${updatedLabel}`;
-      const spotlightMarkup = `<section class="home-spotlight${spotlightLive ? ' has-live' : ''}" aria-labelledby="spotlightTitle"><div class="spotlight-copy"><span class="hero-kicker">${spotlightLive ? 'ACOMPANHAMENTO AO VIVO' : 'BRASILEIRÃO 2026 · PAINEL DA RODADA'}</span><h2 id="spotlightTitle">${spotlightHeading}</h2><p>${spotlightFixture ? 'Acompanhe horário, placar e situação da partida em destaque.' : 'Explore o calendário e acompanhe a temporada.'}</p><p class="spotlight-feed" role="status">${spotlightStatus}</p><div class="spotlight-actions"><button class="p" data-act="show-view" data-view="sim">Criar simulação</button><button data-act="show-view" data-view="live">Ver jogos e calendário</button></div></div><div class="spotlight-match">${spotlightFixture ? renderFixtureCard(spotlightFixture, null, spotlightFeed) : '<p class="mu">Não há próxima partida cadastrada.</p>'}</div></section>`;
-      const secondaryFixtures = spotlightMatch ? recentFixtures.slice(0, 2) : recentFixtures.slice(1, 3);
-      // Com jogos em andamento, a tabela já considera os placares parciais.
-      const currentTable = project({ includeScenario: false }),
-        standings = (
-          LIVE_MATCHES.length || !LIVE_STANDINGS
-            ? rankTeams(currentTable, { includeScenario: false }).map((code, index) => ({
-                code,
-                entry: { position: index + 1, points: currentTable[code].P, matches: currentTable[code].J },
-              }))
-            : [...LIVE_STANDINGS]
-                .sort((a, b) => a[1].position - b[1].position)
-                .map(([code, entry]) => ({ code, entry }))
-        ).slice(0, 5);
-      const dataLabel = liveFeed
-        ? `${escapeHtml(liveFeed.source.name)} · consultado ${formatLiveTime(liveFeed.fetchedAt)}${liveFeed.stale ? ' · desatualizado' : ''}`
-        : `Snapshot local · atualizado ${updatedLabel} · feed ao vivo indisponível`;
-      $('#v-home').innerHTML =
-        `${spotlightMarkup}<div class="home-tour"><div><b>Primeira vez no SimulaBR?</b><span class="mu sm">Veja em poucos passos como simular e acompanhar os dados.</span></div><button data-act="start-tour">Fazer visita guiada</button></div><div class="home-grid"><section class="cd"><div class="home-section-heading"><h2>Jogos ao vivo</h2>${liveCards.length ? '<span class="live-indicator"><i aria-hidden="true"></i>AGORA<span class="sr-only">: jogos ao vivo</span></span>' : ''}</div>${liveCards.length ? `<div class="grid">${liveCards.slice(0, 4).join('')}</div>` : staleCards.length ? `<p class="warn stale-notice">A última consulta válida encontrou estas partidas em andamento; o placar pode ter mudado.</p><div class="grid">${staleCards.slice(0, 4).join('')}</div>` : `<p class="mu">Nenhuma partida em andamento neste momento.</p><button data-act="show-view" data-view="live">Ver central da rodada</button>`}</section>
-  <section class="cd"><h2>Outros próximos jogos</h2>${
-    secondaryFixtures.length
-      ? `<div class="grid">${secondaryFixtures
-          .map((fixture) =>
-            renderFixtureCard(
-              fixture,
-              null,
-              feedMatches.find(
-                (match) =>
-                  match.round === fixture.round &&
-                  teamCode(match.homeTeam) === fixture.home &&
-                  teamCode(match.awayTeam) === fixture.away,
-              ),
-              favoriteTeams.includes(fixture.home) || favoriteTeams.includes(fixture.away),
-            ),
-          )
-          .join('')}</div>`
-      : '<p class="mu">Consulte o calendário para ver os próximos jogos.</p>'
-  }<button data-act="show-view" data-view="live">Abrir calendário completo</button></section></div>
-  <div class="home-grid home-lower"><section class="cd"><div class="home-section-heading"><h2>Classificação atual</h2><span class="data-chip">${dataLabel}</span></div><p class="mu sm">${LIVE_MATCHES.length ? 'Inclui os placares parciais dos jogos em andamento. ' : ''}${liveFeed ? 'Tabela consultada na fonte indicada; não é publicação oficial da CBF.' : 'Cálculo local com resultados conhecidos; pode haver partidas sem placar.'}</p><div class="home-standings">${standings.map(({ code, entry }) => `<button class="home-standing-row" data-act="open-club" data-team="${code}"><span class="home-position">${entry.position}º</span>${lg(code)}<b>${escapeHtml(NM[code])}</b><span>${entry.points} pts</span>${liveChip(currentTable[code])}</button>`).join('')}</div><button data-act="show-view" data-view="est">Ver estatísticas da temporada</button></section>
-  <section class="cd"><div class="home-section-heading"><h2>Seus clubes</h2><button data-act="show-view" data-view="clubs">Explorar clubes</button></div>${
-    favoriteTeams.length
-      ? `<div class="favorite-list">${favoriteTeams
-          .map((code) => {
-            const entry = LIVE_STANDINGS?.get(code),
-              position = entry?.position || rankTeams(base).indexOf(code) + 1,
-              fixtures = upcoming.filter((fixture) => fixture.home === code || fixture.away === code).slice(0, 2);
-            return `<article class="favorite-row"><button class="favorite-name" data-act="open-club" data-team="${code}">${lg(code)}<b>${escapeHtml(NM[code])}</b><span>${position}º${entry ? ` · ${entry.points} pts` : ''}</span></button>${fixtures.length ? fixtures.map((fixture) => `<p class="mu sm">${fixture.round}ª rodada · ${escapeHtml(NM[fixture.home])} x ${escapeHtml(NM[fixture.away])} · ${fixture.kickoff ? formatLiveTime(fixture.kickoff) : 'data a definir'}</p>`).join('') : '<p class="mu sm">Sem próximos jogos disponíveis.</p>'}</article>`;
-          })
-          .join('')}</div>`
-      : '<p class="mu">Escolha seus clubes favoritos para destacar posição e próximos jogos aqui.</p><button data-act="show-view" data-view="clubs">Escolher clubes favoritos</button>'
-  }</section></div>
-  <section class="support-card"><div><span class="hero-kicker">PROJETO INDEPENDENTE</span><h2>Ajude o SimulaBR</h2><p>Se este projeto está sendo útil, você pode apoiar voluntariamente. O apoio é opcional; os recursos principais continuam disponíveis para todos.</p></div><a class="support-link support-link-large" href="https://ko-fi.com/simuladorbr" target="_blank" rel="noopener noreferrer">Apoiar pelo Ko-fi</a></section>`;
-      if (!signedInUser) {
-        const favoritesSection = $('#v-home').querySelector('.home-lower > section:nth-child(2)');
-        favoritesSection.innerHTML = `<div class="home-section-heading"><h2>Clubes favoritos</h2></div><p class="mu">Crie uma conta para escolher seus clubes, acompanhar posição e próximos jogos e configurar lembretes personalizados.</p><button class="p" data-act="open-account" data-mode="register">Criar conta e escolher clubes</button>`;
+          !LIVE_BY_ID.has(fixture.id) &&
+          (fixture.kickoff ? Date.parse(fixture.kickoff) >= now - 3 * 3600_000 : fixture.round >= DEFAULT_ROUND),
+      ).sort(
+        (a, b) =>
+          (a.kickoff ? Date.parse(a.kickoff) : Infinity) - (b.kickoff ? Date.parse(b.kickoff) : Infinity) ||
+          a.round - b.round,
+      );
+    }
+    function fixtureRow(fixture) {
+      const when = fixture.kickoff ? matchDateParts(new Date(fixture.kickoff)) : null;
+      return `<div class="fixture-row"><span class="home">${escapeHtml(NM[fixture.home])}${lg(fixture.home)}</span><span class="when">${when ? `<b>${when.hour}:${when.minute}</b>${when.weekday} ${when.day}/${when.month}` : '<b>—</b>a definir'}</span><span class="away">${lg(fixture.away)}${escapeHtml(NM[fixture.away])}</span></div>`;
+    }
+    // Chances "oficiais" do site (sem palpites): última foto do servidor. Sem
+    // servidor, usa a simulação local quando o usuário não tem palpites.
+    function baselineChances() {
+      const entries = PROB_HISTORY || [];
+      const last = entries[entries.length - 1];
+      if (last) {
+        const previous = [...entries].reverse().find((entry) => entry.matches <= last.matches - T.length / 2) || null;
+        return { now: last.chances, previous: previous?.chances || null, label: 'variação desde a rodada anterior' };
       }
+      if (MCR && !M.some((m) => val(m.k))) {
+        const chances = Object.fromEntries(
+          T.map((code) => {
+            const value = chancesIn(MCR, code);
+            return [code, { title: value.title, libertadores: value.lib, relegation: 100 - value.safe }];
+          }),
+        );
+        return { now: chances, previous: null, label: '' };
+      }
+      return null;
+    }
+    function chanceList(chances, key, tone, limit = 5) {
+      const rows = T.map((code) => ({
+        code,
+        value: chances.now[code]?.[key] ?? 0,
+        before: chances.previous?.[code]?.[key],
+      }))
+        .filter((row) => row.value >= 0.5)
+        .sort((a, b) => b.value - a.value)
+        .slice(0, limit);
+      if (!rows.length) return '<p class="mu sm">Nenhum clube com chance relevante.</p>';
+      return `<div class="chance-list">${rows
+        .map((row) => {
+          const change = row.before == null ? null : row.value - row.before;
+          const good = key === 'relegation' ? -change : change;
+          return `<div class="chance-row">${lg(row.code)}<span class="name">${escapeHtml(NM[row.code])}</span><span class="value">${pc(row.value)}${change != null && Math.abs(change) >= 0.5 ? ` <span class="delta ${good > 0 ? 'up' : 'dn'}">${signed(change)}</span>` : ''}</span>${meter(row.value, tone)}</div>`;
+        })
+        .join('')}</div>`;
+    }
+    function renderHome() {
+      const liveFixtures = ALL_FIXTURES.filter((fixture) => LIVE_BY_ID.has(fixture.id));
+      const upcoming = upcomingFixtures();
+      const current = project({ includeScenario: false });
+      const order = rankTeams(current, { includeScenario: false });
+      const chances = baselineChances();
+      const zone = (index) =>
+        index < Q.libertadoresLeaguePositions
+          ? 'g'
+          : index >= Q.sudamericanaLeagueStart - 1 && index < Q.sudamericanaLeagueEnd
+            ? 'b'
+            : index >= T.length - Q.relegationPlaces
+              ? 'r'
+              : 'n';
+      const roundNumber = LIVE_ROUND?.number || DEFAULT_ROUND;
+      const table = `<table class="mini-table"><thead><tr><th class="l">#</th><th class="l">Clube</th><th>P</th><th>J</th><th>SG</th>${chances ? '<th>Tít.</th>' : ''}</tr></thead><tbody>${order
+        .map((code, index) => {
+          const team = current[code],
+            goalDifference = team.GP - team.GC;
+          return `<tr class="r${zone(index)}"><td class="l"><span class="ps z${zone(index)}">${index + 1}</span></td><td class="l"><button class="tn" data-act="open-club" data-team="${code}">${lg(code)}<span class="fn">${escapeHtml(NM[code])}</span><span class="ab">${ab(code)}</span></button>${liveChip(team)}</td><td class="n">${team.P}</td><td>${team.J}</td><td>${goalDifference > 0 ? '+' : ''}${goalDifference}</td>${chances ? `<td class="mu">${(chances.now[code]?.title ?? 0) >= 0.5 ? pc(chances.now[code].title) : ''}</td>` : ''}</tr>`;
+        })
+        .join('')}</tbody></table>`;
+      const favorites = signedInUser
+        ? favoriteTeams.length
+          ? `<div class="favorite-list">${favoriteTeams
+              .map((code) => {
+                const position = order.indexOf(code) + 1,
+                  next = upcoming.find((fixture) => fixture.home === code || fixture.away === code);
+                return `<article class="favorite-row"><button class="favorite-name" data-act="open-club" data-team="${code}">${lg(code)}<b>${escapeHtml(NM[code])}</b><span class="mu">${position}º · ${current[code].P} pts</span></button>${next ? `<p class="mu sm">Próximo: ${escapeHtml(NM[next.home])} x ${escapeHtml(NM[next.away])} · ${next.kickoff ? formatLiveTime(next.kickoff) : 'a definir'}</p>` : ''}</article>`;
+              })
+              .join('')}</div>`
+          : '<p class="mu sm">Escolha seus clubes na aba Clubes para vê-los aqui.</p><button data-act="show-view" data-view="clubs">Escolher clubes</button>'
+        : '<p class="mu sm">Crie uma conta grátis para acompanhar seus clubes e receber aviso de gol no celular.</p><button data-act="open-account" data-mode="register">Criar conta</button>';
+      const liveCount = liveFixtures.length;
+      $('#v-home').innerHTML =
+        `<div class="welcome"><div><span class="kicker">Brasileirão 2026 · ${roundNumber}ª rodada</span><h1>${liveCount ? `${liveCount === 1 ? 'Um jogo' : `${liveCount} jogos`} ao vivo agora` : 'A tabela, as chances e o seu cenário'}</h1><p class="mu">${liveCount ? 'A classificação abaixo já considera os placares parciais.' : 'Acompanhe a rodada e simule o que falta do campeonato.'}</p></div><div class="row"><button class="p" data-act="show-view" data-view="sim">Simular a rodada</button><button data-act="show-view" data-view="cor">Ver as chances</button></div></div>
+      ${liveCount ? `<section class="home-live" aria-label="Jogos ao vivo"><div class="grid">${liveFixtures.map((fixture) => renderFixtureCard(fixture, null, feedMatchFor(fixture), favoriteTeams.includes(fixture.home) || favoriteTeams.includes(fixture.away))).join('')}</div></section>` : ''}
+      <div class="home-grid"><section class="cd"><div class="card-head"><h2>Classificação</h2><button class="link-btn" data-act="show-view" data-view="sim">Simular a partir dela</button></div><div class="sc">${table}</div></section>
+      <div><section class="cd"><div class="card-head"><h2>Próximos jogos</h2><button class="link-btn" data-act="show-view" data-view="live">Rodada completa</button></div>${upcoming.length ? `<div class="fixture-list">${upcoming.slice(0, 6).map(fixtureRow).join('')}</div>` : '<p class="mu">Sem jogos marcados.</p>'}</section>
+      ${chances ? `<section class="cd"><div class="card-head"><h2>Chance de título</h2>${chances.label ? `<span class="mu xs">${chances.label}</span>` : ''}</div>${chanceList(chances, 'title', 'accent')}</section><section class="cd"><div class="card-head"><h2>Risco de rebaixamento</h2></div>${chanceList(chances, 'relegation', 'r')}</section>` : ''}
+      <section class="cd"><h2>Seus clubes</h2>${favorites}</section></div></div>`;
     }
     function renderLiveHub() {
       const round = LIVE_ROUND?.number || DEFAULT_ROUND,
         fixtures = ALL_FIXTURES.filter((fixture) => fixture.round === round);
-      const feedMatches = new Map(
-        (liveFeed?.matches || []).map((match) => [
-          `${match.round}:${teamCode(match.homeTeam)}:${teamCode(match.awayTeam)}`,
-          match,
-        ]),
-      );
       const groups = { live: [], upcoming: [], finished: [] };
       for (const fixture of fixtures) {
         const result = rawResults.find(
           (item) => item.round === fixture.round && item.home === fixture.home && item.away === fixture.away,
         );
-        const feed = feedMatches.get(`${fixture.round}:${fixture.home}:${fixture.away}`);
+        const feed = feedMatchFor(fixture);
         const status =
           result || feed?.status === 'finished'
             ? 'finished'
@@ -1922,9 +1910,221 @@ import {
           favoriteTeams.includes(fixture.home) || favoriteTeams.includes(fixture.away),
         );
       const section = (title, key) =>
-        `<h2>${key === 'live' && groups.live.length ? '<span class="live-indicator"><i aria-hidden="true"></i>AO VIVO<span class="sr-only">: há partidas em andamento</span></span> ' : ''}${title} (${groups[key].length})</h2><div class="grid">${groups[key].length ? groups[key].map(card).join('') : '<p class="mu">Nenhuma partida nesta categoria.</p>'}</div>`;
+        groups[key].length
+          ? `<section class="cd"><h2>${title} <span class="mu">· ${groups[key].length}</span></h2><div class="grid">${groups[key].map(card).join('')}</div></section>`
+          : '';
+      const source = liveFeed
+        ? `${escapeHtml(liveFeed.source.name)} · atualizado ${formatLiveTime(liveFeed.fetchedAt)}${liveFeed.stale ? ' · dados desatualizados' : ''}`
+        : 'Fonte ao vivo indisponível; mostrando o calendário local';
       $('#v-live').innerHTML =
-        `<div class="cd"><h2>Central da rodada ${round}</h2><p class="mu">${liveFeed ? `Fonte: ${escapeHtml(liveFeed.source.name)} · última consulta ${formatLiveTime(liveFeed.fetchedAt)}${liveFeed.stale ? ' · DADOS DESATUALIZADOS' : ''}.` : `Feed ao vivo indisponível: ${escapeHtml(liveFeedError)}. Exibindo resultados conhecidos e calendário local.`} Atualização automática em segundo plano (a cada minuto durante os jogos, a cada 2 minutos fora deles). O minuto exibido é estimado pelo horário de início.</p><button data-act="refresh-feed">Atualizar agora</button></div>${section('Em andamento', 'live')}<div class="cd">${section('Próximos jogos', 'upcoming')}</div><div class="cd">${section('Encerrados', 'finished')}</div>`;
+        `<div class="page-head"><div><h1>${round}ª rodada</h1><p class="mu sm">${source}. Atualiza sozinho; o minuto é estimado pelo horário de início.</p></div><button class="chip-btn" data-act="refresh-feed">Atualizar agora</button></div>${section('Ao vivo', 'live')}${section('Próximos', 'upcoming')}${section('Encerrados', 'finished')}`;
+    }
+    // ---- Histórico de chances (servidor; sem servidor, arquivo estático) ----
+    let PROB_HISTORY = null,
+      PROB_HISTORY_ERROR = '',
+      MARKET = null,
+      BACKTEST = null,
+      trendMetric = 'title',
+      trendClubs = null,
+      splitMode = 'all';
+    async function loadProbabilityHistory() {
+      try {
+        let response = await fetch('/api/probability-history', { cache: 'no-cache' });
+        if (!response.ok) response = await fetch('data/probability-history-2026.json', { cache: 'no-cache' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const entries = (await response.json()).entries;
+        if (!Array.isArray(entries)) throw new Error('formato inválido');
+        PROB_HISTORY = entries.filter((entry) => entry && Number.isFinite(entry.matches) && entry.chances);
+        PROB_HISTORY_ERROR = '';
+      } catch (error) {
+        PROB_HISTORY_ERROR = `Histórico de chances indisponível (${error.message}).`;
+      }
+      if (['home', 'cor', 'clubs'].includes(view)) renderView(view);
+    }
+    const SERIES_COLORS = ['#E2C266', '#6AA8F0', '#3DD68C', '#F07360', '#B48CF2', '#4FD1C5', '#F59E0B', '#EC4899'];
+    const TREND_METRICS = () => [
+      ['title', 'Título'],
+      ['libertadores', `G${Q.libertadoresLeaguePositions}`],
+      ['sudamericana', 'Sul-Americana'],
+      ['relegation', `Z${Q.relegationPlaces}`],
+      ['meanPoints', 'Pontos projetados'],
+    ];
+    function historySeries(code, metric) {
+      return (PROB_HISTORY || [])
+        .filter((entry) => entry.chances[code] && Number.isFinite(entry.chances[code][metric]))
+        .map((entry) => ({ x: entry.matches / (T.length / 2), y: entry.chances[code][metric] }));
+    }
+    function historyChart(series, metric, title) {
+      const points = series.flatMap((item) => item.points);
+      if (!points.length) return '<p class="empty">Ainda não há histórico suficiente.</p>';
+      const isPoints = metric === 'meanPoints';
+      return lineChart({
+        series,
+        xMin: Math.min(...points.map((point) => point.x)),
+        xMax: Math.max(...points.map((point) => point.x)),
+        yMax: isPoints ? Math.max(100, Math.ceil(Math.max(...points.map((point) => point.y)) / 10) * 10) : 100,
+        yLabel: (value) => (isPoints ? `${value}` : `${value}%`),
+        xLabel: (value) => `${Math.round(value)}ª`,
+        title,
+      });
+    }
+
+    // ---- Chances ----
+    function chancesHead() {
+      return `<div class="page-head"><div><h1>Chances</h1><p class="mu">${SIMULATIONS_LABEL} simulações do restante do campeonato${M.some((m) => val(m.k)) ? ', considerando os placares do seu cenário' : ''}.</p></div></div>${segmented(
+        'cor',
+        [
+          ['race', 'Classificação final'],
+          ['map', 'Mapa de posições'],
+          ['trend', 'Evolução'],
+          ['model', 'Qualidade do modelo'],
+        ],
+        subView.cor,
+        'Visões das chances',
+      )}`;
+    }
+    function zoneOf(index) {
+      return index < Q.libertadoresLeaguePositions
+        ? 'g'
+        : index >= Q.sudamericanaLeagueStart - 1 && index < Q.sudamericanaLeagueEnd
+          ? 'b'
+          : index >= T.length - Q.relegationPlaces
+            ? 'r'
+            : 'n';
+    }
+    function renderChances() {
+      if (subView.cor === 'race') {
+        renderCor();
+        $('#v-cor').insertAdjacentHTML('afterbegin', chancesHead());
+        return;
+      }
+      let body = '';
+      if (subView.cor === 'map') {
+        const order = MCR ? T.slice().sort((a, b) => (od(b)?.mean ?? 0) - (od(a)?.mean ?? 0)) : rankTeams(project());
+        body = MCR
+          ? `<section class="cd"><h2>Onde cada clube deve terminar</h2><p class="mu sm">Chance (%) de terminar em cada posição. Quanto mais forte a cor, maior a chance; células vazias ficam abaixo de 0,5%.</p>${positionMap(
+              {
+                order,
+                positionsOf: (code) => od(code)?.pos || null,
+                zoneOf,
+                renderTeam: (code) =>
+                  `<button class="tn" data-act="open-club" data-team="${code}">${lg(code)}<span class="fn">${escapeHtml(NM[code])}</span><span class="ab">${ab(code)}</span></button>`,
+                highlight: team,
+                nameOf: (code) => NM[code],
+              },
+            )}</section>`
+          : '<p class="empty">Calculando as simulações…</p>';
+      } else if (subView.cor === 'trend') {
+        if (!PROB_HISTORY) body = `<p class="empty">${PROB_HISTORY_ERROR || 'Carregando o histórico…'}</p>`;
+        else {
+          const last = PROB_HISTORY[PROB_HISTORY.length - 1];
+          const metricName = TREND_METRICS().find(([key]) => key === trendMetric)[1];
+          if (!trendClubs) {
+            // Clubes que mais chegaram perto da meta em algum momento da temporada.
+            const peak = (code) => Math.max(0, ...historySeries(code, trendMetric).map((point) => point.y));
+            trendClubs = T.slice()
+              .sort(
+                (a, b) =>
+                  peak(b) - peak(a) || (last?.chances[b]?.[trendMetric] ?? 0) - (last?.chances[a]?.[trendMetric] ?? 0),
+              )
+              .slice(0, 4);
+          }
+          const series = trendClubs.map((code, index) => ({
+            label: ab(code),
+            color: SERIES_COLORS[index % SERIES_COLORS.length],
+            points: historySeries(code, trendMetric),
+          }));
+          const picker = T.slice()
+            .sort((a, b) => NM[a].localeCompare(NM[b], 'pt-BR'))
+            .map((code) => {
+              const index = trendClubs.indexOf(code);
+              return `<button type="button" data-act="trend-club" data-team="${code}" aria-pressed="${index >= 0}" style="${index >= 0 ? `--club-color:${SERIES_COLORS[index % SERIES_COLORS.length]}` : ''}">${lg(code)}${ab(code)}</button>`;
+            })
+            .join('');
+          body = `<section class="cd"><div class="chart-controls"><label for="trendMetric">Mostrar</label><select id="trendMetric" data-change="trend-metric">${TREND_METRICS()
+            .map(([key, label]) => `<option value="${key}" ${key === trendMetric ? 'selected' : ''}>${label}</option>`)
+            .join(
+              '',
+            )}</select></div>${historyChart(series, trendMetric, `${metricName} ao longo da temporada`)}<div class="club-picker" role="group" aria-label="Clubes no gráfico">${picker}</div><p class="mu xs footnote">Chances sem palpites, calculadas ao fim de cada rodada com os resultados conhecidos até ela (rodadas anteriores reconstruídas com o modelo atual) e atualizadas a cada novo resultado.</p></section>`;
+        }
+      } else {
+        if (!BACKTEST || BACKTEST.key !== `${SET.k}:${SET.rho}:${SET.ha}:${rawResults.length}`) {
+          BACKTEST = {
+            key: `${SET.k}:${SET.rho}:${SET.ha}:${rawResults.length}`,
+            ...backtestModel(rawResults, T, { k: SET.k, rho: SET.rho, ha: SET.ha }),
+          };
+        }
+        if (!MARKET) {
+          MARKET = { loading: true };
+          fetch('/api/model-vs-market')
+            .then((response) => (response.ok ? response.json() : Promise.reject(new Error(`HTTP ${response.status}`))))
+            .then((data) => (MARKET = data))
+            .catch(() => (MARKET = { configured: false, unavailable: true }))
+            .finally(() => view === 'cor' && subView.cor === 'model' && renderChances());
+        }
+        const brierText = (value) => (value == null ? '–' : value.toFixed(3).replace('.', ','));
+        const better = BACKTEST.brier < BACKTEST.naiveBrier;
+        const market = MARKET?.loading
+          ? '<p class="mu">Carregando…</p>'
+          : !MARKET?.configured
+            ? '<p class="mu sm">A comparação com as casas de apostas fica disponível quando o servidor tem uma chave da the-odds-api.com (variável ODDS_API_KEY). As odds são guardadas antes de cada jogo e comparadas com o resultado depois.</p>'
+            : MARKET.matches
+              ? `<div class="compare"><div class="${MARKET.modelBrier <= MARKET.marketBrier ? 'best' : ''}"><span class="mu sm">SimulaBR</span><b>${brierText(MARKET.modelBrier)}</b></div><div class="${MARKET.marketBrier < MARKET.modelBrier ? 'best' : ''}"><span class="mu sm">Casas de apostas</span><b>${brierText(MARKET.marketBrier)}</b></div></div><p class="mu sm">${MARKET.matches} jogos com odds registradas antes do início.</p>`
+              : '<p class="mu sm">Coletando odds; a comparação aparece após os primeiros jogos encerrados.</p>';
+        body = `<div class="g2"><section class="cd"><h2>Acerto do modelo nesta temporada</h2><p class="mu sm">Cada rodada desde a 8ª prevista só com os jogos anteriores a ela (${BACKTEST.matches} jogos). Brier score: 0 é perfeito, menor é melhor.</p><div class="compare"><div class="${better ? 'best' : ''}"><span class="mu sm">Modelo (k = ${SET.k})</span><b>${brierText(BACKTEST.brier)}</b></div><div class="${better ? '' : 'best'}"><span class="mu sm">Só a média da liga</span><b>${brierText(BACKTEST.naiveBrier)}</b></div><div><span class="mu sm">Resultado mais provável acertou</span><b>${pc(BACKTEST.accuracy * 100)}</b></div></div><p class="mu xs">A referência ignora os clubes e usa só a frequência de vitória do mandante, empate e vitória do visitante. O ajuste k foi escolhido por este mesmo teste; dar peso maior aos jogos recentes não melhorou o resultado.</p></section><section class="cd"><h2>Modelo x casas de apostas</h2>${market}</section></div><section class="cd"><h2>Os seus palpites</h2><p class="mu sm">A calibração das probabilidades dos jogos em que você palpitou está na aba Palpites.</p><button data-act="show-view" data-view="perf">Abrir Palpites</button></section>`;
+      }
+      $('#v-cor').innerHTML = chancesHead() + body;
+    }
+
+    // ---- Estatísticas ----
+    function statsHead() {
+      return `<div class="page-head"><div><h1>Estatísticas</h1><p class="mu">Números da temporada com os resultados conhecidos.</p></div></div>${segmented(
+        'est',
+        [
+          ['season', 'Temporada'],
+          ['splits', 'Por recorte'],
+          ['rounds', 'Rodada a rodada'],
+        ],
+        subView.est,
+        'Visões das estatísticas',
+      )}`;
+    }
+    function renderStats() {
+      if (subView.est === 'season') {
+        renderEst();
+        updateEstSource();
+      } else if (subView.est === 'rounds') renderRoundHistory();
+      else {
+        const rows = buildSplitTable(rawResults, T, splitMode);
+        $('#v-est').innerHTML =
+          `<section class="cd"><div class="chart-controls"><label for="splitMode">Recorte</label><select id="splitMode" data-change="split-mode">${SPLIT_MODES.map(
+            ([key, label]) => `<option value="${key}" ${key === splitMode ? 'selected' : ''}>${label}</option>`,
+          ).join(
+            '',
+          )}</select></div><div class="sc"><table><thead><tr><th class="l">#</th><th class="l">Clube</th><th>P</th><th>J</th><th>V</th><th>E</th><th>D</th><th>GP</th><th>GC</th><th>SG</th><th>%</th></tr></thead><tbody>${rows
+            .map(
+              (row) =>
+                `<tr><td class="l">${row.position}</td><td class="l"><button class="tn" data-act="open-club" data-team="${row.code}">${lg(row.code)}<span class="fn">${escapeHtml(NM[row.code])}</span><span class="ab">${ab(row.code)}</span></button></td><td class="n">${row.P}</td><td>${row.J}</td><td>${row.V}</td><td>${row.E}</td><td>${row.D}</td><td>${row.GP}</td><td>${row.GC}</td><td>${row.SG > 0 ? '+' : ''}${row.SG}</td><td>${row.rate == null ? '–' : `${Math.round(row.rate)}%`}</td></tr>`,
+            )
+            .join(
+              '',
+            )}</tbody></table></div><p class="mu xs footnote">Calculado só com os placares conhecidos jogo a jogo; pode divergir da tabela oficial se faltar algum resultado.</p></section>`;
+      }
+      $('#v-est').insertAdjacentHTML('afterbegin', statsHead());
+    }
+
+    // ---- Chances do clube ao longo da temporada (aba Clubes) ----
+    function clubChanceCard(code) {
+      if (!PROB_HISTORY) return '';
+      const series = [
+        ['title', 'Título', SERIES_COLORS[0]],
+        ['libertadores', `G${Q.libertadoresLeaguePositions}`, '#3DD68C'],
+        ['sudamericana', 'Sul-Am.', '#6AA8F0'],
+        ['relegation', `Z${Q.relegationPlaces}`, '#F07360'],
+      ]
+        .map(([key, label, color]) => ({ label, color, points: historySeries(code, key) }))
+        .filter((item) => item.points.some((point) => point.y >= 1));
+      return `<section class="cd"><h2>Chances de ${escapeHtml(NM[code])} ao longo da temporada</h2>${historyChart(series, 'title', `Chances de ${NM[code]} por rodada`)}</section>`;
     }
     function renderClubProfile() {
       const code = statsTeam || T[0],
@@ -2071,7 +2271,7 @@ import {
               history.map((entry) => entry.round),
               {
                 h: 70,
-                col: () => '#5B9BE6',
+                col: () => 'var(--b)',
                 fmt: (value) => `${value} pontos`,
                 step: Math.max(1, Math.ceil(history.length / 10)),
               },
@@ -2082,7 +2282,11 @@ import {
     function renderClubPage() {
       renderClubProfile();
       const profile = $('#v-clubs').firstElementChild;
-      if (profile) profile.insertAdjacentHTML('afterend', renderClubProgress(statsTeam || T[0]));
+      if (profile)
+        profile.insertAdjacentHTML(
+          'afterend',
+          clubChanceCard(statsTeam || T[0]) + renderClubProgress(statsTeam || T[0]),
+        );
     }
     function renderRoundHistory() {
       const round = selectedHistoryRound,
@@ -2128,7 +2332,7 @@ import {
           return result ? resultCard(fixture, result) : missingResultCard(fixture);
         })
         .join('');
-      $('#v-history').innerHTML =
+      $('#v-est').innerHTML =
         `<div class="cd"><h2>Histórico por rodada</h2><label for="historyRound">Rodada</label> <select id="historyRound" data-change="history-round">${ROUND_OPTIONS.map((value) => `<option value="${value}" ${value === round ? 'selected' : ''}>${value}ª rodada</option>`).join('')}</select><p class="mu sm">${results.length} de ${fixtures.length} placares disponíveis. Tabela reconstruída somente com resultados conhecidos até esta rodada; em caso de empate, critérios e ordem históricos podem divergir do oficial.</p><p class="mu sm">Fonte do snapshot: ${escapeHtml(dataSource.name)}. Resultados observados podem identificar GE ou a fonte declarada na conferência.</p></div><div class="g2"><div class="cd"><h2>Resultados da ${round}ª rodada</h2><div class="grid">${cards || '<p class="mu">Nenhum jogo cadastrado.</p>'}</div></div><div class="cd"><h2>Classificação após a ${round}ª rodada (dados conhecidos)</h2><div class="sc"><table><thead><tr><th>Pos.</th><th class="l">Clube</th><th>J</th><th>V</th><th>E</th><th>D</th><th>GP</th><th>GC</th><th>P</th></tr></thead><tbody>${order.map((code, index) => `<tr><td>${index + 1}º</td><td class="l"><button class="tn" data-act="open-club" data-team="${code}">${lg(code)}${escapeHtml(NM[code])}</button></td><td>${stats[code].J}</td><td>${stats[code].V}</td><td>${stats[code].E}</td><td>${stats[code].D}</td><td>${stats[code].GP}</td><td>${stats[code].GC}</td><td><b>${stats[code].P}</b></td></tr>`).join('')}</tbody></table></div></div></div>`;
     }
     function renderSearch() {
@@ -2163,6 +2367,68 @@ import {
  <details class="cd help-legal" id="terms-of-use"><summary><span>Termos de uso</span><span>Regras para usar o SimulaBR</span></summary><div class="legal-content"><p><b>Última atualização: 11/10/2026.</b> Ao acessar o SimulaBR, você concorda com estes termos. Se não concordar, não use os recursos de conta.</p><h3>O que o serviço oferece</h3><p>O SimulaBR é uma ferramenta independente de informação e entretenimento para acompanhar dados disponíveis e criar simulações da temporada. Não é afiliado à CBF, aos clubes, ao GE ou às competições citadas. Resultados e calendário podem conter lacunas, atrasos ou correções; consulte as fontes indicadas para confirmar informações.</p><h3>Simulações não são previsões oficiais</h3><p>Probabilidades, classificações projetadas e cenários dependem dos dados e das configurações escolhidas, usam aproximações e não garantem resultados. Não constituem aconselhamento financeiro, recomendação de apostas ou promessa de retorno. O usuário é responsável por suas decisões e deve observar as leis aplicáveis.</p><h3>Conta e uso aceitável</h3><p>Informe dados verdadeiros, proteja sua senha e use apenas a própria conta. Não tente acessar dados alheios, comprometer o serviço, contornar controles de segurança ou usar o site de forma ilegal. Recursos pessoais sincronizados dependem de uma conta e da disponibilidade dos provedores.</p><h3>Disponibilidade, conteúdo externo e apoio</h3><p>O serviço pode ficar temporariamente indisponível ou mudar para manutenção e atualização. Links para GE, Supabase e Ko-fi abrem serviços de terceiros sujeitos aos próprios termos e políticas. Apoio pelo Ko-fi é voluntário, externo e não é necessário para usar o simulador.</p><h3>Dados pessoais e encerramento</h3><p>O tratamento de dados é explicado na seção Privacidade. Você pode parar de usar o site a qualquer momento e solicitar a exclusão da conta pela área Minha conta, quando o recurso estiver configurado.</p><h3>Alterações e contato</h3><p>Estes termos podem ser atualizados quando o serviço mudar; a data no início indicará a revisão mais recente. Para questões sobre o serviço, use o canal de contato informado pelo operador. Este texto deve ser revisado com os dados de contato e as condições da operação antes da publicação comercial.</p></div></details>
  <section class="cd help-footer"><h2>Quer saber mais?</h2><p>Consulte a procedência e as limitações dos dados antes de usar uma simulação como referência.</p><button data-act="show-view" data-view="src">Abrir fontes e método</button></section>`;
     }
+    // ---- Notificações push (gol, início e fim de jogo dos clubes favoritos) ----
+    const pushSupported = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+    function vapidKeyBytes(base64) {
+      const padded = (base64 + '='.repeat((4 - (base64.length % 4)) % 4)).replace(/-/g, '+').replace(/_/g, '/');
+      return Uint8Array.from(atob(padded), (char) => char.charCodeAt(0));
+    }
+    async function currentPushSubscription() {
+      if (!pushSupported()) return null;
+      const registration = await navigator.serviceWorker.ready;
+      return registration.pushManager.getSubscription();
+    }
+    async function enablePush() {
+      if (!signedInUser || !supabaseClient) throw new Error('Entre na conta para ativar as notificações.');
+      if (!PUBLIC_CONFIG.vapidPublicKey) throw new Error('As notificações ainda não foram configuradas no servidor.');
+      if (!favoriteTeams.length) throw new Error('Escolha pelo menos um clube favorito antes.');
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') throw new Error('O navegador não autorizou as notificações.');
+      const registration = await navigator.serviceWorker.ready;
+      const subscription =
+        (await registration.pushManager.getSubscription()) ||
+        (await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: vapidKeyBytes(PUBLIC_CONFIG.vapidPublicKey),
+        }));
+      const { endpoint, keys } = subscription.toJSON();
+      const { error } = await supabaseClient
+        .from('push_subscriptions')
+        .upsert(
+          { endpoint, user_id: signedInUser.id, p256dh: keys.p256dh, auth: keys.auth },
+          { onConflict: 'endpoint' },
+        );
+      if (error) {
+        await subscription.unsubscribe();
+        throw new Error(`Não foi possível salvar a inscrição: ${error.message}`);
+      }
+    }
+    async function disablePush() {
+      const subscription = await currentPushSubscription();
+      if (!subscription) return;
+      if (supabaseClient)
+        await supabaseClient.from('push_subscriptions').delete().eq('endpoint', subscription.endpoint);
+      await subscription.unsubscribe();
+    }
+    async function refreshPushCard() {
+      const box = $('#pushStatus');
+      if (!box) return;
+      if (!pushSupported()) {
+        box.innerHTML =
+          '<p class="mu sm">Este navegador não aceita notificações. No iPhone, adicione o site à tela de início primeiro.</p>';
+        return;
+      }
+      if (!PUBLIC_CONFIG.vapidPublicKey) {
+        box.innerHTML = '<p class="mu sm">As notificações ainda não foram ativadas neste servidor.</p>';
+        return;
+      }
+      const subscription = await currentPushSubscription();
+      box.innerHTML = subscription
+        ? `<p class="sm">Ativadas neste aparelho para ${favoriteTeams.length ? favoriteTeams.map((code) => escapeHtml(NM[code])).join(', ') : 'seus favoritos'}.</p><button data-act="push-disable">Desativar neste aparelho</button>`
+        : `<p class="mu sm">Receba um aviso no celular ou no computador quando um clube favorito começar a jogar, marcar ou terminar a partida, mesmo com o site fechado.</p><button class="p" data-act="push-enable">${ic('bell')}Ativar notificações</button>`;
+    }
+    const pushCard = () =>
+      '<section class="cd"><h2>Notificações de gol</h2><div id="pushStatus"><p class="mu sm">Verificando…</p></div></section>';
     function renderAccountWorkspace() {
       const root = $('#v-account');
       if (!root) return;
@@ -2186,49 +2452,60 @@ import {
             'Guarde seus placares, semente, método e ajustes para continuar sua simulação em outro dispositivo.';
         scenarios.querySelectorAll('[data-act="compare-saved-scenario"]').forEach((button) => button.remove());
       }
+      root.querySelector('.cd.warn')?.insertAdjacentHTML('beforebegin', pushCard());
+      refreshPushCard().catch((error) => {
+        const box = $('#pushStatus');
+        if (box) box.textContent = error.message;
+      });
     }
     function nav() {
-      for (const [key] of TABS)
+      for (const key of VIEWS)
         if (!$('#v-' + key)) {
           const panel = document.createElement('section');
           panel.id = 'v-' + key;
           panel.setAttribute('role', 'tabpanel');
           panel.hidden = true;
-          $('#nav').after(panel);
+          $('#main').append(panel);
         }
       $('#nav').innerHTML = TABS.map(
         ([k, t]) =>
-          `<button role="tab" id="tab-${k}" aria-controls="v-${k}" aria-selected="${view == k}" tabindex="${view == k ? '0' : '-1'}" class="${view == k ? 'on' : ''}" data-act="show-view" data-view="${k}">${t}</button>`,
+          `<button role="tab" id="tab-${k}" aria-controls="v-${k}" aria-selected="${view == k}" tabindex="${view == k ? '0' : '-1'}" class="${view == k ? 'on' : ''}" data-act="show-view" data-view="${k}">${t}${k === 'live' && LIVE_MATCHES.length ? '<i class="dot" aria-hidden="true"></i><span class="sr-only"> (jogos em andamento)</span>' : ''}</button>`,
       ).join('');
     }
-    function show(v) {
-      view = v;
-      document.querySelector('main').classList.toggle('home-active', v === 'home');
-      TABS.forEach(([k]) => {
-        $('#v-' + k).hidden = k != v;
-        $('#v-' + k).setAttribute('aria-labelledby', 'tab-' + k);
-      });
-      nav();
+    function renderView(v) {
       if (v == 'home') renderHome();
       if (v == 'perf') renderPerformance();
-      if (v == 'est') {
-        renderEst();
-        updateEstSource();
-      }
-      if (v == 'cor') renderCor();
+      if (v == 'est') renderStats();
+      if (v == 'cor') renderChances();
       if (v == 'src') {
         renderSrc();
         updateSourceAndRules();
+        $('#v-src').insertAdjacentHTML(
+          'afterbegin',
+          `<div class="page-head"><div><h1>Fontes e método</h1><p class="mu">De onde vêm os dados, como o modelo funciona e os limites do simulador.</p></div></div>${sourceStatusCard()}`,
+        );
       }
       if (v == 'sim') renderAll();
       if (v == 'live') renderLiveHub();
       if (v == 'clubs') renderClubPage();
-      if (v == 'history') renderRoundHistory();
       if (v == 'search') renderSearch();
       if (v == 'guide') renderGuide();
       if (v == 'account') renderAccountWorkspace();
+    }
+    function show(v, { focus = true } = {}) {
+      if (v === 'history') {
+        subView.est = 'rounds';
+        v = 'est';
+      }
+      view = v;
+      VIEWS.forEach((k) => {
+        $('#v-' + k).hidden = k != v;
+        if (TABS.some(([key]) => key === k)) $('#v-' + k).setAttribute('aria-labelledby', 'tab-' + k);
+      });
+      nav();
+      renderView(v);
       scrollTo(0, 0);
-      $('#tab-' + v)?.focus({ preventScroll: true });
+      if (focus) ($('#tab-' + v) || $('#main'))?.focus({ preventScroll: true });
     }
     function updateEstSource() {
       const paragraph = Array.from($('#v-est').querySelectorAll('p')).find((element) =>
@@ -2323,7 +2600,7 @@ import {
       $('#v-est').innerHTML =
         `${liveStats}<div class="cd stats-filter"><h2>Explore os resultados por clube e rodada</h2><div class="row"><label for="snapshotStatsTeam">Clube:</label><select id="snapshotStatsTeam" data-change="snapshot-stats-team"><option value="all" ${snapshotStatsTeam === 'all' ? 'selected' : ''}>Todos os clubes</option>${T.map((code) => `<option value="${code}" ${snapshotStatsTeam === code ? 'selected' : ''}>${escapeHtml(NM[code])}</option>`).join('')}</select><label for="snapshotStatsRound">Rodada:</label><select id="snapshotStatsRound" data-change="snapshot-stats-round"><option value="all" ${snapshotStatsRound === 'all' ? 'selected' : ''}>Todas</option>${ROUND_OPTIONS.map((round) => `<option value="${round}" ${snapshotStatsRound === String(round) ? 'selected' : ''}>${round}ª rodada</option>`).join('')}</select></div><p class="mu sm">Amostra: ${sample.length} ${sample.length === 1 ? 'partida' : 'partidas'} com resultado no snapshot.${snapshotStatsTeam !== 'all' ? ` ${escapeHtml(NM[snapshotStatsTeam])}: ${sampleTeam.played} jogos, ${sampleTeam.points} pontos e ${sampleTeam.goalsFor} gols marcados.` : ''}</p><div class="tile"><div><b>${sample.length ? f1(sampleGoals / sample.length) : '–'}</b><span>Gols por jogo</span></div><div><b>${sample.length ? f1((sampleHome / sample.length) * 100) + '%' : '–'}</b><span>Vitória mandante</span></div><div><b>${sample.length ? f1((sampleDraws / sample.length) * 100) + '%' : '–'}</b><span>Empates</span></div><div><b>${sample.length ? f1((sampleAway / sample.length) * 100) + '%' : '–'}</b><span>Vitória visitante</span></div></div>${sample.length ? bars([sampleHome, sampleDraws, sampleAway], ['Casa', 'Empate', 'Fora'], { h: 70, max: sample.length, fmt: (value) => `${value} jogo(s)` }) : '<p class="mu">Não há resultados disponíveis para esses filtros.</p>'}</div><div class="cd"><h2>Panorama do snapshot de resultados (${n} partidas disponíveis)</h2><div class="tile"><div><b>${ps(L.H)}</b><span>Mandante vence</span></div><div><b>${ps(L.D)}</b><span>Empates</span></div><div><b>${ps(L.A)}</b><span>Visitante vence</span></div><div><b>${f1(L.gols / n)}</b><span>Gols por jogo</span></div><div><b>${ps(L.o25)}</b><span>3+ gols</span></div><div><b>${ps(L.btts)}</b><span>Ambas marcam</span></div><div><b>${L.z}</b><span>Jogos 0x0</span></div></div>
  <p class="mu sm" style="margin:0">Estes indicadores são calculados dos resultados detalhados disponíveis no snapshot; a API anexada informa somente a rodada atual, não o histórico completo. Referência histórica 2025 (ogol): 50% mandante, 26% empates, 24% visitante e 2,52 gols por jogo.</p></div>
- <div class="g2"> <div class="cd"><h2>Empates por rodada</h2>${bars(dv, lb, { h: 100, max: 6, col: (i) => (i < 29 ? '#8CA297' : '#D9B65C'), op: (i) => (i < 29 ? 1 : 0.55), ref: ref, step: 2 })}<p class="mu sm" style="margin:4px 0 0">Cinza: empates dos resultados detalhados disponíveis. Dourado: empates já registrados mais a expectativa do modelo para jogos ainda não realizados nas rodadas 30–38. Linha tracejada: média dos resultados detalhados disponíveis (${f1(ref)} por rodada).</p></div>
+ <div class="g2"> <div class="cd"><h2>Empates por rodada</h2>${bars(dv, lb, { h: 100, max: 6, col: (i) => (i < 29 ? 'var(--mu2)' : 'var(--ac)'), op: (i) => (i < 29 ? 1 : 0.55), ref: ref, step: 2 })}<p class="mu sm" style="margin:4px 0 0">Cinza: empates dos resultados detalhados disponíveis. Dourado: empates já registrados mais a expectativa do modelo para jogos ainda não realizados nas rodadas 30–38. Linha tracejada: média dos resultados detalhados disponíveis (${f1(ref)} por rodada).</p></div>
  <div class="cd"><h2>Gols por jogo em cada rodada</h2>${bars(
    L.gr,
    L.gr.map((_, i) => i + 1),
@@ -2363,7 +2640,7 @@ import {
           const model = snapshot
             ? `Casa ${fmtRate(snapshot.probabilities.home)} · Empate ${fmtRate(snapshot.probabilities.draw)} · Fora ${fmtRate(snapshot.probabilities.away)} · semente ${snapshot.settings.seed} · ${formatLiveTime(snapshot.recordedAt)}`
             : 'Sem snapshot histórico';
-          return `<tr><td>${entry.round}</td><td class="l">${escapeHtml(NM[entry.home])} ${predicted.home}–${predicted.away} ${escapeHtml(NM[entry.away])}</td><td class="l">${actual.home}–${actual.away}</td><td>${exact ? 'Sim' : 'Não'}</td><td>${predicted.type === 'a' ? 'Automático' : 'Seu palpite'}</td><td class="l">${escapeHtml(source.name)}${sourceDate ? ` · ${formatLiveTime(sourceDate)}` : ''}${source.url ? ` · <a href="${escapeHtml(source.url)}" target="_blank" rel="noopener">fonte</a>` : ''}</td><td class="l">${model}</td></tr>`;
+          return `<tr><td>${entry.round}</td><td class="l">${escapeHtml(NM[entry.home])} ${predicted.home}–${predicted.away} ${escapeHtml(NM[entry.away])}</td><td class="l">${actual.home}–${actual.away}</td><td>${exact ? 'Sim' : 'Não'}</td><td>${predicted.type === 'a' ? 'Automático' : 'Seu palpite'}</td><td class="l">${escapeHtml(source.name)}${sourceDate ? ` · ${formatLiveTime(sourceDate)}` : ''}${safeUrl(source.url) ? ` · <a href="${escapeHtml(safeUrl(source.url))}" target="_blank" rel="noopener">fonte</a>` : ''}</td><td class="l">${model}</td></tr>`;
         })
         .join('');
       const calibrationRows = calibration.bins
@@ -2395,102 +2672,67 @@ import {
         sortK = k;
         sortD = -1;
       }
-      renderEst();
+      renderStats();
     }
     function renderCor() {
       const s = project(),
-        o = rankTeams(s),
-        L = o[0],
-        t = s[L];
+        o = rankTeams(s);
       const cut = (k) =>
           MCR ? [pct(MCR.CP[k], MCR.N, 0.5), pct(MCR.CP[k], MCR.N, 0.1), pct(MCR.CP[k], MCR.N, 0.9)] : null,
         cf = (k, hist) => {
           const c = cut(k);
-          return `<tr><td class="l">${hist[0]}</td><td><b>${c ? c[0] : '–'}</b> ${c ? `<span class="mu">(${c[1]}–${c[2]})</span>` : ''}</td><td>${hist[1]}</td></tr>`;
+          return `<tr><td class="l">${hist[0]}</td><td><b>${c ? c[0] : '–'}</b> ${c ? `<span class="mu">(${c[1]}–${c[2]})</span>` : ''}</td><td class="mu">${hist[1]}</td></tr>`;
         };
-      const st = {};
-      T.forEach((c) => (st[c] = { mx: s[c].P + 3 * (38 - s[c].J) }));
+      const maxPoints = (c) => s[c].P + 3 * (38 - s[c].J);
+      // Situação matemática: conta direta com os pontos máximos, sem desempate.
       const sit = (c) => {
         const P = s[c].P,
-          mxc = st[c].mx,
+          mxc = maxPoints(c),
           oth = T.filter((d) => d != c),
           b = [];
-        if (oth.every((d) => st[d].mx < P)) b.push(['Campeão garantido', 'g']);
-        else if (mxc < Math.max(...oth.map((d) => s[d].P))) b.push(['Sem chance de título', 'r']);
+        if (oth.every((d) => maxPoints(d) < P)) b.push(['Campeão', 'g']);
         if (oth.filter((d) => s[d].P > mxc).length >= T.length - Q.relegationPlaces) b.push(['Rebaixado', 'r']);
-        else if (oth.filter((d) => st[d].mx < P).length >= Q.relegationPlaces)
+        else if (oth.filter((d) => maxPoints(d) < P).length >= Q.relegationPlaces)
           b.push(['Livre do Z' + Q.relegationPlaces, 'g']);
         if (
-          oth.filter((d) => st[d].mx >= P).length < Q.libertadoresLeaguePositions &&
-          !b.some((q) => q[0] == 'Campeão garantido')
+          oth.filter((d) => maxPoints(d) >= P).length < Q.libertadoresLeaguePositions &&
+          !b.some((q) => q[0] == 'Campeão')
         )
           b.push(['G' + Q.libertadoresLeaguePositions + ' garantido', 'g']);
-        else if (
-          oth.filter((d) => s[d].P > mxc).length >= Q.libertadoresLeaguePositions &&
-          !b.some((q) => q[0] == 'Rebaixado')
-        )
-          b.push(['Fora do G' + Q.libertadoresLeaguePositions, 'r']);
-        return (
-          b.map((q) => `<span class="tag ${q[1]}">${q[0]}</span>`).join('') || '<span class="mu sm">em aberto</span>'
-        );
+        return b.map((q) => `<span class="tag ${q[1]}">${q[0]}</span>`).join(' ');
       };
-      const calc = (c) => {
+      // Dificuldade: média de pontos por jogo dos adversários que faltam.
+      const difficulty = (c) => {
         const ms = M.filter((m) => m.h == c || m.a == c);
-        let hm = 0,
-          sum = 0;
-        ms.forEach((m) => {
+        const sum = ms.reduce((total, m) => {
           const op = m.h == c ? m.a : m.h;
-          if (m.h == c) hm++;
-          sum += base[op].P / base[op].J;
-        });
-        return { n: ms.length, hm, dif: ms.length ? sum / ms.length : 0 };
+          return total + base[op].P / Math.max(1, base[op].J);
+        }, 0);
+        return ms.length ? sum / ms.length : 0;
       };
-      const rowsC = o
-        .map((c, i) => {
-          const q = od(c),
-            k = calc(c);
-          return `<tr class="${c == team ? 'hl' : ''}"><td class="l">${i + 1}º <button class="tn team-link" data-act="team-and-sim" data-team="${c}" aria-label="Ver detalhes de ${NM[c]}">${lg(c)}${NM[c]}</button></td><td class="n">${s[c].P}</td><td>${st[c].mx}</td><td>${q ? Math.round(q.mean) + ' <span class="mu">(' + q.lo + '–' + q.hi + ')</span>' : '–'}</td><td>${q ? pc(q.t) : '–'}</td><td>${q ? pc(q.g) : '–'}</td><td>${q ? pc(q.z) : '–'}</td><td>${k.n} (${k.hm} em casa)</td><td>${f1(k.dif)}</td><td class="l">${sit(c)}</td></tr>`;
+      const order = MCR ? o.slice().sort((a, b) => (od(b)?.mean ?? 0) - (od(a)?.mean ?? 0)) : o;
+      const cell = (value, tone) =>
+        `<td class="${MCR ? '' : 'dim'}"><b>${MCR ? pc(value) : '–'}</b>${MCR ? meter(value, tone) : ''}</td>`;
+      const rows = order
+        .map((c) => {
+          const q = od(c) || { t: 0, g: 0, s: 0, z: 0, mean: 0, lo: 0, hi: 0 };
+          return `<tr class="${c == team ? 'hl' : ''}"><td class="l mu">${o.indexOf(c) + 1}º</td><td class="l"><button class="tn" data-act="team-and-sim" data-team="${c}">${lg(c)}<span class="fn">${escapeHtml(NM[c])}</span><span class="ab">${ab(c)}</span></button></td><td class="n">${s[c].P}</td><td>${MCR ? `<b>${Math.round(q.mean)}</b> <span class="mu xs">${q.lo}–${q.hi}</span>` : '–'}</td>${cell(q.t, 'accent')}${cell(q.g, 'g')}${cell(q.s, 'b')}${cell(q.z, 'r')}<td class="mu">${f1(difficulty(c))}</td><td class="l">${sit(c)}</td></tr>`;
         })
         .join('');
-      const titleRows = o
-        .map((c, i) => {
-          const q = od(c);
-          return { c, pos: i + 1, points: s[c].P, projected: q ? Math.round(q.mean) : null, title: q?.t ?? null };
-        })
-        .sort((a, b) => (b.title ?? -1) - (a.title ?? -1) || a.pos - b.pos)
-        .map(
-          (r) =>
-            `<tr><td>${r.pos}º</td><td class="l"><button class="tn team-link" data-act="team-and-sim" data-team="${r.c}" aria-label="Ver detalhes de ${NM[r.c]}">${lg(r.c)}${NM[r.c]}</button></td><td>${r.points}</td><td>${r.projected ?? '–'}</td><td><b>${r.title == null ? '–' : pc(r.title)}</b></td></tr>`,
-        )
-        .join('');
-      const contenders = o
-        .slice(0, 3)
-        .map((c, i) => {
-          const q = od(c),
-            gap = t.P - s[c].P;
-          return `<tr><td>${i + 1}º</td><td class="l"><button class="tn team-link" data-act="team-and-sim" data-team="${c}" aria-label="Ver detalhes de ${NM[c]}">${lg(c)}${NM[c]}</button></td><td>${s[c].P}${gap ? ` <span class="mu">(${gap} atrás)</span>` : ' <span class="mu">(na liderança)</span>'}</td><td>${s[c].P + 3 * (38 - s[c].J)}</td><td>${q ? Math.round(q.mean) : '–'}</td><td>${q ? pc(q.t) : '–'}</td></tr>`;
-        })
-        .join('');
-      const leaderNames = o
-        .filter((c) => s[c].P === t.P)
-        .map((c) => NM[c])
-        .join(', ');
       const rel = [];
       for (let p = 37; p <= 47; p++) {
         const q = MCR && MCR.RN[p] >= 15 ? (MCR.RL[p] / MCR.RN[p]) * 100 : null;
-        rel.push(`<tr><td>${p}</td><td>${UF[p]}%</td><td>${q == null ? '–' : f1(q) + '%'}</td></tr>`);
+        rel.push(`<tr><td>${p}</td><td class="mu">${UF[p]}%</td><td><b>${q == null ? '–' : f1(q) + '%'}</b></td></tr>`);
       }
       $('#v-cor').innerHTML =
-        `<div class="cd"><h2>Disputa pelo título: probabilidades de todos os clubes</h2><p class="mu sm">Tabela ordenada pela chance simulada de terminar em 1º, sem destacar um clube isoladamente. Os atuais líderes por pontos: <b>${escapeHtml(leaderNames)}</b> (${t.P} pontos). Cada linha usa o mesmo modelo, dados e número de simulações.</p><div class="sc"><table><thead><tr><th>Pos. atual</th><th class="l">Clube</th><th>Pontos</th><th>Projeção de pontos</th><th>Chance de título</th></tr></thead><tbody>${titleRows}</tbody></table></div><p class="mu sm">Probabilidades são frequências de ${SIMULATIONS_LABEL} simulações, não previsão oficial; todos os 20 clubes são mostrados, inclusive os que estão com chance estimada abaixo de 1%.</p></div>
- <div class="cd"><h2>Projeção dos principais concorrentes</h2><p class="mu sm">Comparação neutra dos três primeiros na classificação do cenário atual. “Pontos atrás” usa a pontuação do líder; projeções e chances vêm das mesmas simulações para todos os clubes.</p><div class="sc"><table><thead><tr><th>Pos.</th><th class="l">Clube</th><th>Pontos</th><th>Máximo possível</th><th>Projeção de pontos</th><th>Chance de título</th></tr></thead><tbody>${contenders}</tbody></table></div></div>
- <div class="cd"><h2>Referência histórica: pontos dos campeões na era dos 20 clubes</h2>${bars(
-   CH.map((c) => c[2]),
-   CH.map((c) => c[0]),
-   { h: 90, max: 95, ref: MCR ? cut(0)[0] : null, col: () => '#8CA297', fmt: (v) => v + ' pts', step: 2 },
- )}<p class="mu sm" style="margin:2px 0 0">Média ${f1(CH.reduce((a, c) => a + c[2], 0) / CH.length)} pontos, mínimo 67 (Flamengo 2009), máximo 90 (Flamengo 2019). Fonte: Olympics.com e Goal.com.</p></div>
- <div class="g2"><div class="cd"><h2>Linhas de corte projetadas x histórico</h2><div class="sc"><table><tr><th class="l">Posição final</th><th>Pontos: mediana (10–90%)</th><th>Referência histórica</th></tr>${cf(0, ['Campeão (1º)', 'média 77 · de 67 a 90 (2006–2025)'])}${cf(1, [`${Q.libertadoresLeaguePositions}º · limite da faixa Libertadores`, '—'])}${cf(2, [`${Q.sudamericanaLeagueEnd}º · limite da faixa Sul-Americana`, '—'])}${cf(3, [`${T.length - Q.relegationPlaces}º · último fora do Z${Q.relegationPlaces}`, Q.relegationPlaces === 4 ? 'média 43,2 · maior rebaixado: 45 · ninguém caiu com 46' : '—'])}</table></div><p class="mu sm" style="margin:6px 0 0">As faixas mudam conforme os placares que você definiu. Históricos: Olympics.com, Betway e No Ataque.</p></div>
- <div class="cd"><h2>Risco de rebaixamento por pontos finais</h2><div class="sc"><table><tr><th>Pontos</th><th>Histórico (UFMG)*</th><th>Este simulador</th></tr>${rel.join('')}</table></div><p class="mu sm" style="margin:6px 0 0">*Probabilidades divulgadas pelo Departamento de Matemática da UFMG, reproduzidas por No Ataque (2025). Fontes e metodologias diferem; "–" = poucas simulações com essa pontuação.</p></div></div>
- <div class="cd"><h2>Situação de cada clube no cenário atual</h2><div class="sc"><table><tr><th class="l">Time</th><th>P</th><th>Máx</th><th>Proj. (10–90%)</th><th>Tít.</th><th>G${Q.libertadoresLeaguePositions}</th><th>Z${Q.relegationPlaces}</th><th>Jogos restantes</th><th title="Média de pontos por jogo dos próximos adversários">Dificuldade</th><th class="l">Situação matemática</th></tr>${rowsC}</table></div><p class="mu sm" style="margin:6px 0 0">Dificuldade = média de pontos por jogo dos adversários que ainda faltam (maior = calendário mais duro). Situação: conta direta com pontos máximos, sem critérios de desempate (empates em pontos contam contra o clube).</p></div>`;
+        `<section class="cd"><div class="card-head"><h2>Classificação final provável</h2><span class="mu xs">ordenada pelos pontos projetados</span></div><div class="sc"><table><thead><tr><th class="l">Agora</th><th class="l">Clube</th><th>P</th><th>Proj. (10–90%)</th><th>Título</th><th>G${Q.libertadoresLeaguePositions}</th><th>Sul-Am.</th><th>Z${Q.relegationPlaces}</th><th title="Média de pontos por jogo dos adversários que faltam">Dificuldade</th><th class="l">Situação</th></tr></thead><tbody>${rows}</tbody></table></div><p class="mu xs footnote">Dificuldade: média de pontos por jogo dos próximos adversários (maior = calendário mais duro). Situação: conta direta com os pontos máximos, sem critérios de desempate.</p></section>
+      <div class="g2"><section class="cd"><h2>Pontos necessários</h2><div class="sc"><table><thead><tr><th class="l">Posição final</th><th>Mediana (10–90%)</th><th>Histórico</th></tr></thead><tbody>${cf(0, ['Campeão', 'média 77 (67–90)'])}${cf(1, [`${Q.libertadoresLeaguePositions}º lugar`, '—'])}${cf(2, [`${Q.sudamericanaLeagueEnd}º lugar`, '—'])}${cf(3, [`${T.length - Q.relegationPlaces}º, último fora do Z${Q.relegationPlaces}`, Q.relegationPlaces === 4 ? 'média 43,2' : '—'])}</tbody></table></div><p class="mu xs footnote">Históricos de 2006 a 2025 (Olympics.com, Goal.com, Betway).</p></section>
+      <section class="cd"><h2>Risco de queda por pontuação final</h2><div class="sc"><table><thead><tr><th>Pontos</th><th>Histórico (UFMG)</th><th>Simulações</th></tr></thead><tbody>${rel.join('')}</tbody></table></div><p class="mu xs footnote">Histórico: Departamento de Matemática da UFMG, via No Ataque (2025). “–” = poucas simulações com essa pontuação.</p></section></div>
+      <section class="cd"><h2>Pontos dos campeões desde 2006</h2>${bars(
+        CH.map((c) => c[2]),
+        CH.map((c) => c[0]),
+        { h: 70, max: 95, ref: MCR ? cut(0)[0] : null, col: () => 'var(--mu2)', fmt: (v) => v + ' pts', step: 2 },
+      )}<p class="mu xs footnote">Linha tracejada: pontuação mediana do campeão nas simulações deste cenário.</p></section>`;
     }
     function renderSrc() {
       const S = [
@@ -2562,7 +2804,7 @@ import {
         liveUrl = liveFeed?.source.url || 'https://ge.globo.com/futebol/brasileirao-serie-a/';
       sourceList?.insertAdjacentHTML(
         'afterbegin',
-        `<li><a href="${escapeHtml(liveUrl)}" target="_blank" rel="noopener">GE · classificação atual e rodada consultada</a><br><span class="mu sm">API anexada; consulta automática em segundo plano a cada 1–2 minutos. O pacote extrai a tabela e a rodada atual do GE, não é uma API oficial da CBF nem fornece o histórico completo.</span></li>`,
+        `<li><a href="${escapeHtml(safeUrl(liveUrl) || 'https://ge.globo.com/futebol/brasileirao-serie-a/')}" target="_blank" rel="noopener">GE · classificação atual e rodada consultada</a><br><span class="mu sm">API anexada; consulta automática em segundo plano a cada 1–2 minutos. O pacote extrai a tabela e a rodada atual do GE, não é uma API oficial da CBF nem fornece o histórico completo.</span></li>`,
       );
       const snapshotItem = sourceList?.querySelectorAll('li')[1];
       if (snapshotItem) {
@@ -2610,7 +2852,7 @@ import {
       ];
       $('#v-src').insertAdjacentHTML(
         'afterbegin',
-        `<div class="cd"><h2>Conferência e reconciliação do histórico</h2><p>${coverageDetails}</p><p class="mu sm">A comparação detecta diferença entre os resultados locais e os totais por clube publicados pelo GE. Ela não recupera sozinha placares passados nem transforma o GE em fonte oficial.</p><p>Correções verificadas incorporadas: <b>${VERIFIED_BACKFILL_COUNT}</b>. ${backfillSources.length ? `Fontes registradas: ${backfillSources.map((source) => `<a href="${escapeHtml(source.url)}" target="_blank" rel="noopener">${escapeHtml(source.name)}</a> (conferido em ${escapeHtml(formatLiveTime(source.verifiedAt))})`).join('; ')}.` : 'Nenhuma correção manual foi importada.'}</p><p class="sm">Procedimento: confira os jogos ausentes em uma fonte confiável; prepare um CSV com <code>round,home,away,homeGoals,awayGoals</code> (use siglas como FLA e PAL); execute <code>npm run import:results -- resultados.csv https://sua-fonte-verificada.example "Nome da fonte"</code>; revise o arquivo <code>data/historical-backfill-2026.json</code>, rode <code>npm test</code> e publique o arquivo junto com a página. O importador rejeita placares que contradizem resultados existentes e exige correspondência exata com o calendário.</p><details><summary>Relatório de procedência dos ${rawResults.length} resultados carregados</summary><div class="sc" role="region" aria-label="Relatório de procedência dos resultados por partida" tabindex="0"><table><thead><tr><th>Rodada</th><th class="l">Partida</th><th>Placar</th><th>Registro</th><th class="l">Fonte e data</th></tr></thead><tbody>${rawResults
+        `<div class="cd"><h2>Conferência e reconciliação do histórico</h2><p>${coverageDetails}</p><p class="mu sm">A comparação detecta diferença entre os resultados locais e os totais por clube publicados pelo GE. Ela não recupera sozinha placares passados nem transforma o GE em fonte oficial.</p><p>Correções verificadas incorporadas: <b>${VERIFIED_BACKFILL_COUNT}</b>. ${backfillSources.length ? `Fontes registradas: ${backfillSources.map((source) => `<a href="${escapeHtml(safeUrl(source.url))}" target="_blank" rel="noopener">${escapeHtml(source.name)}</a> (conferido em ${escapeHtml(formatLiveTime(source.verifiedAt))})`).join('; ')}.` : 'Nenhuma correção manual foi importada.'}</p><p class="sm">Procedimento: confira os jogos ausentes em uma fonte confiável; prepare um CSV com <code>round,home,away,homeGoals,awayGoals</code> (use siglas como FLA e PAL); execute <code>npm run import:results -- resultados.csv https://sua-fonte-verificada.example "Nome da fonte"</code>; revise o arquivo <code>data/historical-backfill-2026.json</code>, rode <code>npm test</code> e publique o arquivo junto com a página. O importador rejeita placares que contradizem resultados existentes e exige correspondência exata com o calendário.</p><details><summary>Relatório de procedência dos ${rawResults.length} resultados carregados</summary><div class="sc" role="region" aria-label="Relatório de procedência dos resultados por partida" tabindex="0"><table><thead><tr><th>Rodada</th><th class="l">Partida</th><th>Placar</th><th>Registro</th><th class="l">Fonte e data</th></tr></thead><tbody>${rawResults
           .slice()
           .sort((a, b) => a.round - b.round || a.home.localeCompare(b.home))
           .map((result) => {
@@ -2624,7 +2866,7 @@ import {
                     : 'Snapshot local · sem confirmação individual',
               sourceDate = type === 'feed-observed' ? source.observedAt : source.verifiedAt,
               when = sourceDate ? ` · ${escapeHtml(formatLiveTime(sourceDate))}` : '';
-            return `<tr><td>${result.round}</td><td class="l">${escapeHtml(NM[result.home])} x ${escapeHtml(NM[result.away])}</td><td>${result.homeGoals}–${result.awayGoals}</td><td>${label}</td><td class="l">${source.url ? `<a href="${escapeHtml(source.url)}" target="_blank" rel="noopener">${escapeHtml(source.name)}</a>` : escapeHtml(source.name)}${when}</td>`;
+            return `<tr><td>${result.round}</td><td class="l">${escapeHtml(NM[result.home])} x ${escapeHtml(NM[result.away])}</td><td>${result.homeGoals}–${result.awayGoals}</td><td>${label}</td><td class="l">${safeUrl(source.url) ? `<a href="${escapeHtml(safeUrl(source.url))}" target="_blank" rel="noopener">${escapeHtml(source.name)}</a>` : escapeHtml(source.name)}${when}</td>`;
           })
           .join(
             '',
@@ -2649,17 +2891,50 @@ import {
     /* ---- compartilhar ---- */
     let modalReturnFocus = null;
     const code = () => `B28:${encodeScenarioPayload(payloadFromState())}`;
-    function shareM() {
+    async function shareM() {
       const value = code(),
-        link = new URL(location.href);
-      link.searchParams.set('scenario', value.slice(4));
+        longLink = new URL('/', location.origin);
+      longLink.searchParams.set('scenario', value.slice(4));
       modalReturnFocus = document.activeElement;
+      const defined = M.filter((m) => val(m.k)).length;
       $('#mb').innerHTML =
-        `<div class="row" style="justify-content:space-between"><h2 id="share-title" style="margin:0">Compartilhar cenário</h2><button class="ic" data-act="close-modal" aria-label="Fechar janela">${ic('x')}</button></div><p class="mu sm">O link e o código incluem placares, ajustes e semente. O link pode ficar longo; o código também pode ser copiado ou salvo como backup.</p><label for="cd">Código do cenário</label><textarea id="cd" readonly>${value}</textarea><label for="shareLink">Link compartilhável</label><textarea id="shareLink" readonly>${link.href}</textarea>
- <div class="row" style="margin:8px 0"><button class="p" data-act="copy-code">${ic('copy')}Copiar código</button><button data-act="copy-link">Copiar link</button><button data-act="backup-export">${ic('down')}Baixar backup</button><button data-act="copy-table">${ic('list')}Tabela em texto</button><button data-act="make-image">${ic('img')}Imagem da tabela</button></div><label for="imp">Importar código do cenário</label><textarea id="imp" placeholder="Cole aqui um código B28:..."></textarea><div class="row" style="margin-top:8px"><button data-act="import-scenario">${ic('down')}Importar código</button><label for="backupFile">Restaurar backup JSON</label><input id="backupFile" type="file" accept="application/json,.json" data-change="backup-file"></div><div id="out" role="status" aria-live="polite"></div>`;
+        `<div class="card-head"><h2 id="share-title">Compartilhar cenário</h2><button class="ic" data-act="close-modal" aria-label="Fechar">${ic('x')}</button></div>
+      <p class="mu sm">Quem abrir o link vê os seus ${defined} ${defined === 1 ? 'placar' : 'placares'} e a mesma tabela. A prévia do link mostra o campeão e a classificação do seu cenário.</p>
+      <label for="shareLink">Link</label><div class="row"><input id="shareLink" readonly value="${escapeHtml(longLink.href)}" style="flex:1;min-width:0"><button class="p" data-act="copy-link">${ic('copy')}Copiar</button>${navigator.share ? `<button data-act="native-share">${ic('share')}Enviar</button>` : ''}</div>
+      <p class="mu xs" id="shareLinkStatus">${PUBLIC_CONFIG.shortLinks ? 'Gerando link curto…' : ''}</p>
+      <img id="sharePreview" class="share-preview" alt="Prévia da imagem que aparece ao compartilhar" width="1200" height="630" style="width:100%;height:auto;border-radius:12px;border:1px solid var(--ln)" hidden>
+      <details style="margin-top:12px"><summary class="sm">Mais opções</summary><div class="row" style="margin:10px 0"><button data-act="copy-code">${ic('copy')}Copiar código</button><button data-act="backup-export">${ic('down')}Baixar backup</button><button data-act="copy-table">${ic('list')}Tabela em texto</button><button data-act="make-image">${ic('img')}Imagem da tabela</button></div>
+      <label for="cd">Código do cenário</label><textarea id="cd" readonly>${value}</textarea>
+      <label for="imp">Importar código</label><textarea id="imp" placeholder="Cole aqui um código B28:..."></textarea><div class="row" style="margin-top:8px"><button data-act="import-scenario">${ic('down')}Importar código</button><label for="backupFile" class="btn">Restaurar backup<input id="backupFile" type="file" accept="application/json,.json" data-change="backup-file" hidden></label></div></details>
+      <div id="out" role="status" aria-live="polite"></div>`;
       $('#mod').setAttribute('aria-labelledby', 'share-title');
       $('#mod').hidden = false;
-      $('#mb button')?.focus();
+      $('#mb [data-act="copy-link"]')?.focus();
+      const preview = $('#sharePreview');
+      preview.addEventListener('load', () => (preview.hidden = false));
+      preview.addEventListener('error', () => (preview.hidden = true));
+      if (!PUBLIC_CONFIG.shortLinks) {
+        if (longLink.href.length < 6000) preview.src = `/api/og/scenario.png?s=${value.slice(4)}`;
+        return;
+      }
+      try {
+        const response = await fetch('/api/share', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ payload: payloadFromState() }),
+        });
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error || `HTTP ${response.status}`);
+        const input = $('#shareLink');
+        if (!input) return;
+        input.value = body.url.startsWith('http') ? body.url : new URL(body.url, location.origin).href;
+        $('#shareLinkStatus').textContent = 'Link curto pronto.';
+        preview.src = `/api/og/c/${body.id}.png`;
+      } catch (error) {
+        const status = $('#shareLinkStatus');
+        if (status) status.textContent = `Usando o link completo (${error.message}).`;
+        preview.src = `/api/og/scenario.png?s=${value.slice(4)}`;
+      }
     }
     async function copyText(value, message) {
       try {
@@ -2922,15 +3197,8 @@ import {
       if (view === 'sim') {
         renderTab();
         renderSide();
-      } else if (view === 'home') renderHome();
-      else if (view === 'live') renderLiveHub();
-      else if (view === 'est') {
-        renderEst();
-        updateEstSource();
-      } else if (view === 'cor') renderCor();
-      else if (view === 'clubs') renderClubPage();
-      else if (view === 'history') renderRoundHistory();
-      else if (view === 'perf') renderPerformance();
+      } else if (['home', 'live', 'est', 'cor', 'clubs', 'perf'].includes(view)) renderView(view);
+      nav();
       if (match && side !== undefined) {
         const input = $(`#side [data-input="score"][data-match="${match}"][data-side="${side}"]`);
         input?.focus({ preventScroll: true });
@@ -2961,9 +3229,12 @@ import {
       return messages.length > 0;
     }
     function applyLiveUpdate(nextSeason) {
-      const previousLive = LIVE_MATCHES;
+      const previousLive = LIVE_MATCHES,
+        resultsBefore = rawResults.length;
       applySeasonState(nextSeason);
-      PG = {};
+      resetModel();
+      // Resultado novo: o servidor grava uma nova foto das chances.
+      if (rawResults.length !== resultsBefore) setTimeout(loadProbabilityHistory, 5_000);
       const captured = archiveCompletedPredictions(
         predictionHistory,
         SC,
@@ -3094,25 +3365,64 @@ import {
         return `Os ${HISTORY_COVERAGE.knownMatches} placares locais conferem com os totais atuais da tabela GE; isso não certifica cada partida como fonte oficial.`;
       return `Histórico ${HISTORY_COVERAGE.status === 'incomplete' ? 'incompleto' : 'divergente'}: tabela GE indica ${HISTORY_COVERAGE.expectedMatches} partidas contabilizadas e há ${HISTORY_COVERAGE.knownMatches} placares locais${gap ? `; diferença estimada: ${gap} jogo(s)` : ''}${affected ? `. Verificar: ${affected}` : ''}. Confira e importe resultados verificados pela aba Fontes e método.`;
     }
+    // Pílula de status no cabeçalho; o detalhe completo fica em Fontes e método.
     function updateSourceStatus() {
-      const sourceStatus = $('#sourceStatus'),
-        sourceSummary = $('#sourceSummary');
-      if (!sourceStatus) return;
-      const coverage = historyCoverageMessage();
+      const pill = $('#statusPill');
+      if (!pill) return;
+      pill.classList.remove('ok', 'live', 'stale');
+      let text, detail;
       if (liveFeed) {
-        sourceStatus.textContent = `Classificação e estatísticas por clube: ${liveFeed.source.name} · consultado em ${formatLiveTime(liveFeed.fetchedAt)} · rodada ${liveFeed.round.number}${liveFeed.stale ? ' · cache desatualizado' : ''}. ${liveFeed.stale ? liveFeed.warning : 'Atualização automática em segundo plano.'}${liveFeed.historyWarning ? ` ${liveFeed.historyWarning}` : ''} ${coverage} Calendário completo e demais indicadores: snapshot de ${updatedLabel}. Fonte GE, não oficial da CBF.`;
-        if (sourceSummary)
-          sourceSummary.textContent = `${liveFeed.stale ? 'Último dado válido' : 'GE atualizado'} · ${formatLiveTime(liveFeed.fetchedAt)}${liveFeed.stale ? ' · desatualizado' : ''}`;
+        const time = new Intl.DateTimeFormat('pt-BR', { timeStyle: 'short', timeZone: 'America/Sao_Paulo' }).format(
+          new Date(liveFeed.fetchedAt),
+        );
+        if (liveFeed.stale) {
+          pill.classList.add('stale');
+          text = `Desatualizado · ${time}`;
+        } else if (LIVE_MATCHES.length) {
+          pill.classList.add('live');
+          text = `Ao vivo · ${time}`;
+        } else {
+          pill.classList.add('ok');
+          text = `Atualizado ${time}`;
+        }
+        detail = `Fonte: ${liveFeed.source.name}, última consulta ${formatLiveTime(liveFeed.fetchedAt)}.`;
       } else {
-        sourceStatus.textContent = `Feed GE indisponível (${liveFeedError || 'sem resposta'}). Mostrando o snapshot de ${dataSource.name}, atualizado em ${updatedLabel}; os dados podem estar desatualizados. ${coverage} O site tentará novamente automaticamente.`;
-        if (sourceSummary) sourceSummary.textContent = `Feed indisponível · dados locais de ${updatedLabel}`;
+        text = 'Fonte indisponível';
+        detail = `Mostrando os dados locais de ${updatedLabel}.`;
       }
-      if (liveFeedCacheWarning) sourceStatus.textContent += ` ${liveFeedCacheWarning}`;
-      if (view === 'home') renderHome();
+      pill.querySelector('span').textContent = text;
+      pill.title = `${detail} Clique para ver fontes e método.`;
+      pill.setAttribute('aria-label', `${text}. ${detail} Abrir fontes e método.`);
+    }
+    function sourceStatusCard() {
+      const lines = [
+        liveFeed
+          ? `Classificação e rodada: ${escapeHtml(liveFeed.source.name)}, consultada em ${formatLiveTime(liveFeed.fetchedAt)} (rodada ${liveFeed.round.number})${liveFeed.stale ? ` · ${escapeHtml(liveFeed.warning || 'desatualizada')}` : ''}.`
+          : `Fonte ao vivo indisponível (${escapeHtml(liveFeedError || 'sem resposta')}); usando o snapshot de ${updatedLabel}.`,
+        escapeHtml(historyCoverageMessage()),
+        liveFeed?.historyWarning ? escapeHtml(liveFeed.historyWarning) : '',
+        liveFeedCacheWarning ? escapeHtml(liveFeedCacheWarning) : '',
+        ...validationWarnings.map((warning) => escapeHtml(warning)),
+      ].filter(Boolean);
+      return `<section class="cd"><h2>Situação dos dados agora</h2>${lines.map((line) => `<p class="sm">${line}</p>`).join('')}</section>`;
     }
     function runAction(button) {
       const { act } = button.dataset;
       switch (act) {
+        case 'sub-view':
+          if (!(button.dataset.group in subView)) throw new Error('Visão inválida.');
+          subView[button.dataset.group] = button.dataset.value;
+          renderView(view);
+          break;
+        case 'trend-club': {
+          const code = button.dataset.team;
+          if (!T.includes(code)) throw new Error('Clube inválido.');
+          trendClubs = trendClubs.includes(code)
+            ? trendClubs.filter((item) => item !== code)
+            : [...trendClubs, code].slice(-SERIES_COLORS.length);
+          renderChances();
+          break;
+        }
         case 'share':
           shareM();
           break;
@@ -3140,8 +3450,8 @@ import {
           closeModal();
           break;
         case 'reset-model':
-          SET = { k: 6, ha: 1, rho: -0.1, adj: {}, seed: 20261010 };
-          PG = {};
+          SET = { ...DEFAULT_SETTINGS, adj: {} };
+          resetModel();
           save();
           renderAll();
           break;
@@ -3270,6 +3580,22 @@ import {
         case 'copy-code':
           cp();
           break;
+        case 'push-enable':
+          button.disabled = true;
+          enablePush()
+            .then(() => notify('Notificações ativadas.'))
+            .catch((error) => notify(error.message))
+            .finally(refreshPushCard);
+          break;
+        case 'push-disable':
+          disablePush()
+            .then(() => notify('Notificações desativadas neste aparelho.'))
+            .catch((error) => notify(error.message))
+            .finally(refreshPushCard);
+          break;
+        case 'native-share':
+          navigator.share({ title: 'Meu cenário do Brasileirão 2026', url: $('#shareLink').value }).catch(() => {});
+          break;
         case 'copy-link':
           copyText($('#shareLink').value, 'Link copiado.');
           break;
@@ -3333,22 +3659,26 @@ import {
         renderSide();
       } else if (action === 'stats-team') {
         statsTeam = input.value;
-        renderEst();
-        updateEstSource();
+        renderStats();
       } else if (action === 'snapshot-stats-team') {
         snapshotStatsTeam = input.value;
-        renderEst();
-        updateEstSource();
+        renderStats();
       } else if (action === 'snapshot-stats-round') {
         snapshotStatsRound = input.value;
-        renderEst();
-        updateEstSource();
+        renderStats();
       } else if (action === 'club-profile') {
         statsTeam = input.value;
         renderClubPage();
       } else if (action === 'history-round') {
         selectedHistoryRound = Number(input.value);
-        renderRoundHistory();
+        renderStats();
+      } else if (action === 'trend-metric') {
+        trendMetric = input.value;
+        trendClubs = null;
+        renderChances();
+      } else if (action === 'split-mode') {
+        splitMode = input.value;
+        renderStats();
       } else if (action === 'favorite-preference') {
         toggleFavorite(input.dataset.team).catch((error) => notify(error.message));
       } else if (action === 'reminder-enabled') {
@@ -3450,89 +3780,61 @@ import {
       show(TABS[next][0]);
     });
     document.querySelectorAll('[data-i]').forEach((e) => (e.innerHTML = ic(e.dataset.i)));
-    document.title = 'SimulaBR | Simulador do Brasileirão 2026';
-    document.querySelector('header h1').textContent = 'SimulaBR';
-    document.querySelector('header p').textContent = 'Acompanhe, simule e explore cada rodada.';
+    document.title = 'SimulaBR · Simulador do Brasileirão 2026';
     const updatedLabel = new Intl.DateTimeFormat('pt-BR', {
       dateStyle: 'short',
       timeStyle: 'short',
       timeZone: 'America/Sao_Paulo',
     }).format(new Date(dataUpdatedAt));
-    const sourceStatus = $('#sourceStatus'),
-      sourceDetails = document.createElement('details'),
-      sourceSummary = document.createElement('summary');
-    sourceDetails.className = 'source-details';
-    sourceSummary.id = 'sourceSummary';
-    sourceSummary.textContent = 'Status das fontes e atualização';
-    sourceStatus.replaceWith(sourceDetails);
-    sourceDetails.append(sourceSummary, sourceStatus);
-    const headerActions = document.querySelector('header .row');
-    const supportButton = document.createElement('a');
-    supportButton.className = 'support-link';
-    supportButton.href = 'https://ko-fi.com/simuladorbr';
-    supportButton.target = '_blank';
-    supportButton.rel = 'noopener noreferrer';
-    supportButton.textContent = 'Apoie o projeto';
-    headerActions.prepend(supportButton);
-    const refreshButton = document.createElement('button');
-    refreshButton.id = 'refreshLive';
-    refreshButton.type = 'button';
-    refreshButton.textContent = 'Atualizar agora';
-    refreshButton.setAttribute('aria-label', 'Consultar agora a classificação e os resultados atuais');
-    headerActions.append(refreshButton);
-    refreshButton.addEventListener('click', () => refreshLive(true));
-    const accountButton = document.createElement('button');
-    accountButton.id = 'accountButton';
-    accountButton.type = 'button';
-    accountButton.textContent = 'Carregando conta…';
-    accountButton.disabled = true;
-    headerActions.append(accountButton);
-    accountButton.addEventListener('click', async () => {
-      if (!signedInUser) {
-        openAccountDialog();
-        return;
-      }
-      try {
-        const { error } = await supabaseClient.auth.signOut();
-        if (error) throw error;
-        notify('Você saiu da conta.');
-      } catch (error) {
-        notify(`Não foi possível sair da conta: ${error.message}`);
-      }
+    $('#accountButton').addEventListener('click', () => {
+      if (signedInUser) show('account');
+      else openAccountDialog();
     });
     updateSourceStatus();
-    $('#seasonSummary').textContent = 'Acompanhe, simule e explore cada rodada.';
-    $('#leg-lib').textContent = `1º–${Q.libertadoresLeaguePositions}º · referência Libertadores`;
-    $('#leg-sud').textContent = `${Q.sudamericanaLeagueStart}º–${Q.sudamericanaLeagueEnd}º · referência Sul-Americana`;
-    $('#leg-releg').textContent = `${T.length - Q.relegationPlaces + 1}º–${T.length}º · rebaixamento`;
-    const sharedCode = new URLSearchParams(location.search).get('scenario');
+    $('#leg-lib').textContent = `1º–${Q.libertadoresLeaguePositions}º Libertadores`;
+    $('#leg-sud').textContent = `${Q.sudamericanaLeagueStart}º–${Q.sudamericanaLeagueEnd}º Sul-Americana`;
+    $('#leg-releg').textContent = `${T.length - Q.relegationPlaces + 1}º–${T.length}º rebaixamento`;
+    function adoptSharedPayload(payload) {
+      SC = payload.scores;
+      SET = {
+        k: payload.settings.k,
+        ha: payload.settings.ha,
+        rho: payload.settings.rho,
+        seed: payload.settings.seed,
+        adj: payload.settings.adjustments,
+      };
+      opt = { full: payload.options.full, odds: payload.options.odds, meth: payload.options.method };
+      resetModel();
+      Object.keys(SC).forEach(recordPredictionSnapshot);
+      save();
+    }
+    const params = new URLSearchParams(location.search);
+    const sharedCode = params.get('scenario');
+    const shortId = /^\/c\/([A-Za-z0-9_-]{10})$/.exec(location.pathname)?.[1];
+    let initialView = TABS.some(([key]) => key === params.get('view')) ? params.get('view') : 'home';
     if (sharedCode) {
       try {
-        const payload = payloadFromCode(`B28:${sharedCode}`);
-        SC = payload.scores;
-        SET = {
-          k: payload.settings.k,
-          ha: payload.settings.ha,
-          rho: payload.settings.rho,
-          seed: payload.settings.seed,
-          adj: payload.settings.adjustments,
-        };
-        opt = { full: payload.options.full, odds: payload.options.odds, meth: payload.options.method };
-        Object.keys(SC).forEach(recordPredictionSnapshot);
-        save();
+        adoptSharedPayload(payloadFromCode(`B28:${sharedCode}`));
+        initialView = 'sim';
       } catch (error) {
         notify(`Link de cenário ignorado: ${error.message}`);
       }
+    } else if (shortId) {
+      try {
+        const response = await fetch(`/api/share/${shortId}`);
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error || `HTTP ${response.status}`);
+        adoptSharedPayload(validatedPayload(body.payload));
+        initialView = 'sim';
+        history.replaceState(null, '', '/');
+      } catch (error) {
+        notify(`Cenário compartilhado indisponível: ${error.message}`);
+      }
     }
-    document.querySelector('main').classList.add('home-active');
     nav();
-    TABS.forEach(([key]) => {
-      $('#v-' + key).hidden = key !== 'home';
-      $('#v-' + key).setAttribute('aria-labelledby', `tab-${key}`);
-    });
-    renderAll();
-    renderHome();
-    if (validationWarnings.length) notify(validationWarnings.join(' '));
+    show(initialView, { focus: false });
+    if (initialView !== 'sim') sched();
+    loadProbabilityHistory();
     await initializeAccount();
     scheduleLiveRefresh();
     document.addEventListener('visibilitychange', () => {

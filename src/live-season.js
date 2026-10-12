@@ -11,6 +11,18 @@ function resolveTeamCode(team, teams, byName) {
   return byName.get(normalized(team?.name)) || null;
 }
 
+// Texto livre vindo do feed (ex.: estádio): sem marcação HTML e com tamanho limitado.
+export function cleanText(value, maxLength = 80) {
+  if (typeof value !== 'string') return '';
+  return (
+    value
+      // eslint-disable-next-line no-control-regex
+      .replace(/[<>"'`&\u0000-\u001f]/g, '')
+      .trim()
+      .slice(0, maxLength)
+  );
+}
+
 function validScore(score) {
   return Number.isInteger(score) && score >= 0 && score <= 20;
 }
@@ -20,6 +32,25 @@ const NAME_ALIASES = [
   ['athleticopr', 'CAP'],
   ['redbullbragantino', 'BRA'],
   ['bragantino', 'BRA'],
+  // Nomes usados por fontes de odds e agregadores em inglês.
+  ['atleticomineiro', 'CAM'],
+  ['atleticoparanaense', 'CAP'],
+  ['athletico', 'CAP'],
+  ['botafogorj', 'BOT'],
+  ['botafogo', 'BOT'],
+  ['vasco', 'VAS'],
+  ['vascodagama', 'VAS'],
+  ['ecvitoria', 'VIT'],
+  ['ecbahia', 'BAH'],
+  ['clubedoremo', 'REM'],
+  ['saopaulofc', 'SAO'],
+  ['scinternacional', 'INT'],
+  ['gremiofbpa', 'GRE'],
+  ['coritibafc', 'CFC'],
+  ['santosfc', 'SAN'],
+  ['sccorinthians', 'COR'],
+  ['corinthianspaulista', 'COR'],
+  ['chapecoensesc', 'CHA'],
 ];
 
 // Converte um clube do feed ({ shortName, name }) para a sigla do calendário local.
@@ -137,7 +168,8 @@ export function mergeLiveSeason(snapshot, liveFeed) {
     if (typeof kickoff === 'string' && Number.isFinite(Date.parse(kickoff))) {
       fixture.kickoff = kickoff;
     }
-    if (match.venue) fixture.stadium = match.venue;
+    const venue = cleanText(match.venue);
+    if (venue) fixture.stadium = venue;
 
     if (match.status !== 'finished') continue;
     if (!validScore(match.score?.home) || !validScore(match.score?.away)) {

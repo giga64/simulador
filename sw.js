@@ -1,16 +1,18 @@
-// Service worker do SimulaBR: rede primeiro, cache como reserva para abrir o
-// site sem conexão. A API ao vivo e a autenticação nunca passam pelo cache.
-const CACHE = 'simulabr-v1';
+// Service worker do SimulaBR: notificações push e abertura sem conexão.
+// Estratégia: rede primeiro, cache como reserva. A API nunca passa pelo cache.
+const CACHE = 'simulabr-v2';
 const PRECACHE = [
   '/',
   '/index.html',
   '/app.js',
   '/styles.css',
   '/manifest.webmanifest',
-  '/data/season-2026.json',
-  '/data/historical-backfill-2026.json',
   '/assets/logos.json',
   '/assets/simulabr-logo.webp',
+  '/assets/fonts/inter-latin.woff2',
+  '/data/season-2026.json',
+  '/data/historical-backfill-2026.json',
+  '/data/probability-history-2026.json',
 ];
 
 self.addEventListener('install', (event) => {
@@ -37,12 +39,53 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        if (response.ok) {
+        if (response.ok && response.type === 'basic') {
           const copy = response.clone();
           caches.open(CACHE).then((cache) => cache.put(event.request, copy));
         }
         return response;
       })
-      .catch(() => caches.match(event.request, { ignoreSearch: true }).then((cached) => cached || Response.error())),
+      .catch(() =>
+        caches
+          .match(event.request, { ignoreSearch: true })
+          .then(
+            (cached) => cached || (event.request.mode === 'navigate' ? caches.match('/index.html') : Response.error()),
+          ),
+      ),
+  );
+});
+
+self.addEventListener('push', (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    data = { title: 'SimulaBR', body: event.data?.text() || '' };
+  }
+  const title = String(data.title || 'SimulaBR').slice(0, 80);
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body: String(data.body || '').slice(0, 200),
+      tag: String(data.tag || 'simulabr'),
+      renotify: true,
+      icon: '/assets/icons/icon-192.png',
+      badge: '/assets/icons/icon-32.png',
+      data: { url: typeof data.url === 'string' && data.url.startsWith('/') ? data.url : '/' },
+    }),
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = new URL(event.notification.data?.url || '/', self.location.origin).href;
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windows) => {
+      const open = windows.find((client) => client.url.startsWith(self.location.origin));
+      if (open) {
+        open.navigate(target);
+        return open.focus();
+      }
+      return self.clients.openWindow(target);
+    }),
   );
 });

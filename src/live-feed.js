@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { cleanText } from './live-season.js';
 
 const TEAM_COUNT = 20;
 const ROUND_COUNT = 38;
@@ -108,7 +109,7 @@ export function normalizeLiveCompetition(competition, fetchedAt = new Date().toI
       round: round.number,
       status: match.status,
       dateTime: typeof match.dateTime === 'string' ? match.dateTime : null,
-      venue: match.venue,
+      venue: cleanText(match.venue) || null,
       homeTeam: { shortName: match.homeTeam.shortName, name: match.homeTeam.name },
       awayTeam: { shortName: match.awayTeam.shortName, name: match.awayTeam.name },
       score: { home: score.home, away: score.away },

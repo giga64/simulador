@@ -1,225 +1,128 @@
-import { createReadStream, statSync } from 'node:fs';
+// Servidor do SimulaBR: liga o feed ao vivo, o estado da temporada, as
+// notificações, o histórico de chances e as rotas (src/server/app.js).
+import { readFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createClient } from '@supabase/supabase-js';
 import { createLiveFeedCache } from '../src/live-feed.js';
 import { createLiveHistoryStore } from '../src/live-history.js';
 import { createGeLiveSource } from '../src/live-sources/ge.js';
-import { isPublicPath } from '../src/static-paths.js';
+import { createMatchModel, DEFAULT_SETTINGS, openFixturesFrom } from '../src/model/season-model.js';
+import { createRequestHandler } from '../src/server/app.js';
+import { createJsonStore } from '../src/server/json-store.js';
+import { createOddsTracker } from '../src/server/odds.js';
+import { createOgRenderer } from '../src/server/og-image.js';
+import { createPushNotifier } from '../src/server/push.js';
+import { createSeasonService } from '../src/server/season-service.js';
+import { createAccountDeleter, createAdminClient, createSharedScenarioStore } from '../src/server/supabase-admin.js';
 import { getPublicSupabaseConfig, isSupabaseServiceRoleKey } from '../src/supabase-config.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const supabaseSdkPath = path.join(root, 'node_modules', '@supabase', 'supabase-js', 'dist', 'umd', 'supabase.js');
-const supabaseConfig = getPublicSupabaseConfig(process.env);
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const port = Number(process.env.PORT || 4173);
-const host = process.env.HOST || (process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1');
-const addToHistory = createLiveHistoryStore(
-  process.env.LIVE_HISTORY_PATH || path.join(root, '.runtime', 'live-results-2026.json'),
-);
+const env = process.env;
+const production = env.NODE_ENV === 'production';
+const port = Number(env.PORT || 4173);
+const host = env.HOST || (production ? '0.0.0.0' : '127.0.0.1');
+const runtimeDir = env.RUNTIME_DIR || path.join(root, '.runtime');
+const readJson = async (file) => JSON.parse(await readFile(path.join(root, file), 'utf8'));
+
+const siteUrl = (() => {
+  try {
+    const url = new URL(env.SITE_URL || '');
+    return url.protocol === 'https:' || url.hostname === 'localhost' ? url.origin : '';
+  } catch {
+    return '';
+  }
+})();
+
+const supabaseConfig = getPublicSupabaseConfig(env);
+const serviceRoleKey = isSupabaseServiceRoleKey(env.SUPABASE_SERVICE_ROLE_KEY) ? env.SUPABASE_SERVICE_ROLE_KEY : '';
+const adminClient = supabaseConfig.authConfigured
+  ? createAdminClient({ supabaseUrl: supabaseConfig.supabaseUrl, serviceRoleKey })
+  : null;
+
+const [snapshot, backfill, logos, reconstructed] = await Promise.all([
+  readJson('data/season-2026.json'),
+  readJson('data/historical-backfill-2026.json'),
+  readJson('assets/logos.json'),
+  readJson('data/probability-history-2026.json'),
+]);
+
+const seasonService = createSeasonService({
+  snapshot,
+  backfill,
+  logos,
+  reconstructedHistory: reconstructed.entries,
+  historyStore: createJsonStore(env.PROBABILITY_HISTORY_PATH || path.join(runtimeDir, 'probability-history.json'), {
+    fallback: { version: 1, entries: [] },
+  }),
+});
+const pushNotifier = createPushNotifier({
+  vapid: { publicKey: env.VAPID_PUBLIC_KEY, privateKey: env.VAPID_PRIVATE_KEY, subject: env.VAPID_SUBJECT },
+  adminClient,
+  teamNames: snapshot.teams,
+});
+const oddsTracker = createOddsTracker({
+  apiKey: env.ODDS_API_KEY,
+  store: createJsonStore(path.join(runtimeDir, 'odds.json'), { fallback: { version: 1, records: [] } }),
+  resolveTeam: seasonService.resolveTeam,
+});
+
+const addToHistory = createLiveHistoryStore(env.LIVE_HISTORY_PATH || path.join(runtimeDir, 'live-results-2026.json'));
 const loadLiveFeed = createGeLiveSource();
 const readLiveFeed = createLiveFeedCache(async () => {
   const feed = await loadLiveFeed();
-  return { ...feed, ...(await addToHistory(feed)) };
-});
-const mimeTypes = new Map([
-  ['.css', 'text/css; charset=utf-8'],
-  ['.html', 'text/html; charset=utf-8'],
-  ['.js', 'text/javascript; charset=utf-8'],
-  ['.json', 'application/json; charset=utf-8'],
-  ['.webmanifest', 'application/manifest+json; charset=utf-8'],
-  ['.webp', 'image/webp'],
-  ['.png', 'image/png'],
-  ['.svg', 'image/svg+xml'],
-  ['.ico', 'image/x-icon'],
-]);
-// Imagens mudam raramente; o restante é revalidado a cada acesso (ETag), já que
-// os arquivos não têm hash no nome.
-const cacheControlFor = (extension) =>
-  ['.webp', '.png', '.svg', '.ico'].includes(extension) ? 'public, max-age=86400' : 'no-cache';
-
-const server = createServer(async (request, response) => {
-  if (!['GET', 'HEAD', 'DELETE'].includes(request.method || '')) {
-    response.writeHead(405, { Allow: 'GET, HEAD, DELETE' }).end('Method not allowed');
-    return;
-  }
-
-  let pathname, forceRefresh;
-  try {
-    const requestUrl = new URL(request.url || '/', 'http://localhost');
-    pathname = decodeURIComponent(requestUrl.pathname);
-    forceRefresh = requestUrl.searchParams.get('refresh') === '1';
-  } catch {
-    response.writeHead(400).end('Bad request');
-    return;
-  }
-
-  if (pathname === '/api/account') {
-    if (request.method !== 'DELETE') {
-      response.writeHead(405, { Allow: 'DELETE' }).end('Method not allowed');
-      return;
-    }
-    if (!supabaseConfig.authConfigured || !isSupabaseServiceRoleKey(supabaseServiceRoleKey)) {
-      response
-        .writeHead(503, { 'Content-Type': 'application/json; charset=utf-8' })
-        .end(JSON.stringify({ error: 'Exclusão de conta não está configurada no servidor.' }));
-      return;
-    }
-    const token = /^Bearer ([A-Za-z0-9._-]+)$/.exec(request.headers.authorization || '')?.[1];
-    if (!token) {
-      response
-        .writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' })
-        .end(JSON.stringify({ error: 'Sessão inválida. Entre novamente para excluir a conta.' }));
-      return;
-    }
-    try {
-      const authClient = createClient(supabaseConfig.supabaseUrl, supabaseConfig.supabaseKey, {
-        auth: { autoRefreshToken: false, persistSession: false },
-      });
-      const { data, error: authError } = await authClient.auth.getUser(token);
-      if (authError || !data.user) {
-        response
-          .writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' })
-          .end(JSON.stringify({ error: 'Sessão inválida ou expirada. Entre novamente.' }));
-        return;
-      }
-      const adminClient = createClient(supabaseConfig.supabaseUrl, supabaseServiceRoleKey, {
-        auth: { autoRefreshToken: false, persistSession: false },
-      });
-      const { error } = await adminClient.auth.admin.deleteUser(data.user.id);
-      if (error) throw error;
-      response
-        .writeHead(200, {
-          'Cache-Control': 'no-store',
-          'Content-Type': 'application/json; charset=utf-8',
-          'X-Content-Type-Options': 'nosniff',
-        })
-        .end(JSON.stringify({ deleted: true }));
-    } catch (error) {
-      console.error('Supabase account deletion failed:', error instanceof Error ? error.message : error);
-      response
-        .writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' })
-        .end(JSON.stringify({ error: 'O provedor não conseguiu excluir a conta. Tente novamente.' }));
-    }
-    return;
-  }
-
-  if (request.method === 'DELETE') {
-    response.writeHead(405, { Allow: 'GET, HEAD' }).end('Method not allowed');
-    return;
-  }
-
-  if (pathname === '/api/live-season') {
-    if (request.method === 'HEAD') {
-      response.writeHead(405, { Allow: 'GET' }).end();
-      return;
-    }
-    try {
-      const liveFeed = await readLiveFeed({ forceRefresh });
-      response
-        .writeHead(200, {
-          'Cache-Control': 'no-store',
-          'Content-Type': 'application/json; charset=utf-8',
-          'X-Content-Type-Options': 'nosniff',
-        })
-        .end(JSON.stringify(liveFeed));
-    } catch (error) {
-      response
-        .writeHead(502, {
-          'Cache-Control': 'no-store',
-          'Content-Type': 'application/json; charset=utf-8',
-          'X-Content-Type-Options': 'nosniff',
-        })
-        .end(
-          JSON.stringify({
-            error: 'Não foi possível consultar a fonte GE neste momento.',
-            details: error instanceof Error ? error.message : 'Erro externo desconhecido.',
-          }),
-        );
-    }
-    return;
-  }
-
-  if (pathname === '/api/config') {
-    response
-      .writeHead(200, {
-        'Cache-Control': 'no-store',
-        'Content-Type': 'application/json; charset=utf-8',
-        'X-Content-Type-Options': 'nosniff',
-      })
-      .end(JSON.stringify(supabaseConfig));
-    return;
-  }
-
-  if (pathname === '/vendor/supabase.js') {
-    try {
-      if (!statSync(supabaseSdkPath).isFile()) throw new Error('SDK unavailable');
-      response.writeHead(200, {
-        'Cache-Control': 'public, max-age=3600',
-        'Content-Type': 'text/javascript; charset=utf-8',
-        'X-Content-Type-Options': 'nosniff',
-      });
-      if (request.method === 'HEAD') response.end();
-      else createReadStream(supabaseSdkPath).pipe(response);
-    } catch {
-      response
-        .writeHead(503, {
-          'Cache-Control': 'no-store',
-          'Content-Type': 'text/plain; charset=utf-8',
-        })
-        .end('Supabase client SDK unavailable');
-    }
-    return;
-  }
-
-  const relative = pathname === '/' ? 'index.html' : pathname.replace(/^[/\\]+/, '');
-  if (!isPublicPath(relative)) {
-    response.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Not found');
-    return;
-  }
-  const filePath = path.resolve(root, relative);
-  if (filePath !== root && !filePath.startsWith(`${root}${path.sep}`)) {
-    response.writeHead(403).end('Forbidden');
-    return;
-  }
-
-  try {
-    const stats = statSync(filePath);
-    if (!stats.isFile()) throw new Error('Not a file');
-    const extension = path.extname(filePath).toLowerCase();
-    const etag = `W/"${stats.size.toString(16)}-${Math.floor(stats.mtimeMs).toString(16)}"`;
-    const headers = {
-      'Cache-Control': cacheControlFor(extension),
-      'Content-Type': mimeTypes.get(extension) || 'application/octet-stream',
-      ETag: etag,
-      'X-Content-Type-Options': 'nosniff',
-    };
-    if (request.headers['if-none-match'] === etag) {
-      response.writeHead(304, headers).end();
-      return;
-    }
-    response.writeHead(200, headers);
-    if (request.method === 'HEAD') response.end();
-    else createReadStream(filePath).pipe(response);
-  } catch {
-    response.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Not found');
-  }
+  const enriched = { ...feed, ...(await addToHistory(feed)) };
+  // Eventos (gol, início, fim) disparam notificações sem atrasar a resposta.
+  seasonService
+    .update(enriched)
+    .then((events) => pushNotifier.notify(events))
+    .catch((error) => console.error(`Atualização do estado da temporada falhou: ${error.message}`));
+  return enriched;
 });
 
+const sharedScenarios = createSharedScenarioStore(adminClient);
+const handler = createRequestHandler({
+  root,
+  production,
+  trustProxy: env.TRUST_PROXY === '1',
+  siteUrl,
+  readLiveFeed,
+  seasonService,
+  publicConfig: {
+    ...supabaseConfig,
+    vapidPublicKey: pushNotifier.publicKey,
+    shortLinks: sharedScenarios.enabled,
+    oddsComparison: oddsTracker.enabled,
+  },
+  deleteAccount: createAccountDeleter({
+    supabaseUrl: supabaseConfig.supabaseUrl,
+    publicKey: supabaseConfig.supabaseKey,
+    adminClient,
+  }),
+  sharedScenarios,
+  renderScenarioImage: createOgRenderer({ root }),
+  oddsTracker,
+});
+
+const server = createServer(handler);
+server.requestTimeout = 20_000;
+server.headersTimeout = 10_000;
 server.listen(port, host, () => {
-  console.log(`Preview server running at http://${host}:${port}`);
+  console.log(`SimulaBR em http://${host}:${port}`);
+  const features = [
+    ['contas', supabaseConfig.authConfigured],
+    ['exclusão de conta e links curtos', Boolean(adminClient)],
+    ['notificações push', pushNotifier.enabled],
+    ['comparação com o mercado', oddsTracker.enabled],
+    ['URL pública (SITE_URL)', Boolean(siteUrl)],
+  ];
+  for (const [name, enabled] of features) console.log(`  ${enabled ? '✓' : '·'} ${name}`);
 });
 
 // Com jogo em andamento a fonte é consultada a cada minuto; fora disso, a cada 2.
 const LIVE_REFRESH_MS = 60_000;
 const IDLE_REFRESH_MS = 120_000;
 let refreshTimer;
-function scheduleRefresh(delay) {
-  clearTimeout(refreshTimer);
-  refreshTimer = setTimeout(refreshInBackground, delay);
-  refreshTimer.unref();
-}
 async function refreshInBackground({ forceRefresh = true } = {}) {
   let hasLiveMatch = false;
   try {
@@ -228,6 +131,25 @@ async function refreshInBackground({ forceRefresh = true } = {}) {
   } catch (error) {
     console.error(`Atualização periódica do GE falhou: ${error.message || String(error)}`);
   }
-  scheduleRefresh(hasLiveMatch ? LIVE_REFRESH_MS : IDLE_REFRESH_MS);
+  clearTimeout(refreshTimer);
+  refreshTimer = setTimeout(refreshInBackground, hasLiveMatch ? LIVE_REFRESH_MS : IDLE_REFRESH_MS);
+  refreshTimer.unref();
 }
 refreshInBackground({ forceRefresh: false });
+
+// Odds: 4 consultas por dia cabem no plano gratuito da the-odds-api.
+async function refreshOdds() {
+  if (!oddsTracker.enabled) return;
+  try {
+    const { seasonData, standings, round } = seasonService.state;
+    const teams = Object.keys(seasonData.teams);
+    await oddsTracker.refresh({
+      openFixtures: openFixturesFrom(seasonData.fixtures, round?.number),
+      matchModel: createMatchModel({ teams, results: seasonData.results, standings, settings: DEFAULT_SETTINGS }),
+    });
+  } catch (error) {
+    console.error(`Consulta de odds falhou: ${error.message}`);
+  }
+}
+setTimeout(refreshOdds, 30_000).unref();
+setInterval(refreshOdds, 6 * 60 * 60_000).unref();

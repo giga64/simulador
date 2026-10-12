@@ -19,6 +19,7 @@ export default [
       'src/live-history.js',
       'src/live-sources/**/*.js',
       'src/static-paths.js',
+      'src/server/**/*.js',
       'src/supabase-config.js',
       'test/**/*.js',
       'eslint.config.js',
