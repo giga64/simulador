@@ -1,0 +1,151 @@
+# Dados, fontes e modelo
+
+## Fonte e limites da atualização
+
+A API anexada extrai dados da página do GE: não é um serviço oficial da CBF e
+não fornece o histórico completo de jogos ou o calendário futuro inteiro.
+Portanto:
+
+- classificação, pontos, V/E/D, gols, saldo, aproveitamento e forma dos clubes
+  vêm da tabela mais recente consultada no GE;
+- resultados finais da rodada ativa são incorporados ao snapshot e persistidos
+  localmente para aparecerem também após a mudança de rodada;
+- o calendário completo e partidas adiadas fora da rodada ativa continuam
+  sujeitos ao snapshot local;
+- o resumo histórico detalhado é calculado dos resultados conhecidos, não deve
+  ser interpretado como um histórico oficial completo após a data do snapshot;
+- a página compara jogos, vitórias, empates, derrotas e gols conhecidos com os
+  totais da tabela GE. Diferenças são um alerta de cobertura, não uma prova de
+  qual placar está faltando;
+- a aba **Fontes e método** contém um relatório jogo a jogo. Resultados do
+  snapshot não têm procedência individual; resultados observados identificam o
+  feed GE; correções mantêm a fonte HTTPS declarada na importação. O processo
+  não autentica essas fontes de forma independente;
+- as probabilidades usam os totais atuais por clube do GE; como o feed não
+  informa separação casa/fora, a proporção de gols mandante/visitante é uma
+  referência histórica do snapshot.
+
+### Recuperar resultados não observados
+
+O pacote do GE retorna somente a rodada atual. Se a instância ficar fora do ar
+durante jogos, o histórico local pode ficar incompleto. A página compara os
+resultados locais aos totais da classificação GE e aponta possíveis diferenças
+por clube; essa checagem não consegue deduzir placares ausentes. O GE não é uma
+fonte oficial da CBF, e essa comparação não certifica o histórico jogo a jogo.
+
+Para preencher lacunas, confira os placares em uma fonte confiável e autorizada
+quando disponível. Prepare um CSV de siglas e resultados:
+
+```csv
+round,home,away,homeGoals,awayGoals
+30,FLA,PAL,2,1
+```
+
+Importe cada lote com a URL HTTPS e o nome da fonte que você conferiu:
+
+```sh
+npm run import:results -- resultados.csv https://fonte-verificada.example "Nome da fonte"
+```
+
+O importador exige que cada confronto exista no calendário, valida rodada e
+placar, rejeita duplicatas e não sobrescreve resultados divergentes já
+registrados. Ele registra a fonte e a data da importação em
+`data/historical-backfill-2026.json`, que deve ser revisado e publicado junto
+com o site. A validação normal verifica o snapshot mais esse arquivo. O
+importador não autentica a fonte nem confirma o placar por conta própria: não
+importe dados sem conferi-los.
+
+O arquivo [data/season-2026.json](./data/season-2026.json) é o snapshot de
+contingência e registra fonte e instante de atualização. Para mantê-lo:
+
+1. Confira resultados, calendário, estádios e horários nas fontes indicadas no
+   JSON.
+2. Atualize `results` e `fixtures` em conjunto. Cada resultado deve corresponder
+   a uma partida marcada como `played`.
+3. Atualize `updatedAt` para o instante real da conferência.
+4. Rode `npm run validate:data` e `npm test`.
+
+O validador confere 20 clubes, 380 jogos, 38 partidas por clube, equilíbrio de
+19 jogos em casa e 19 fora, resultados duplicados/órfãos, placares e horários.
+Rodadas parcialmente disputadas aparecem como avisos.
+
+## Regras e aproximações
+
+O desempate aplicado é pontos, vitórias, saldo, gols pró e confronto direto
+quando somente dois clubes continuam empatados nesses critérios. Cartões e
+sorteio não são modelados; empates residuais usam uma ordem estável, explicitamente
+não oficial.
+
+As faixas continentais e o número de rebaixados ficam em `qualificationModel`.
+As vagas da liga são aproximações: títulos de copas e o regulamento oficial
+podem mudar as posições classificatórias. O validador rejeita faixas
+sobrepostas ou fora das posições da liga.
+
+A interface trata as faixas de classificação como cenários do modelo, não como
+vagas oficiais garantidas. O projeto ainda não confirmou um documento oficial
+específico do regulamento 2026 com data de publicação verificável; os cortes não
+devem ser apresentados como oficiais até que a fonte seja adicionada e conferida.
+
+## Modelo
+
+O código do modelo fica em `src/model/`, em funções puras e testadas
+(`test/model.test.js`):
+
+- `expected-goals.js`: gols esperados de cada lado a partir de ataque e defesa
+  relativos à média da liga, com `k` jogos fictícios de regressão à média,
+  força do mando e o ajuste manual de cada clube;
+- `poisson.js`: distribuição de placares (Poisson com correção de
+  Dixon-Coles) e a amostragem por busca binária;
+- `standings.js`: classificação e desempates;
+- `monte-carlo.js`: 10.000 simulações do restante do campeonato. Elas rodam
+  em um Web Worker (`monte-carlo.worker.js`) para não travar a página; sem
+  suporte a workers de módulo, rodam na thread principal;
+- `live-matches.js`: jogos em andamento.
+
+Cada simulação Monte Carlo usa a semente configurável do cenário. Com os mesmos
+dados, palpites, ajustes e semente, as chances são reproduzíveis. A aba
+**Corrida** mostra a chance de título de todos os clubes, calculada pelo mesmo
+modelo e número de simulações.
+
+Na visão de um clube, **Jogos que mais mexem nas chances** usa as mesmas
+simulações. Para cada jogo ao vivo e das duas próximas rodadas, compara a
+chance da meta escolhida (título, G5, Sul-Americana ou fugir do Z4) quando o
+mandante vence, quando empata e quando o visitante vence, e indica o resultado
+mais favorável ao clube.
+
+## Jogos ao vivo
+
+Partidas com status `live` no feed:
+
+- entram na classificação com o placar atual, como se terminassem agora, com
+  um chip ● ao lado dos dois clubes;
+- não aceitam palpite: o card mostra o placar, o minuto e as chances de casa,
+  empate e fora a partir do placar atual. Um palpite feito antes do início
+  continua guardado e é avaliado em **Meus palpites** quando o jogo termina;
+- nas simulações, partem do placar atual e sorteiam só os gols do tempo que
+  falta (gols esperados multiplicados pela fração restante da partida).
+
+O feed não informa o minuto. Ele é estimado pelo horário de início: 1º tempo de
+cerca de 47 minutos de relógio, 15 minutos de intervalo e depois o 2º tempo.
+
+Alguns sites atualizam a classificação durante o jogo. Quando a tabela tem, para
+os dois clubes, exatamente um jogo a mais do que os resultados conhecidos, o
+placar parcial é descontado dela antes de ser somado de novo. Assim ele nunca é
+contado duas vezes.
+
+A página consulta `/api/live-season` em segundo plano, sem recarregar: a cada
+minuto quando há jogo ao vivo e a cada 2 minutos fora disso. A consulta pausa
+com a aba escondida e é feita na hora em que a página volta a ficar visível. O
+cenário, a rolagem e o campo em edição são preservados. Gols, inícios e fins de
+jogo aparecem como aviso. O servidor segue o mesmo ritmo na consulta ao GE.
+
+A aba **Meus palpites** também calcula calibração das probabilidades salvas em
+cada previsão. O Brier score de três resultados é a média da soma dos erros
+quadráticos para casa/empate/fora (0 é perfeito; menor é melhor), e a tabela de
+confiabilidade compara confiança média com frequência observada por faixas.
+Somente previsões com snapshot e resultado registrado entram nessas métricas;
+amostras pequenas não são evidência de desempenho futuro.
+
+Em telas estreitas, tabelas e relatórios rolam horizontalmente dentro de regiões
+identificadas. Os campos de placar e os controles principais têm alvos de toque
+maiores; as abas também aceitam navegação por setas, Home e End.

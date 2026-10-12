@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "competition": "Campeonato Brasileiro S?rie A",
+  "competition": "Campeonato Brasileiro Série A",
   "season": 2026,
   "updatedAt": "2026-10-08T23:33:00-03:00",
   "source": {
-    "name": "Tabela e resultados consolidados; confer?ncia de calend?rio pela CBF",
+    "name": "Tabela e resultados consolidados; conferência de calendário pela CBF",
     "url": "https://aquiesportes.com.br/futebol/tabela-do-brasileirao/",
     "calendarUrl": "https://www.cbf.com.br/futebol-brasileiro/noticias/campeonato-brasileiro-serie-a/a/confira-o-retrospecto-dos-confrontos-da-30-rodada-do-brasileirao",
-    "method": "Snapshot manual publicado com o site; n?o ? um feed ao vivo."
+    "method": "Snapshot manual publicado com o site; não é um feed ao vivo."
   },
   "qualificationModel": {
     "libertadoresLeaguePositions": 5,
@@ -3173,7 +3173,7 @@
       "away": "CHA",
       "status": "scheduled",
       "kickoff": "2026-11-18T17:00:00-03:00",
-      "stadium": "Baen?o"
+      "stadium": "Baenão"
     },
     {
       "id": "5:7",
@@ -3452,7 +3452,7 @@
       "away": "COR",
       "status": "scheduled",
       "kickoff": "2026-12-02T17:00:00-03:00",
-      "stadium": "Baen?o"
+      "stadium": "Baenão"
     },
     {
       "id": "8:8",

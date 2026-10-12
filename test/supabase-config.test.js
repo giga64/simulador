@@ -23,7 +23,10 @@ test('never returns service-role or invalid-origin keys to the browser', () => {
     { SUPABASE_URL: 'https://attacker.example', SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_public' },
     { SUPABASE_URL: 'https://project-ref.supabase.co', SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_' },
     { SUPABASE_URL: 'https://project-ref.supabase.co:8443', SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_public' },
-    { SUPABASE_URL: 'https://project-ref.supabase.co/unexpected-path', SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_public' },
+    {
+      SUPABASE_URL: 'https://project-ref.supabase.co/unexpected-path',
+      SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_public',
+    },
     { SUPABASE_URL: 'https://project-ref.supabase.co', SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_public!' },
   ]) {
     assert.deepEqual(getPublicSupabaseConfig(environment), {
@@ -40,9 +43,12 @@ test('recognizes only JWT credentials with the service_role claim for server-sid
   assert.equal(isSupabaseServiceRoleKey(jwt({ role: 'anon' })), false);
   assert.equal(isSupabaseServiceRoleKey('sb_secret_private_key'), false);
   assert.equal(isSupabaseServiceRoleKey('invalid'), false);
-  assert.equal(getPublicSupabaseConfig({
-    SUPABASE_URL: 'https://project-ref.supabase.co',
-    SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_public',
-    SUPABASE_SERVICE_ROLE_KEY: jwt({ role: 'service_role' }),
-  }).accountDeletionConfigured, true);
+  assert.equal(
+    getPublicSupabaseConfig({
+      SUPABASE_URL: 'https://project-ref.supabase.co',
+      SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_public',
+      SUPABASE_SERVICE_ROLE_KEY: jwt({ role: 'service_role' }),
+    }).accountDeletionConfigured,
+    true,
+  );
 });

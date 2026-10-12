@@ -11,13 +11,15 @@ test('finished matches persist and survive a store restart', async () => {
   const feed = {
     fetchedAt: '2026-10-10T12:00:00.000Z',
     source: { name: 'GE (Globo Esporte)', url: 'https://ge.globo.com/futebol/brasileirao-serie-a/' },
-    matches: [{
-      round: 30,
-      status: 'finished',
-      homeTeam: { shortName: 'FLA', name: 'Flamengo' },
-      awayTeam: { shortName: 'PAL', name: 'Palmeiras' },
-      score: { home: 2, away: 1 },
-    }],
+    matches: [
+      {
+        round: 30,
+        status: 'finished',
+        homeTeam: { shortName: 'FLA', name: 'Flamengo' },
+        awayTeam: { shortName: 'PAL', name: 'Palmeiras' },
+        score: { home: 2, away: 1 },
+      },
+    ],
   };
   try {
     const addMatches = createLiveHistoryStore(filePath);
@@ -29,10 +31,12 @@ test('finished matches persist and survive a store restart', async () => {
     const updatedFeed = {
       fetchedAt: '2026-10-10T13:00:00.000Z',
       source: feed.source,
-      matches: [{
-        ...feed.matches[0],
-        score: { home: 2, away: 2 },
-      }],
+      matches: [
+        {
+          ...feed.matches[0],
+          score: { home: 2, away: 2 },
+        },
+      ],
     };
     const updated = await addMatches(updatedFeed);
     assert.equal(updated.history[0].score.away, 2);
@@ -54,13 +58,15 @@ test('an unreadable history is preserved and is not silently replaced', async ()
   const filePath = path.join(directory, 'history.json');
   const invalidContents = '{"version":999,"matches":"unreadable"}';
   const feed = {
-    matches: [{
-      round: 30,
-      status: 'finished',
-      homeTeam: { shortName: 'FLA', name: 'Flamengo' },
-      awayTeam: { shortName: 'PAL', name: 'Palmeiras' },
-      score: { home: 2, away: 1 },
-    }],
+    matches: [
+      {
+        round: 30,
+        status: 'finished',
+        homeTeam: { shortName: 'FLA', name: 'Flamengo' },
+        awayTeam: { shortName: 'PAL', name: 'Palmeiras' },
+        score: { home: 2, away: 1 },
+      },
+    ],
   };
   try {
     await writeFile(filePath, invalidContents);

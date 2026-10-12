@@ -1,21 +1,110 @@
-<!DOCTYPE html>
-<html lang="pt-BR"><head><meta charset="utf-8"><title>SimulaBR | Simulador do Brasileirão 2026</title>
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="SimulaBR: acompanhe os jogos, explore estatísticas e simule cenários do Brasileirão 2026.">
-<meta name="theme-color" content="#0A0F0D">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
-<link rel="icon" type="image/png" href="assets/simulabr-logo.png">
-<link rel="stylesheet" href="styles.css"></head><body><main>
-<header><img src="assets/simulabr-logo.png" alt="Logo do SimulaBR"><div><h1>SimulaBR</h1><p id="seasonSummary">Carregando os dados da temporada...</p></div><span class="sp"></span><div class="row"><button class="p" data-act="share" aria-label="Compartilhar cen&#225;rio"><span data-i="share"></span>Compartilhar</button></div><p id="sourceStatus" class="source-status" role="status"></p></header>
-<section class="hero" aria-labelledby="heroTitle"><div class="hero-copy"><span class="hero-kicker">BRASILEIRÃO 2026 · A TEMPORADA EM UM SÓ LUGAR</span><h2 id="heroTitle">O campeonato, do seu jeito.</h2><p>Acompanhe os jogos, explore os clubes e simule cada rodada.</p></div><div class="hero-actions"><button class="p" data-act="show-view" data-view="live">Acompanhar jogos</button><button data-act="show-view" data-view="sim">Criar simulação</button></div></section>
-<div class="nav" id="nav" role="tablist" aria-label="Seções do simulador"></div>
-<section id="v-home" role="tabpanel" aria-labelledby="tab-home" hidden></section>
-<section id="v-sim" role="tabpanel" aria-labelledby="tab-sim"><div id="aviso"></div><div class="lay"><div class="stick"><div class="cd"><div class="row" style="justify-content:space-between;margin-bottom:8px"><h2 style="margin:0">Classificação projetada</h2><span class="mu sm" id="st" role="status" aria-live="polite"></span></div><div class="row" style="margin-bottom:8px"><button id="bF" data-act="toggle-full" aria-pressed="true"></button><button id="bO" data-act="toggle-odds" aria-pressed="true"></button></div><div class="sc" id="tab"></div>
-<div class="leg"><span><i style="background:var(--g)"></i><span id="leg-lib">Top 5 · vagas continentais</span></span><span><i style="background:var(--b)"></i><span id="leg-sud">6º a 11º · vagas continentais</span></span><span><i style="background:var(--r)"></i><span id="leg-releg">17º a 20º · Rebaixamento</span></span></div>
-<p class="mu sm" style="margin:8px 0 0">Desempate aplicado: pontos, vitórias, saldo, gols pró e confronto direto quando só dois clubes continuam empatados. Cartões e sorteio não estão disponíveis; empates residuais mantêm ordem estável e não oficial. Tít./G5/Z4 e Proj. vêm de 1.200 simulações reproduzíveis dos jogos em branco. Máx = pontos possíveis se vencer tudo. Forma: 5 últimos jogos (tracejado = jogo do cenário).</p></div></div><div id="side"></div></div></section>
-<section id="v-perf" role="tabpanel" aria-labelledby="tab-perf" hidden></section><section id="v-est" role="tabpanel" aria-labelledby="tab-est" hidden></section><section id="v-cor" role="tabpanel" aria-labelledby="tab-cor" hidden></section><section id="v-src" role="tabpanel" aria-labelledby="tab-src" hidden></section>
-<footer class="site-footer"><span>SimulaBR · dados, simulações e conteúdo para acompanhar o Brasileirão.</span><nav aria-label="Ajuda e informações legais"><button data-act="show-help-section" data-section="help-start">Ajuda</button><button data-act="show-help-section" data-section="help-privacy">Privacidade</button><button data-act="show-help-section" data-section="terms-of-use">Termos de uso</button></nav></footer>
-</main><div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
-<div id="mod" role="dialog" aria-modal="true" aria-label="Compartilhar cen?rio" hidden><div class="box" id="mb"></div></div>
-<script src="/vendor/supabase.js"></script>
-<script type="module" src="app.js"></script></body></html>
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>SimulaBR | Simulador do Brasileirão 2026</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta
+      name="description"
+      content="SimulaBR: acompanhe os jogos, explore estatísticas e simule cenários do Brasileirão 2026."
+    />
+    <meta name="theme-color" content="#0A0F0D" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'"
+    />
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/icon-32.png" />
+    <link rel="apple-touch-icon" href="assets/icons/icon-180.png" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="SimulaBR | Simulador do Brasileirão 2026" />
+    <meta
+      property="og:description"
+      content="Acompanhe os jogos ao vivo, explore estatísticas e simule cada rodada do Brasileirão 2026."
+    />
+    <meta property="og:image" content="/assets/og-image.png" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <img src="assets/simulabr-logo.webp" alt="Logo do SimulaBR" width="76" height="76" />
+        <div>
+          <h1>SimulaBR</h1>
+          <p id="seasonSummary">Carregando os dados da temporada...</p>
+        </div>
+        <span class="sp"></span>
+        <div class="row">
+          <button class="p" data-act="share" aria-label="Compartilhar cen&#225;rio">
+            <span data-i="share"></span>Compartilhar
+          </button>
+        </div>
+        <p id="sourceStatus" class="source-status" role="status"></p>
+      </header>
+      <section class="hero" aria-labelledby="heroTitle">
+        <div class="hero-copy">
+          <span class="hero-kicker">BRASILEIRÃO 2026 · A TEMPORADA EM UM SÓ LUGAR</span>
+          <h2 id="heroTitle">O campeonato, do seu jeito.</h2>
+          <p>Acompanhe os jogos, explore os clubes e simule cada rodada.</p>
+        </div>
+        <div class="hero-actions">
+          <button class="p" data-act="show-view" data-view="live">Acompanhar jogos</button
+          ><button data-act="show-view" data-view="sim">Criar simulação</button>
+        </div>
+      </section>
+      <div class="nav" id="nav" role="tablist" aria-label="Seções do simulador"></div>
+      <section id="v-home" role="tabpanel" aria-labelledby="tab-home" hidden></section>
+      <section id="v-sim" role="tabpanel" aria-labelledby="tab-sim">
+        <div id="aviso"></div>
+        <div class="lay">
+          <div class="stick">
+            <div class="cd">
+              <div class="row" style="justify-content: space-between; margin-bottom: 8px">
+                <h2 style="margin: 0">Classificação projetada</h2>
+                <span class="mu sm" id="st" role="status" aria-live="polite"></span>
+              </div>
+              <div class="row" style="margin-bottom: 8px">
+                <button id="bF" data-act="toggle-full" aria-pressed="true"></button
+                ><button id="bO" data-act="toggle-odds" aria-pressed="true"></button>
+              </div>
+              <div class="sc" id="tab"></div>
+              <div class="leg">
+                <span><i style="background: var(--g)"></i><span id="leg-lib">Top 5 · vagas continentais</span></span
+                ><span><i style="background: var(--b)"></i><span id="leg-sud">6º a 11º · vagas continentais</span></span
+                ><span><i style="background: var(--r)"></i><span id="leg-releg">17º a 20º · Rebaixamento</span></span>
+              </div>
+              <p class="mu sm" style="margin: 8px 0 0">
+                Desempate aplicado: pontos, vitórias, saldo, gols pró e confronto direto quando só dois clubes continuam
+                empatados. Cartões e sorteio não estão disponíveis; empates residuais mantêm ordem estável e não
+                oficial. Tít./G5/Z4 e Proj. vêm de 10.000 simulações reproduzíveis dos jogos em branco. Jogos ao vivo
+                (●) entram na tabela com o placar atual e não podem ser editados. Máx = pontos possíveis se vencer tudo.
+                Forma: 5 últimos jogos (tracejado = jogo do cenário).
+              </p>
+            </div>
+          </div>
+          <div id="side"></div>
+        </div>
+      </section>
+      <section id="v-perf" role="tabpanel" aria-labelledby="tab-perf" hidden></section>
+      <section id="v-est" role="tabpanel" aria-labelledby="tab-est" hidden></section>
+      <section id="v-cor" role="tabpanel" aria-labelledby="tab-cor" hidden></section>
+      <section id="v-src" role="tabpanel" aria-labelledby="tab-src" hidden></section>
+      <footer class="site-footer">
+        <span>SimulaBR · dados, simulações e conteúdo para acompanhar o Brasileirão.</span>
+        <nav aria-label="Ajuda e informações legais">
+          <button data-act="show-help-section" data-section="help-start">Ajuda</button
+          ><button data-act="show-help-section" data-section="help-privacy">Privacidade</button
+          ><button data-act="show-help-section" data-section="terms-of-use">Termos de uso</button>
+        </nav>
+      </footer>
+    </main>
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+    <div id="mod" role="dialog" aria-modal="true" aria-label="Compartilhar cenário" hidden>
+      <div class="box" id="mb"></div>
+    </div>
+    <script src="/vendor/supabase.js"></script>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

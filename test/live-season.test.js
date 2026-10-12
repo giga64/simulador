@@ -3,10 +3,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { mergeLiveSeason } from '../src/live-season.js';
 
-const season = JSON.parse(await readFile(
-  new URL('../data/season-2026.json', import.meta.url),
-  'utf8',
-));
+const season = JSON.parse(await readFile(new URL('../data/season-2026.json', import.meta.url), 'utf8'));
 
 function makeLiveFeed(round) {
   return {
@@ -78,37 +75,44 @@ test('live standings must map uniquely to every local club', () => {
 test('persisted results from earlier rounds are merged after the live round advances', () => {
   const fixture = season.fixtures.find((item) => item.round === 30 && item.status === 'scheduled');
   const feed = makeLiveFeed(31);
-  feed.history = [{
-    round: 30,
-    status: 'finished',
-    homeTeam: { shortName: fixture.home, name: season.teams[fixture.home] },
-    awayTeam: { shortName: fixture.away, name: season.teams[fixture.away] },
-    score: { home: 1, away: 0 },
-  }];
+  feed.history = [
+    {
+      round: 30,
+      status: 'finished',
+      homeTeam: { shortName: fixture.home, name: season.teams[fixture.home] },
+      awayTeam: { shortName: fixture.away, name: season.teams[fixture.away] },
+      score: { home: 1, away: 0 },
+    },
+  ];
 
   const merged = mergeLiveSeason(season, feed);
   assert.equal(merged.seasonData.fixtures.find((item) => item.id === fixture.id).status, 'played');
-  assert.ok(merged.seasonData.results.some((item) => item.round === 30
-    && item.home === fixture.home && item.homeGoals === 1));
+  assert.ok(
+    merged.seasonData.results.some((item) => item.round === 30 && item.home === fixture.home && item.homeGoals === 1),
+  );
 });
 
 test('a current feed never overwrites a result already present in the versioned snapshot', () => {
   const existing = season.results[0];
-  const fixture = season.fixtures.find((item) => item.round === existing.round
-    && item.home === existing.home && item.away === existing.away);
+  const fixture = season.fixtures.find(
+    (item) => item.round === existing.round && item.home === existing.home && item.away === existing.away,
+  );
   const feed = makeLiveFeed(30);
-  feed.history = [{
-    round: existing.round,
-    status: 'finished',
-    homeTeam: { shortName: fixture.home, name: season.teams[fixture.home] },
-    awayTeam: { shortName: fixture.away, name: season.teams[fixture.away] },
-    score: { home: existing.homeGoals + 1, away: existing.awayGoals },
-  }];
+  feed.history = [
+    {
+      round: existing.round,
+      status: 'finished',
+      homeTeam: { shortName: fixture.home, name: season.teams[fixture.home] },
+      awayTeam: { shortName: fixture.away, name: season.teams[fixture.away] },
+      score: { home: existing.homeGoals + 1, away: existing.awayGoals },
+    },
+  ];
 
   const merged = mergeLiveSeason(season, feed);
   assert.deepEqual(
-    merged.seasonData.results.find((item) => item.round === existing.round
-      && item.home === existing.home && item.away === existing.away),
+    merged.seasonData.results.find(
+      (item) => item.round === existing.round && item.home === existing.home && item.away === existing.away,
+    ),
     existing,
   );
 });
@@ -116,18 +120,17 @@ test('a current feed never overwrites a result already present in the versioned 
 test('naive Brazilian kickoff times are interpreted as Brasília time', () => {
   const fixture = season.fixtures.find((item) => item.status === 'scheduled');
   const feed = makeLiveFeed(fixture.round);
-  feed.matches = [{
-    round: fixture.round,
-    status: 'scheduled',
-    dateTime: '2026-10-10T18:00',
-    homeTeam: { shortName: fixture.home, name: season.teams[fixture.home] },
-    awayTeam: { shortName: fixture.away, name: season.teams[fixture.away] },
-    score: { home: null, away: null },
-  }];
+  feed.matches = [
+    {
+      round: fixture.round,
+      status: 'scheduled',
+      dateTime: '2026-10-10T18:00',
+      homeTeam: { shortName: fixture.home, name: season.teams[fixture.home] },
+      awayTeam: { shortName: fixture.away, name: season.teams[fixture.away] },
+      score: { home: null, away: null },
+    },
+  ];
 
   const merged = mergeLiveSeason(season, feed);
-  assert.equal(
-    merged.seasonData.fixtures.find((item) => item.id === fixture.id).kickoff,
-    '2026-10-10T18:00-03:00',
-  );
+  assert.equal(merged.seasonData.fixtures.find((item) => item.id === fixture.id).kickoff, '2026-10-10T18:00-03:00');
 });

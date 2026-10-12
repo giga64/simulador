@@ -18,15 +18,35 @@ function outcome(home, away) {
 
 const SNAPSHOT_OUTCOMES = ['home', 'draw', 'away'];
 
-export function createModelSnapshot({ probabilities, settings, teams, dataRevision, method, recordedAt = new Date().toISOString() }) {
-  if (!probabilities || !SNAPSHOT_OUTCOMES.every((key) =>
-    Number.isFinite(probabilities[key]) && probabilities[key] >= 0 && probabilities[key] <= 1)
-    || Math.abs(SNAPSHOT_OUTCOMES.reduce((sum, key) => sum + probabilities[key], 0) - 1) > 0.002) {
+export function createModelSnapshot({
+  probabilities,
+  settings,
+  teams,
+  dataRevision,
+  method,
+  recordedAt = new Date().toISOString(),
+}) {
+  if (
+    !probabilities ||
+    !SNAPSHOT_OUTCOMES.every(
+      (key) => Number.isFinite(probabilities[key]) && probabilities[key] >= 0 && probabilities[key] <= 1,
+    ) ||
+    Math.abs(SNAPSHOT_OUTCOMES.reduce((sum, key) => sum + probabilities[key], 0) - 1) > 0.002
+  ) {
     throw new Error('As probabilidades do modelo precisam ser válidas e somar 100%.');
   }
-  if (!settings || !Number.isInteger(settings.seed) || settings.seed < 0 || settings.seed > 0xffffffff
-    || !Number.isInteger(settings.k) || !Number.isFinite(settings.ha) || !Number.isFinite(settings.rho)
-    || !teams || typeof teams.home !== 'string' || typeof teams.away !== 'string') {
+  if (
+    !settings ||
+    !Number.isInteger(settings.seed) ||
+    settings.seed < 0 ||
+    settings.seed > 0xffffffff ||
+    !Number.isInteger(settings.k) ||
+    !Number.isFinite(settings.ha) ||
+    !Number.isFinite(settings.rho) ||
+    !teams ||
+    typeof teams.home !== 'string' ||
+    typeof teams.away !== 'string'
+  ) {
     throw new Error('As configurações do modelo para o snapshot são inválidas.');
   }
   return {
@@ -50,8 +70,12 @@ export function createModelSnapshot({ probabilities, settings, teams, dataRevisi
 }
 
 export function upsertPredictionSnapshot(history, fixture, score, modelSnapshot) {
-  if (!fixture || !['a', 'u'].includes(score?.[2])
-    || !SCORE_PATTERN.test(String(score?.[0])) || !SCORE_PATTERN.test(String(score?.[1]))) {
+  if (
+    !fixture ||
+    !['a', 'u'].includes(score?.[2]) ||
+    !SCORE_PATTERN.test(String(score?.[0])) ||
+    !SCORE_PATTERN.test(String(score?.[1]))
+  ) {
     throw new Error('O palpite precisa conter dois placares válidos.');
   }
   const existing = history.find((entry) => entry.fixtureId === fixture.id);
@@ -65,17 +89,22 @@ export function upsertPredictionSnapshot(history, fixture, score, modelSnapshot)
     modelSnapshot,
     recordedAt: modelSnapshot.recordedAt,
   };
-  return [...history.filter((item) => item.fixtureId !== fixture.id), entry]
-    .sort((a, b) => a.round - b.round || a.fixtureId.localeCompare(b.fixtureId));
+  return [...history.filter((item) => item.fixtureId !== fixture.id), entry].sort(
+    (a, b) => a.round - b.round || a.fixtureId.localeCompare(b.fixtureId),
+  );
 }
 
-export function archiveCompletedPredictions(history, scores, fixtures, results, recordedAt = new Date().toISOString(), snapshotSource = null) {
+export function archiveCompletedPredictions(
+  history,
+  scores,
+  fixtures,
+  results,
+  recordedAt = new Date().toISOString(),
+  snapshotSource = null,
+) {
   const existing = new Map(history.map((entry) => [entry.fixtureId, entry]));
   const fixturesById = new Map(fixtures.map((fixture) => [fixture.id, fixture]));
-  const resultsByKey = new Map(results.map((result) => [
-    `${result.round}:${result.home}:${result.away}`,
-    result,
-  ]));
+  const resultsByKey = new Map(results.map((result) => [`${result.round}:${result.home}:${result.away}`, result]));
   const archived = [];
   let updated = 0;
 
@@ -84,9 +113,11 @@ export function archiveCompletedPredictions(history, scores, fixtures, results, 
     const fixture = fixturesById.get(fixtureId);
     const result = fixture && resultsByKey.get(`${fixture.round}:${fixture.home}:${fixture.away}`);
     if (!result) continue;
-    const resultSource = result.source || (snapshotSource
-      ? { ...snapshotSource, type: 'snapshot' }
-      : { name: 'Fonte local não especificada', url: null, type: 'snapshot' });
+    const resultSource =
+      result.source ||
+      (snapshotSource
+        ? { ...snapshotSource, type: 'snapshot' }
+        : { name: 'Fonte local não especificada', url: null, type: 'snapshot' });
     existing.set(fixtureId, {
       ...entry,
       actual: { home: result.homeGoals, away: result.awayGoals },
@@ -96,20 +127,30 @@ export function archiveCompletedPredictions(history, scores, fixtures, results, 
   }
 
   for (const [fixtureId, score] of Object.entries(scores || {})) {
-    if (!Array.isArray(score) || score.length < 3
-      || !SCORE_PATTERN.test(score[0]) || !SCORE_PATTERN.test(score[1])
-      || !['a', 'u'].includes(score[2])) continue;
+    if (
+      !Array.isArray(score) ||
+      score.length < 3 ||
+      !SCORE_PATTERN.test(score[0]) ||
+      !SCORE_PATTERN.test(score[1]) ||
+      !['a', 'u'].includes(score[2])
+    )
+      continue;
     const fixture = fixturesById.get(fixtureId);
     if (!fixture || fixture.status !== 'played') continue;
     const result = resultsByKey.get(`${fixture.round}:${fixture.home}:${fixture.away}`);
     if (!result) continue;
-    const resultSource = result.source || (snapshotSource
-      ? { ...snapshotSource, type: 'snapshot' }
-      : { name: 'Fonte local não especificada', url: null, type: 'snapshot' });
+    const resultSource =
+      result.source ||
+      (snapshotSource
+        ? { ...snapshotSource, type: 'snapshot' }
+        : { name: 'Fonte local não especificada', url: null, type: 'snapshot' });
     const existingEntry = existing.get(fixtureId);
     if (existingEntry) {
-      if (existingEntry.actual.home !== result.homeGoals || existingEntry.actual.away !== result.awayGoals
-        || JSON.stringify(existingEntry.resultSource) !== JSON.stringify(resultSource)) {
+      if (
+        existingEntry.actual.home !== result.homeGoals ||
+        existingEntry.actual.away !== result.awayGoals ||
+        JSON.stringify(existingEntry.resultSource) !== JSON.stringify(resultSource)
+      ) {
         existing.set(fixtureId, {
           ...existingEntry,
           actual: { home: result.homeGoals, away: result.awayGoals },
@@ -146,26 +187,46 @@ export function validatePredictionHistory(history, fixtures, teams) {
   const seen = new Set();
   for (const entry of history) {
     const fixture = allowed.get(entry?.fixtureId);
-    if (!fixture || seen.has(entry.fixtureId) || fixture.round !== entry.round
-      || fixture.home !== entry.home || fixture.away !== entry.away
-      || !teams.includes(entry.home) || !teams.includes(entry.away)
-      || !['a', 'u'].includes(entry.prediction?.type)
-      || ![entry.prediction?.home, entry.prediction?.away].every((score) =>
-        Number.isInteger(score) && score >= 0 && score <= 20)
-      || (entry.actual != null && ![entry.actual?.home, entry.actual?.away].every((score) =>
-        Number.isInteger(score) && score >= 0 && score <= 20))
-      || !Number.isFinite(Date.parse(entry.recordedAt))
-      || (entry.actual != null && (!entry.resultSource || typeof entry.resultSource.name !== 'string'
-        || !validSourceUrl(entry.resultSource.url)
-        || (entry.resultSource.type != null && !['snapshot', 'feed-observed', 'verified-backfill'].includes(entry.resultSource.type))
-        || (entry.resultSource.observedAt != null && !Number.isFinite(Date.parse(entry.resultSource.observedAt)))
-        || !Number.isFinite(Date.parse(entry.resultSource.verifiedAt || entry.resultSource.observedAt || entry.recordedAt))))
-      || (entry.modelSnapshot != null && (!entry.modelSnapshot.probabilities
-        || !SNAPSHOT_OUTCOMES.every((key) => Number.isFinite(entry.modelSnapshot.probabilities[key])
-          && entry.modelSnapshot.probabilities[key] >= 0 && entry.modelSnapshot.probabilities[key] <= 1)
-        || Math.abs(SNAPSHOT_OUTCOMES.reduce((sum, key) => sum + entry.modelSnapshot.probabilities[key], 0) - 1) > 0.002
-        || !Number.isInteger(entry.modelSnapshot.settings?.seed)
-        || !Number.isFinite(Date.parse(entry.modelSnapshot.recordedAt))))) {
+    if (
+      !fixture ||
+      seen.has(entry.fixtureId) ||
+      fixture.round !== entry.round ||
+      fixture.home !== entry.home ||
+      fixture.away !== entry.away ||
+      !teams.includes(entry.home) ||
+      !teams.includes(entry.away) ||
+      !['a', 'u'].includes(entry.prediction?.type) ||
+      ![entry.prediction?.home, entry.prediction?.away].every(
+        (score) => Number.isInteger(score) && score >= 0 && score <= 20,
+      ) ||
+      (entry.actual != null &&
+        ![entry.actual?.home, entry.actual?.away].every(
+          (score) => Number.isInteger(score) && score >= 0 && score <= 20,
+        )) ||
+      !Number.isFinite(Date.parse(entry.recordedAt)) ||
+      (entry.actual != null &&
+        (!entry.resultSource ||
+          typeof entry.resultSource.name !== 'string' ||
+          !validSourceUrl(entry.resultSource.url) ||
+          (entry.resultSource.type != null &&
+            !['snapshot', 'feed-observed', 'verified-backfill'].includes(entry.resultSource.type)) ||
+          (entry.resultSource.observedAt != null && !Number.isFinite(Date.parse(entry.resultSource.observedAt))) ||
+          !Number.isFinite(
+            Date.parse(entry.resultSource.verifiedAt || entry.resultSource.observedAt || entry.recordedAt),
+          ))) ||
+      (entry.modelSnapshot != null &&
+        (!entry.modelSnapshot.probabilities ||
+          !SNAPSHOT_OUTCOMES.every(
+            (key) =>
+              Number.isFinite(entry.modelSnapshot.probabilities[key]) &&
+              entry.modelSnapshot.probabilities[key] >= 0 &&
+              entry.modelSnapshot.probabilities[key] <= 1,
+          ) ||
+          Math.abs(SNAPSHOT_OUTCOMES.reduce((sum, key) => sum + entry.modelSnapshot.probabilities[key], 0) - 1) >
+            0.002 ||
+          !Number.isInteger(entry.modelSnapshot.settings?.seed) ||
+          !Number.isFinite(Date.parse(entry.modelSnapshot.recordedAt))))
+    ) {
       throw new Error('O histórico de palpites contém um registro inválido.');
     }
     seen.add(entry.fixtureId);
@@ -174,11 +235,16 @@ export function validatePredictionHistory(history, fixtures, teams) {
 }
 
 export function summarizePredictionPerformance(history, teamCodes) {
-  const clubs = Object.fromEntries(teamCodes.map((code) => [code, {
-    predictedPoints: 0,
-    actualPoints: 0,
-    matches: 0,
-  }]));
+  const clubs = Object.fromEntries(
+    teamCodes.map((code) => [
+      code,
+      {
+        predictedPoints: 0,
+        actualPoints: 0,
+        matches: 0,
+      },
+    ]),
+  );
   let exactScoreHits = 0;
   let correctOutcomeHits = 0;
   let predictedGoals = 0;
@@ -248,10 +314,14 @@ export function summarizePredictionCalibration(history) {
     const probabilities = entry.modelSnapshot.probabilities;
     const actual = outcome(entry.actual.home, entry.actual.away);
     const actualKey = actual === 'H' ? 'home' : actual === 'D' ? 'draw' : 'away';
-    brierTotal += SNAPSHOT_OUTCOMES.reduce((sum, key) =>
-      sum + (probabilities[key] - Number(key === actualKey)) ** 2, 0);
-    const predictedKey = SNAPSHOT_OUTCOMES.reduce((best, key) =>
-      probabilities[key] > probabilities[best] ? key : best, SNAPSHOT_OUTCOMES[0]);
+    brierTotal += SNAPSHOT_OUTCOMES.reduce(
+      (sum, key) => sum + (probabilities[key] - Number(key === actualKey)) ** 2,
+      0,
+    );
+    const predictedKey = SNAPSHOT_OUTCOMES.reduce(
+      (best, key) => (probabilities[key] > probabilities[best] ? key : best),
+      SNAPSHOT_OUTCOMES[0],
+    );
     const confidence = probabilities[predictedKey];
     const binIndex = Math.min(4, Math.floor(confidence / 0.2));
     const bin = bins[binIndex];
@@ -262,24 +332,28 @@ export function summarizePredictionCalibration(history) {
   return {
     matches: evaluated.length,
     brierScore: brierTotal / evaluated.length,
-    bins: bins.filter((bin) => bin.matches).map((bin) => ({
-      min: bin.min,
-      max: bin.max,
-      matches: bin.matches,
-      meanConfidence: bin.confidenceTotal / bin.matches,
-      observedAccuracy: bin.correct / bin.matches,
-    })),
+    bins: bins
+      .filter((bin) => bin.matches)
+      .map((bin) => ({
+        min: bin.min,
+        max: bin.max,
+        matches: bin.matches,
+        meanConfidence: bin.confidenceTotal / bin.matches,
+        observedAccuracy: bin.correct / bin.matches,
+      })),
   };
 }
 
 export function summarizeCalibrationByRound(history) {
-  const rounds = [...new Set(history
-    .filter((entry) => entry.actual && entry.modelSnapshot?.probabilities)
-    .map((entry) => entry.round))]
-    .sort((a, b) => a - b);
+  const rounds = [
+    ...new Set(
+      history.filter((entry) => entry.actual && entry.modelSnapshot?.probabilities).map((entry) => entry.round),
+    ),
+  ].sort((a, b) => a - b);
   return rounds.map((round) => {
-    const matches = history.filter((entry) => entry.round === round
-      && entry.actual && entry.modelSnapshot?.probabilities);
+    const matches = history.filter(
+      (entry) => entry.round === round && entry.actual && entry.modelSnapshot?.probabilities,
+    );
     return {
       round,
       matches: matches.length,

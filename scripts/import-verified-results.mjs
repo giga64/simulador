@@ -28,21 +28,22 @@ async function runImport(inputPath, sourceUrlValue, sourceNameValue) {
 
     const backfillPath = path.join(root, 'data', 'historical-backfill-2026.json');
     const backfill = await readJson(backfillPath);
-    const existing = new Map(backfill.results.map((result) => [
-      `${result.round}:${result.home}:${result.away}`,
-      result,
-    ]));
-    const knownResults = new Map(season.results.map((result) => [
-      `${result.round}:${result.home}:${result.away}`,
-      result,
-    ]));
+    const existing = new Map(
+      backfill.results.map((result) => [`${result.round}:${result.home}:${result.away}`, result]),
+    );
+    const knownResults = new Map(
+      season.results.map((result) => [`${result.round}:${result.home}:${result.away}`, result]),
+    );
     const source = {
       name: sourceNameValue?.trim() || sourceUrl.hostname,
       url: sourceUrl.toString(),
       verifiedAt: new Date().toISOString(),
     };
     const additions = [];
-    const lines = csv.replace(/^\uFEFF/, '').trim().split(/\r?\n/);
+    const lines = csv
+      .replace(/^\uFEFF/, '')
+      .trim()
+      .split(/\r?\n/);
     if (lines.shift()?.trim() !== 'round,home,away,homeGoals,awayGoals') {
       throw new Error('Cabeçalho CSV esperado: round,home,away,homeGoals,awayGoals.');
     }

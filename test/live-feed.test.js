@@ -9,33 +9,39 @@ function makeCompetition() {
       season: 2026,
       source: { url: 'https://ge.globo.com/futebol/brasileirao-serie-a/' },
     },
-    tables: [{
-      entries: Array.from({ length: 20 }, (_, index) => ({
-        position: index + 1,
-        team: { shortName: `T${index}`, name: `Time ${index}` },
-        points: 0,
-        matches: 0,
-        wins: 0,
-        draws: 0,
-        losses: 0,
-        goalsFor: 0,
-        goalsAgainst: 0,
-        goalDifference: 0,
-        efficiency: 0,
-        recentForm: [],
-      })),
-    }],
-    rounds: [{
-      number: 30,
-      total: 38,
-      label: '30a rodada',
-      matches: [{
-        status: 'finished',
-        homeTeam: { shortName: 'T0', name: 'Time 0' },
-        awayTeam: { shortName: 'T1', name: 'Time 1' },
-        score: { home: 2, away: 1 },
-      }],
-    }],
+    tables: [
+      {
+        entries: Array.from({ length: 20 }, (_, index) => ({
+          position: index + 1,
+          team: { shortName: `T${index}`, name: `Time ${index}` },
+          points: 0,
+          matches: 0,
+          wins: 0,
+          draws: 0,
+          losses: 0,
+          goalsFor: 0,
+          goalsAgainst: 0,
+          goalDifference: 0,
+          efficiency: 0,
+          recentForm: [],
+        })),
+      },
+    ],
+    rounds: [
+      {
+        number: 30,
+        total: 38,
+        label: '30a rodada',
+        matches: [
+          {
+            status: 'finished',
+            homeTeam: { shortName: 'T0', name: 'Time 0' },
+            awayTeam: { shortName: 'T1', name: 'Time 1' },
+            score: { home: 2, away: 1 },
+          },
+        ],
+      },
+    ],
   };
 }
 
@@ -63,11 +69,14 @@ test('feed cache coalesces requests and returns an explicitly stale last-good re
   let now = 0;
   let calls = 0;
   let unavailable = false;
-  const read = createLiveFeedCache(async () => {
-    calls++;
-    if (unavailable) throw new Error('upstream offline');
-    return { fetchedAt: new Date(now).toISOString(), revision: String(calls) };
-  }, { freshForMs: 100, staleForMs: 1_000, clock: () => now });
+  const read = createLiveFeedCache(
+    async () => {
+      calls++;
+      if (unavailable) throw new Error('upstream offline');
+      return { fetchedAt: new Date(now).toISOString(), revision: String(calls) };
+    },
+    { freshForMs: 100, staleForMs: 1_000, clock: () => now },
+  );
 
   const [first, concurrent] = await Promise.all([read(), read()]);
   assert.equal(first.revision, concurrent.revision);

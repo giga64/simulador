@@ -15,12 +15,18 @@ export function normalizeLiveCompetition(competition, fetchedAt = new Date().toI
     throw new Error('A classificação ao vivo está ausente ou incompleta.');
   }
   const sourceUrl = new URL(source.url);
-  if (sourceUrl.protocol !== 'https:' || (sourceUrl.hostname !== 'ge.globo.com'
-    && !sourceUrl.hostname.endsWith('.ge.globo.com'))) {
+  if (
+    sourceUrl.protocol !== 'https:' ||
+    (sourceUrl.hostname !== 'ge.globo.com' && !sourceUrl.hostname.endsWith('.ge.globo.com'))
+  ) {
     throw new Error('A classificação veio de uma origem diferente da fonte GE esperada.');
   }
-  if (!Number.isInteger(round?.number) || round.number < 1 || round.number > ROUND_COUNT
-    || !Array.isArray(round.matches)) {
+  if (
+    !Number.isInteger(round?.number) ||
+    round.number < 1 ||
+    round.number > ROUND_COUNT ||
+    !Array.isArray(round.matches)
+  ) {
     throw new Error('A rodada atual retornada pela fonte é inválida.');
   }
 
@@ -29,17 +35,33 @@ export function normalizeLiveCompetition(competition, fetchedAt = new Date().toI
   const standings = table.entries.map((entry) => {
     const teamCode = entry.team?.shortName;
     const stats = [
-      entry.position, entry.points, entry.matches, entry.wins, entry.draws,
-      entry.losses, entry.goalsFor, entry.goalsAgainst, entry.goalDifference,
+      entry.position,
+      entry.points,
+      entry.matches,
+      entry.wins,
+      entry.draws,
+      entry.losses,
+      entry.goalsFor,
+      entry.goalsAgainst,
+      entry.goalDifference,
     ];
 
-    if (typeof teamCode !== 'string' || !teamCode || seenTeams.has(teamCode)
-      || !stats.every(Number.isInteger) || entry.matches < 0 || entry.matches > ROUND_COUNT
-      || entry.position < 1 || entry.position > TEAM_COUNT || seenPositions.has(entry.position)
-      || entry.wins + entry.draws + entry.losses !== entry.matches
-      || entry.points !== entry.wins * 3 + entry.draws
-      || entry.goalsFor < 0 || entry.goalsAgainst < 0
-      || entry.goalDifference !== entry.goalsFor - entry.goalsAgainst) {
+    if (
+      typeof teamCode !== 'string' ||
+      !teamCode ||
+      seenTeams.has(teamCode) ||
+      !stats.every(Number.isInteger) ||
+      entry.matches < 0 ||
+      entry.matches > ROUND_COUNT ||
+      entry.position < 1 ||
+      entry.position > TEAM_COUNT ||
+      seenPositions.has(entry.position) ||
+      entry.wins + entry.draws + entry.losses !== entry.matches ||
+      entry.points !== entry.wins * 3 + entry.draws ||
+      entry.goalsFor < 0 ||
+      entry.goalsAgainst < 0 ||
+      entry.goalDifference !== entry.goalsFor - entry.goalsAgainst
+    ) {
       throw new Error('A classificação contém dados inválidos ou clubes duplicados.');
     }
 
@@ -69,10 +91,14 @@ export function normalizeLiveCompetition(competition, fetchedAt = new Date().toI
   const seenMatches = new Set();
   const matches = round.matches.map((match) => {
     const score = match.score || {};
-    if (!match.homeTeam?.shortName || !match.awayTeam?.shortName
-      || !['finished', 'live', 'scheduled'].includes(match.status)
-      || ![score.home, score.away].every((value) => value == null
-        || (Number.isInteger(value) && value >= 0 && value <= 20))) {
+    if (
+      !match.homeTeam?.shortName ||
+      !match.awayTeam?.shortName ||
+      !['finished', 'live', 'scheduled'].includes(match.status) ||
+      ![score.home, score.away].every(
+        (value) => value == null || (Number.isInteger(value) && value >= 0 && value <= 20),
+      )
+    ) {
       throw new Error('A rodada atual contém uma partida com dados inválidos.');
     }
     const key = `${match.homeTeam.shortName}:${match.awayTeam.shortName}`;
@@ -102,21 +128,22 @@ export function normalizeLiveCompetition(competition, fetchedAt = new Date().toI
     matches,
   };
   normalizedFeed.revision = createHash('sha256')
-    .update(JSON.stringify({
-      season: normalizedFeed.season,
-      round: normalizedFeed.round,
-      standings: normalizedFeed.standings,
-      matches: normalizedFeed.matches,
-    }))
+    .update(
+      JSON.stringify({
+        season: normalizedFeed.season,
+        round: normalizedFeed.round,
+        standings: normalizedFeed.standings,
+        matches: normalizedFeed.matches,
+      }),
+    )
     .digest('hex');
   return normalizedFeed;
 }
 
-export function createLiveFeedCache(load, {
-  freshForMs = 60_000,
-  staleForMs = 6 * 60 * 60 * 1000,
-  clock = Date.now,
-} = {}) {
+export function createLiveFeedCache(
+  load,
+  { freshForMs = 60_000, staleForMs = 6 * 60 * 60 * 1000, clock = Date.now } = {},
+) {
   let cached = null;
   let pending = null;
 
@@ -127,23 +154,27 @@ export function createLiveFeedCache(load, {
     }
     if (pending) return pending;
 
-    pending = Promise.resolve().then(load).then((feed) => {
-      cached = { feed, savedAt: clock() };
-      return { ...feed, stale: false, checkedAt: feed.fetchedAt };
-    }).catch((error) => {
-      const checkedAt = new Date(clock()).toISOString();
-      if (cached && clock() - cached.savedAt < staleForMs) {
-        return {
-          ...cached.feed,
-          stale: true,
-          checkedAt,
-          warning: `Fonte indisponível; exibindo a última consulta bem-sucedida de ${cached.feed.fetchedAt}.`,
-        };
-      }
-      throw error;
-    }).finally(() => {
-      pending = null;
-    });
+    pending = Promise.resolve()
+      .then(load)
+      .then((feed) => {
+        cached = { feed, savedAt: clock() };
+        return { ...feed, stale: false, checkedAt: feed.fetchedAt };
+      })
+      .catch((error) => {
+        const checkedAt = new Date(clock()).toISOString();
+        if (cached && clock() - cached.savedAt < staleForMs) {
+          return {
+            ...cached.feed,
+            stale: true,
+            checkedAt,
+            warning: `Fonte indisponível; exibindo a última consulta bem-sucedida de ${cached.feed.fetchedAt}.`,
+          };
+        }
+        throw error;
+      })
+      .finally(() => {
+        pending = null;
+      });
 
     return pending;
   };
