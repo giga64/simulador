@@ -6,9 +6,13 @@ function normalized(value) {
     .replace(/[^a-z0-9]/g, '');
 }
 
+// Sufixo de estado que algumas fontes acrescentam ao nome ("Bragantino-SP", "Botafogo RJ").
+const STATE_SUFFIX = /[\s\-/]+(AC|AL|AM|AP|BA|CE|DF|ES|GO|MA|MG|MS|MT|PA|PB|PE|PI|PR|RJ|RN|RO|RR|RS|SC|SE|SP|TO)$/i;
+
 function resolveTeamCode(team, teams, byName) {
   if (team?.shortName && teams[team.shortName]) return team.shortName;
-  return byName.get(normalized(team?.name)) || null;
+  const name = String(team?.name || '').trim();
+  return byName.get(normalized(name)) || byName.get(normalized(name.replace(STATE_SUFFIX, ''))) || null;
 }
 
 // Texto livre vindo do feed (ex.: estádio): sem marcação HTML e com tamanho limitado.

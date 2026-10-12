@@ -24,6 +24,10 @@ test('resolvedor de clubes aceita nomes usados por sites de odds', () => {
   assert.equal(resolve({ name: 'Botafogo RJ' }), 'BOT');
   assert.equal(resolve({ name: 'Red Bull Bragantino' }), 'BRA');
   assert.equal(resolve({ name: 'Sao Paulo' }), 'SAO');
+  assert.equal(resolve({ name: 'Bragantino-SP' }), 'BRA', 'nome usado pela the-odds-api');
+  assert.equal(resolve({ name: 'Atletico Paranaense' }), 'CAP');
+  assert.equal(resolve({ name: 'Vitoria' }), 'VIT');
+  assert.equal(resolve({ name: 'Time Inexistente-SP' }), null);
 });
 
 test('odds: probabilidades implícitas somam 1 e a margem sai', () => {
