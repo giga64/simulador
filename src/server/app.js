@@ -37,6 +37,7 @@ export function createRequestHandler({
   sharedScenarios,
   renderScenarioImage,
   oddsTracker,
+  competitionService = null,
   logger = console,
 }) {
   const limits = {
@@ -208,6 +209,21 @@ export function createRequestHandler({
         { entries: await seasonService.probabilityHistory() },
         { 'Cache-Control': 'public, max-age=60' },
       );
+    }
+
+    const competitionMatch = /^\/api\/competition\/([A-Za-z]+)$/.exec(pathname);
+    if (competitionMatch) {
+      if (onlyGet()) return;
+      if (!competitionService) return sendJson(response, 503, { error: 'Copas indisponíveis.' });
+      try {
+        return sendJson(response, 200, await competitionService.read(competitionMatch[1]), {
+          'Cache-Control': 'no-store',
+        });
+      } catch (error) {
+        return sendJson(response, error.status || 502, {
+          error: error.status ? error.message : 'Não foi possível consultar a fonte das copas agora.',
+        });
+      }
     }
 
     if (pathname === '/api/model-vs-market') {

@@ -13,7 +13,9 @@
     "check": "npm run lint && npm run format:check && npm test && npm run validate:data",
     "backtest": "node scripts/backtest-model.mjs",
     "build:history": "node scripts/build-probability-history.mjs",
-    "vapid": "web-push generate-vapid-keys"
+    "vapid": "web-push generate-vapid-keys",
+    "crests": "node scripts/download-crests.mjs",
+    "build:ratings": "node scripts/build-ratings.mjs"
   },
   "dependencies": {
     "@resvg/resvg-js": "^2.6.2",

@@ -6,6 +6,16 @@ import { buildSimulationInput, createMatchModel, DEFAULT_SETTINGS } from './src/
 import { collectLiveMatches, standingsWithoutLiveMatches } from './src/model/live-matches.js';
 import { createSimulationRunner } from './src/client/simulation-runner.js';
 import { lineChart, meter, positionMap, safeUrl, segmented, signed } from './src/client/ui.js';
+import {
+  bracket as cupBracket,
+  chanceTable as cupChanceTable,
+  crest as cupCrest,
+  groupTables as cupGroupTables,
+  rulesList as cupRules,
+} from './src/client/cups.js';
+import { COMPETITION_IDS, COMPETITIONS } from './src/competitions/formats.js';
+import { libertadoresSlots } from './src/competitions/qualification.js';
+import { createStrength, simulateKnockout } from './src/competitions/simulate.js';
 import { backtestModel } from './src/model/backtest.js';
 import { buildSplitTable, SPLIT_MODES } from './src/model/standings-splits.js';
 import {
@@ -1700,6 +1710,7 @@ import {
       ['live', 'Ao vivo'],
       ['sim', 'Simular'],
       ['cor', 'Chances'],
+      ['copas', 'Copas'],
       ['clubs', 'Clubes'],
       ['est', 'Estatísticas'],
       ['perf', 'Palpites'],
@@ -1977,6 +1988,7 @@ import {
           ['race', 'Classificação final'],
           ['map', 'Mapa de posições'],
           ['trend', 'Evolução'],
+          ['vagas', 'Vagas 2027'],
           ['model', 'Qualidade do modelo'],
         ],
         subView.cor,
@@ -2014,6 +2026,8 @@ import {
               },
             )}</section>`
           : '<p class="empty">Calculando as simulações…</p>';
+      } else if (subView.cor === 'vagas') {
+        body = renderSlots();
       } else if (subView.cor === 'trend') {
         if (!PROB_HISTORY) body = `<p class="empty">${PROB_HISTORY_ERROR || 'Carregando o histórico…'}</p>`;
         else {
@@ -2125,6 +2139,187 @@ import {
         .map(([key, label, color]) => ({ label, color, points: historySeries(code, key) }))
         .filter((item) => item.points.some((point) => point.y >= 1));
       return `<section class="cd"><h2>Chances de ${escapeHtml(NM[code])} ao longo da temporada</h2>${historyChart(series, 'title', `Chances de ${NM[code]} por rodada`)}</section>`;
+    }
+    // ---- Copas (Libertadores, Sul-Americana, Copa do Brasil) ----
+    const CUP_ADJUST_KEY = 'br26-cup-adjustments';
+    const CUPS = {
+      active: 'libertadores',
+      data: {},
+      errors: {},
+      ratings: null,
+      crestMap: null,
+      fileOverrides: {},
+      adjustments: (() => {
+        try {
+          const stored = JSON.parse(localStorage.getItem(CUP_ADJUST_KEY) || '{}');
+          return Object.fromEntries(
+            Object.entries(stored).filter(
+              ([id, value]) => /^\d{1,8}$/.test(id) && Number.isInteger(value) && Math.abs(value) <= 400,
+            ),
+          );
+        } catch {
+          return {};
+        }
+      })(),
+      sims: {},
+      timer: null,
+    };
+    async function loadCupAssets() {
+      if (CUPS.ratings) return;
+      const [ratings, overrides, crestMap] = await Promise.all(
+        ['data/club-ratings-2026.json', 'data/club-ratings-overrides.json', 'assets/crests/map.json'].map((file) =>
+          fetch(file, { cache: 'no-cache' }).then((response) => (response.ok ? response.json() : null)),
+        ),
+      );
+      if (!ratings?.teams || !ratings?.model) throw new Error('notas de força indisponíveis');
+      CUPS.ratings = ratings;
+      CUPS.fileOverrides = overrides?.adjustments || {};
+      CUPS.crestMap = crestMap || { clubs: {}, competitions: {} };
+    }
+    async function loadCup(id) {
+      try {
+        const response = await fetch(`/api/competition/${id}`, { cache: 'no-store' });
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error || `HTTP ${response.status}`);
+        CUPS.data[id] = body;
+        CUPS.errors[id] = '';
+        CUPS.sims[id] = null;
+      } catch (error) {
+        CUPS.errors[id] = error.message;
+      }
+    }
+    const cupStrength = () => {
+      const overrides = { ...CUPS.fileOverrides };
+      for (const [id, value] of Object.entries(CUPS.adjustments)) overrides[id] = (Number(overrides[id]) || 0) + value;
+      return createStrength({ ratings: CUPS.ratings, overrides });
+    };
+    function cupSimulation(id) {
+      if (!CUPS.data[id] || !CUPS.ratings) return null;
+      CUPS.sims[id] ??= simulateKnockout(CUPS.data[id], cupStrength(), { iterations: SIMULATIONS, seed: SET.seed });
+      return CUPS.sims[id];
+    }
+    const cupHasLive = (id) =>
+      CUPS.data[id]?.stages.some((stage) => stage.ties.some((tie) => tie.legs.some((leg) => leg.state === 'in')));
+    function scheduleCupRefresh() {
+      clearTimeout(CUPS.timer);
+      if (view !== 'copas') return;
+      CUPS.timer = setTimeout(
+        async () => {
+          if (document.visibilityState === 'visible') {
+            await loadCup(CUPS.active);
+            if (view === 'copas') renderCups();
+          }
+          scheduleCupRefresh();
+        },
+        cupHasLive(CUPS.active) ? 30_000 : 120_000,
+      );
+    }
+    async function ensureCups(ids) {
+      try {
+        await loadCupAssets();
+      } catch (error) {
+        for (const id of ids) CUPS.errors[id] = error.message;
+        return;
+      }
+      await Promise.all(ids.filter((id) => !CUPS.data[id]).map(loadCup));
+    }
+    function applyCupTheme() {
+      if (view === 'copas') document.documentElement.dataset.cup = CUPS.active;
+      else delete document.documentElement.dataset.cup;
+    }
+    function renderCups() {
+      applyCupTheme();
+      const id = CUPS.active,
+        format = COMPETITIONS[id],
+        competition = CUPS.data[id];
+      const switcher = `<div class="cup-switch" role="group" aria-label="Escolha a competição">${COMPETITION_IDS.map(
+        (key) => {
+          const logo = CUPS.crestMap?.competitions?.[key]?.file;
+          return `<button type="button" data-act="cup-select" data-cup="${key}" aria-pressed="${key === id}" class="${key === id ? 'on' : ''}">${logo ? `<img src="${escapeHtml(logo)}" alt="" width="22" height="22">` : ''}${escapeHtml(COMPETITIONS[key].name)}</button>`;
+        },
+      ).join('')}</div>`;
+      let body;
+      if (!competition) {
+        body = CUPS.errors[id]
+          ? `<p class="empty">Não foi possível carregar a ${escapeHtml(format.name)}: ${escapeHtml(CUPS.errors[id])}.</p>`
+          : '<p class="empty">Carregando…</p>';
+      } else {
+        const simulation = cupSimulation(id),
+          strength = cupStrength();
+        const stage = competition.stages.find((item) => item.id === competition.currentStage);
+        const leaders = simulation
+          ? Object.entries(simulation.probabilities)
+              .sort((a, b) => (b[1].champion || 0) - (a[1].champion || 0))
+              .slice(0, 4)
+          : [];
+        const championName = competition.champion ? competition.teams[competition.champion]?.name : null;
+        body = `<section class="cup-hero cd"><div><span class="kicker">${escapeHtml(format.fullName)}</span><h2>${championName ? `Campeão: ${escapeHtml(championName)}` : stage ? `Em disputa: ${escapeHtml(stage.name)}` : 'Temporada encerrada'}</h2><p class="mu sm">Fonte: ESPN · atualizado ${formatLiveTime(competition.fetchedAt)}${competition.stale ? ' · dados desatualizados' : ''}</p></div>${
+          leaders.length
+            ? `<div class="chance-list cup-leaders">${leaders
+                .map(
+                  ([team, chances]) =>
+                    `<div class="chance-row">${cupCrest(team, CUPS.crestMap)}<span class="name">${escapeHtml(competition.teams[team]?.name || '?')}</span><span class="value">${pc(chances.champion || 0)}</span>${meter(chances.champion || 0, 'accent')}</div>`,
+                )
+                .join('')}<p class="mu xs">Chance de título em ${SIMULATIONS_LABEL} simulações</p></div>`
+            : ''
+        }</section>
+        <section class="cd"><h2>Chaveamento</h2><div class="sc">${cupBracket(competition, CUPS.crestMap)}</div></section>
+        ${simulation?.stages.length > 1 ? `<section class="cd"><div class="card-head"><h2>Chance de cada clube</h2><button class="link-btn" data-act="cup-reset" ${Object.keys(CUPS.adjustments).length ? '' : 'hidden'}>Desfazer meus ajustes</button></div><p class="mu sm">Use − e + para mudar a força de um clube (lesões, fase, viagem). As chances são recalculadas na hora e o ajuste fica só neste navegador.</p>${cupChanceTable(competition, simulation, strength, CUPS.adjustments, CUPS.crestMap)}</section>` : ''}
+        ${competition.groups.length ? `<section class="cd"><h2>Fase de grupos</h2>${cupGroupTables(competition, CUPS.crestMap)}</section>` : ''}
+        <section class="cd"><h2>Regras e método</h2>${cupRules(id)}<p class="mu sm">Força dos clubes: Elo calculado com ${escapeHtml(CUPS.ratings?.sources?.elo || 'resultados recentes')}. Média de gols e mando: ${escapeHtml(CUPS.ratings?.sources?.prior || 'histórico das copas')}. Pênaltis: 50% para cada lado, como no histórico de 2012–2025.</p><button class="link-btn" data-act="show-view" data-view="src">Fontes e método</button></section>`;
+      }
+      $('#v-copas').innerHTML =
+        `<div class="page-head"><div><h1>Copas</h1><p class="mu">Libertadores, Sul-Americana e Copa do Brasil: chaveamento, grupos e chances.</p></div></div>${switcher}${body}`;
+      scheduleCupRefresh();
+    }
+
+    // Vagas na Libertadores 2027: Brasileirão + copas, simulação a simulação.
+    function renderSlots() {
+      if (!MCR) return '<p class="empty">Calculando as simulações do Brasileirão…</p>';
+      if (COMPETITION_IDS.some((id) => !CUPS.data[id]) || !CUPS.ratings) {
+        const failed = COMPETITION_IDS.filter((id) => CUPS.errors[id]);
+        if (failed.length)
+          return `<p class="empty">Copas indisponíveis agora (${escapeHtml(failed.map((id) => COMPETITIONS[id].name).join(', '))}).</p>`;
+        ensureCups(COMPETITION_IDS).then(() => view === 'cor' && subView.cor === 'vagas' && renderChances());
+        return '<p class="empty">Carregando as copas…</p>';
+      }
+      const N = MCR.N,
+        teamCount = T.length,
+        leagueOrders = new Array(N);
+      for (let iteration = 0; iteration < N; iteration++) {
+        const order = new Array(teamCount);
+        for (let team = 0; team < teamCount; team++) order[MCR.finalPositions[iteration * teamCount + team]] = T[team];
+        leagueOrders[iteration] = order;
+      }
+      const cups = Object.fromEntries(COMPETITION_IDS.map((id) => [id, cupSimulation(id)]));
+      const toAppCode = (id) => (id ? CUPS.crestMap?.clubs?.[id]?.appCode || null : null);
+      const result = libertadoresSlots({ leagueOrders, cups, toAppCode });
+      const current = rankTeams(project());
+      const rows = T.map((code) => ({ code, chance: result.chance[code] || 0, league: od(code)?.g ?? 0 }))
+        .filter((row) => row.chance >= 0.5 || row.league >= 0.5)
+        .sort((a, b) => b.chance - a.chance);
+      const cutoff = Object.entries(result.cutoff)
+        .map(([position, share]) => [Number(position), share])
+        .sort((a, b) => a[0] - b[0]);
+      const cupChance = (id, code) => {
+        const sim = cups[id];
+        const espnId = Object.entries(CUPS.crestMap.clubs).find(([, club]) => club.appCode === code)?.[0];
+        return espnId && sim?.probabilities[espnId] ? sim.probabilities[espnId].champion || 0 : null;
+      };
+      return `<section class="cd"><h2>Até onde a vaga desce no Brasileirão</h2><p class="mu sm">O Brasil tem 7 vagas: 5 pelo Brasileirão e 2 pelos finalistas da Copa do Brasil, mais uma para cada brasileiro campeão da Libertadores ou da Sul-Americana. Quando um finalista já está no G5, a vaga desce na tabela.</p><div class="compare">${cutoff
+        .map(([position, share]) => `<div><span class="mu sm">Vaga até o ${position}º</span><b>${pc(share)}</b></div>`)
+        .join('')}</div></section>
+      <section class="cd"><h2>Chance de vaga na Libertadores 2027</h2><div class="sc"><table><thead><tr><th class="l">Clube</th><th>Agora</th><th>Só pela tabela (G${Q.libertadoresLeaguePositions})</th><th>Com as copas</th><th>Título Libertadores</th><th>Título Sul-Am.</th><th>Título Copa do Brasil</th></tr></thead><tbody>${rows
+        .map((row) => {
+          const cell = (id) => {
+            const value = cupChance(id, row.code);
+            return `<td class="mu">${value == null ? '–' : pc(value)}</td>`;
+          };
+          return `<tr><td class="l"><button class="tn" data-act="open-club" data-team="${row.code}">${lg(row.code)}<span class="fn">${escapeHtml(NM[row.code])}</span><span class="ab">${ab(row.code)}</span></button></td><td class="mu">${current.indexOf(row.code) + 1}º</td><td>${pc(row.league)}</td><td><b>${pc(row.chance)}</b>${meter(row.chance, 'g')}</td>${cell('libertadores')}${cell('sudamericana')}${cell('copaDoBrasil')}</tr>`;
+        })
+        .join(
+          '',
+        )}</tbody></table></div><p class="mu xs footnote">Regra da CBF para 2026 (fonte em Copas › Regras). Não simula a exigência de estar na Série A no ano da Libertadores. As copas usam a força Elo e os seus ajustes da aba Copas.</p></section>`;
     }
     function renderClubProfile() {
       const code = statsTeam || T[0],
@@ -2477,6 +2672,10 @@ import {
       if (v == 'perf') renderPerformance();
       if (v == 'est') renderStats();
       if (v == 'cor') renderChances();
+      if (v == 'copas') {
+        renderCups();
+        ensureCups([CUPS.active]).then(() => view === 'copas' && renderCups());
+      }
       if (v == 'src') {
         renderSrc();
         updateSourceAndRules();
@@ -2503,6 +2702,7 @@ import {
         if (TABS.some(([key]) => key === k)) $('#v-' + k).setAttribute('aria-labelledby', 'tab-' + k);
       });
       nav();
+      applyCupTheme();
       renderView(v);
       scrollTo(0, 0);
       if (focus) ($('#tab-' + v) || $('#main'))?.focus({ preventScroll: true });
@@ -3176,6 +3376,7 @@ import {
       renderTour();
     }
     function updateSeed(value) {
+      CUPS.sims = {};
       const seed = Number(value);
       if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff) {
         notify('A semente precisa ser um inteiro entre 0 e 4.294.967.295.');
@@ -3409,6 +3610,37 @@ import {
     function runAction(button) {
       const { act } = button.dataset;
       switch (act) {
+        case 'cup-select':
+          if (!COMPETITION_IDS.includes(button.dataset.cup)) throw new Error('Competição inválida.');
+          CUPS.active = button.dataset.cup;
+          renderCups();
+          ensureCups([CUPS.active]).then(() => view === 'copas' && renderCups());
+          break;
+        case 'cup-adjust': {
+          const id = button.dataset.team;
+          if (!/^\d{1,8}$/.test(id)) throw new Error('Clube inválido.');
+          const next = Math.max(-400, Math.min(400, (CUPS.adjustments[id] || 0) + Number(button.dataset.delta)));
+          if (next) CUPS.adjustments[id] = next;
+          else delete CUPS.adjustments[id];
+          try {
+            localStorage.setItem(CUP_ADJUST_KEY, JSON.stringify(CUPS.adjustments));
+          } catch {
+            // o ajuste continua valendo nesta visita
+          }
+          CUPS.sims = {};
+          renderCups();
+          break;
+        }
+        case 'cup-reset':
+          CUPS.adjustments = {};
+          try {
+            localStorage.removeItem(CUP_ADJUST_KEY);
+          } catch {
+            // sem armazenamento local
+          }
+          CUPS.sims = {};
+          renderCups();
+          break;
         case 'sub-view':
           if (!(button.dataset.group in subView)) throw new Error('Visão inválida.');
           subView[button.dataset.group] = button.dataset.value;

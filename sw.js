@@ -1,6 +1,6 @@
 // Service worker do SimulaBR: notificações push e abertura sem conexão.
 // Estratégia: rede primeiro, cache como reserva. A API nunca passa pelo cache.
-const CACHE = 'simulabr-v2';
+const CACHE = 'simulabr-v3';
 const PRECACHE = [
   '/',
   '/index.html',
@@ -10,16 +10,43 @@ const PRECACHE = [
   '/assets/logos.json',
   '/assets/simulabr-logo.webp',
   '/assets/fonts/inter-latin.woff2',
+  '/assets/crests/map.json',
   '/data/season-2026.json',
   '/data/historical-backfill-2026.json',
   '/data/probability-history-2026.json',
+  '/data/club-ratings-2026.json',
+  '/data/club-ratings-overrides.json',
+  '/src/client/cups.js',
+  '/src/client/ui.js',
+  '/src/client/simulation-runner.js',
+  '/src/competitions/formats.js',
+  '/src/competitions/elo.js',
+  '/src/competitions/simulate.js',
+  '/src/competitions/qualification.js',
 ];
+
+// Escudos das copas e logos das competições: a lista vem de assets/crests/map.json.
+async function crestFiles() {
+  try {
+    const map = await (await fetch('/assets/crests/map.json', { cache: 'no-cache' })).json();
+    return [...Object.values(map.clubs || {}), ...Object.values(map.competitions || {})]
+      .map((entry) => entry.file)
+      .filter((file) => typeof file === 'string' && /^assets\/crests\/[\w/-]+\.png$/.test(file))
+      .map((file) => `/${file}`);
+  } catch {
+    return [];
+  }
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches
       .open(CACHE)
-      .then((cache) => cache.addAll(PRECACHE))
+      .then(async (cache) => {
+        await cache.addAll(PRECACHE);
+        // Escudos são opcionais: uma falha não impede a instalação.
+        await Promise.allSettled((await crestFiles()).map((file) => cache.add(file)));
+      })
       .then(() => self.skipWaiting()),
   );
 });

@@ -1,0 +1,1027 @@
+{
+ "generatedAt": "2026-10-13T01:45:31.745Z",
+ "size": 72,
+ "clubs": {
+  "3": {
+   "name": "Argentinos Juniors",
+   "file": "assets/crests/clubs/3.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "libertadores"
+   ]
+  },
+  "5": {
+   "name": "Boca Juniors",
+   "file": "assets/crests/clubs/5.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "libertadores",
+    "sudamericana"
+   ]
+  },
+  "8": {
+   "name": "Estudiantes de La Plata",
+   "file": "assets/crests/clubs/8.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "libertadores"
+   ]
+  },
+  "12": {
+   "name": "Lanús",
+   "file": "assets/crests/clubs/12.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "libertadores",
+    "sudamericana"
+   ]
+  },
+  "15": {
+   "name": "Racing Club",
+   "file": "assets/crests/clubs/15.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "sudamericana"
+   ]
+  },
+  "16": {
+   "name": "River Plate",
+   "file": "assets/crests/clubs/16.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "sudamericana"
+   ]
+  },
+  "17": {
+   "name": "Rosario Central",
+   "file": "assets/crests/clubs/17.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "libertadores"
+   ]
+  },
+  "18": {
+   "name": "San Lorenzo",
+   "file": "assets/crests/clubs/18.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "sudamericana"
+   ]
+  },
+  "819": {
+   "name": "Flamengo",
+   "file": "assets/crests/clubs/819.png",
+   "source": "ESPN",
+   "appCode": "FLA",
+   "competitions": [
+    "copaDoBrasil",
+    "libertadores"
+   ]
+  },
+  "874": {
+   "name": "Corinthians",
+   "file": "assets/crests/clubs/874.png",
+   "source": "ESPN",
+   "appCode": "COR",
+   "competitions": [
+    "copaDoBrasil",
+    "libertadores"
+   ]
+  },
+  "885": {
+   "name": "Universidad Católica",
+   "file": "assets/crests/clubs/885.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "libertadores"
+   ]
+  },
+  "1007": {
+   "name": "Defensor Sporting",
+   "file": "assets/crests/clubs/1007.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "sudamericana"
+   ]
+  },
+  "1936": {
+   "name": "Internacional",
+   "file": "assets/crests/clubs/1936.png",
+   "source": "ESPN",
+   "appCode": "INT",
+   "competitions": [
+    "copaDoBrasil"
+   ]
+  },
+  "2022": {
+   "name": "Cruzeiro",
+   "file": "assets/crests/clubs/2022.png",
+   "source": "ESPN",
+   "appCode": "CRU",
+   "competitions": [
+    "copaDoBrasil",
+    "libertadores"
+   ]
+  },
+  "2026": {
+   "name": "São Paulo",
+   "file": "assets/crests/clubs/2026.png",
+   "source": "ESPN",
+   "appCode": "SAO",
+   "competitions": [
+    "copaDoBrasil",
+    "sudamericana"
+   ]
+  },
+  "2029": {
+   "name": "Palmeiras",
+   "file": "assets/crests/clubs/2029.png",
+   "source": "ESPN",
+   "appCode": "PAL",
+   "competitions": [
+    "copaDoBrasil",
+    "libertadores"
+   ]
+  },
+  "2670": {
+   "name": "Libertad",
+   "file": "assets/crests/clubs/2670.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "libertadores"
+   ]
+  },
+  "2671": {
+   "name": "Cerro Porteño",
+   "file": "assets/crests/clubs/2671.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "libertadores"
+   ]
+  },
+  "2673": {
+   "name": "Sporting Cristal",
+   "file": "assets/crests/clubs/2673.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "libertadores",
+    "sudamericana"
+   ]
+  },
+  "2674": {
+   "name": "Santos",
+   "file": "assets/crests/clubs/2674.png",
+   "source": "ESPN",
+   "appCode": "SAN",
+   "competitions": [
+    "copaDoBrasil",
+    "sudamericana"
+   ]
+  },
+  "2675": {
+   "name": "Club Olimpia",
+   "file": "assets/crests/clubs/2675.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "sudamericana"
+   ]
+  },
+  "2680": {
+   "name": "Alianza Lima",
+   "file": "assets/crests/clubs/2680.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "libertadores"
+   ]
+  },
+  "2681": {
+   "name": "Bolívar",
+   "file": "assets/crests/clubs/2681.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "libertadores",
+    "sudamericana"
+   ]
+  },
+  "2683": {
+   "name": "Peñarol",
+   "file": "assets/crests/clubs/2683.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "libertadores"
+   ]
+  },
+  "2684": {
+   "name": "Nacional",
+   "file": "assets/crests/clubs/2684.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "libertadores",
+    "sudamericana"
+   ]
+  },
+  "2685": {
+   "name": "Universitario",
+   "file": "assets/crests/clubs/2685.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "libertadores"
+   ]
+  },
+  "2686": {
+   "name": "Barcelona SC",
+   "file": "assets/crests/clubs/2686.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "libertadores"
+   ]
+  },
+  "2687": {
+   "name": "The Strongest",
+   "file": "assets/crests/clubs/2687.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "libertadores"
+   ]
+  },
+  "2690": {
+   "name": "Independiente Medellín",
+   "file": "assets/crests/clubs/2690.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "libertadores",
+    "sudamericana"
+   ]
+  },
+  "3372": {
+   "name": "Cienciano del Cusco",
+   "file": "assets/crests/clubs/3372.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "sudamericana"
+   ]
+  },
+  "3395": {
+   "name": "Goiás",
+   "file": "assets/crests/clubs/3395.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "copaDoBrasil"
+   ]
+  },
+  "3445": {
+   "name": "Fluminense",
+   "file": "assets/crests/clubs/3445.png",
+   "source": "ESPN",
+   "appCode": "FLU",
+   "competitions": [
+    "copaDoBrasil",
+    "libertadores"
+   ]
+  },
+  "3454": {
+   "name": "Vasco da Gama",
+   "file": "assets/crests/clubs/3454.png",
+   "source": "ESPN",
+   "appCode": "VAS",
+   "competitions": [
+    "copaDoBrasil",
+    "sudamericana"
+   ]
+  },
+  "3456": {
+   "name": "Coritiba",
+   "file": "assets/crests/clubs/3456.png",
+   "source": "ESPN",
+   "appCode": "CFC",
+   "competitions": [
+    "copaDoBrasil"
+   ]
+  },
+  "3457": {
+   "name": "Vitória",
+   "file": "assets/crests/clubs/3457.png",
+   "source": "ESPN",
+   "appCode": "VIT",
+   "competitions": [
+    "copaDoBrasil"
+   ]
+  },
+  "3458": {
+   "name": "Athletico-PR",
+   "file": "assets/crests/clubs/3458.png",
+   "source": "ESPN",
+   "appCode": "CAP",
+   "competitions": [
+    "copaDoBrasil"
+   ]
+  },
+  "4133": {
+   "name": "Cobresal",
+   "file": "assets/crests/clubs/4133.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "sudamericana"
+   ]
+  },
+  "4134": {
+   "name": "Huachipato",
+   "file": "assets/crests/clubs/4134.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "libertadores"
+   ]
+  },
+  "4138": {
+   "name": "Audax Italiano",
+   "file": "assets/crests/clubs/4138.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "sudamericana"
+   ]
+  },
+  "4139": {
+   "name": "Universidad de Chile",
+   "file": "assets/crests/clubs/4139.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "sudamericana"
+   ]
+  },
+  "4422": {
+   "name": "Palestino",
+   "file": "assets/crests/clubs/4422.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "sudamericana"
+   ]
+  },
+  "4811": {
+   "name": "Caracas FC",
+   "file": "assets/crests/clubs/4811.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "sudamericana"
+   ]
+  },
+  "4812": {
+   "name": "Deportivo Cuenca",
+   "file": "assets/crests/clubs/4812.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "sudamericana"
+   ]
+  },
+  "4815": {
+   "name": "Atlético Junior",
+   "file": "assets/crests/clubs/4815.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "libertadores"
+   ]
+  },
+  "4816": {
+   "name": "Liga de Quito",
+   "file": "assets/crests/clubs/4816.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "libertadores"
+   ]
+  },
+  "4818": {
+   "name": "Deportivo Táchira",
+   "file": "assets/crests/clubs/4818.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "libertadores"
+   ]
+  },
+  "4875": {
+   "name": "Confiança",
+   "file": "assets/crests/clubs/4875.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "copaDoBrasil"
+   ]
+  },
+  "4936": {
+   "name": "Remo",
+   "file": "assets/crests/clubs/4936.png",
+   "source": "ESPN",
+   "appCode": "REM",
+   "competitions": [
+    "copaDoBrasil"
+   ]
+  },
+  "5264": {
+   "name": "Atlético Nacional",
+   "file": "assets/crests/clubs/5264.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "sudamericana"
+   ]
+  },
+  "5267": {
+   "name": "Alianza Atlético",
+   "file": "assets/crests/clubs/5267.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "sudamericana"
+   ]
+  },
+  "5484": {
+   "name": "Millonarios",
+   "file": "assets/crests/clubs/5484.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "sudamericana"
+   ]
+  },
+  "5488": {
+   "name": "Independiente Santa Fe",
+   "file": "assets/crests/clubs/5488.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "libertadores",
+    "sudamericana"
+   ]
+  },
+  "5489": {
+   "name": "Deportes Tolima",
+   "file": "assets/crests/clubs/5489.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "libertadores"
+   ]
+  },
+  "5492": {
+   "name": "Liverpool",
+   "file": "assets/crests/clubs/5492.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "libertadores"
+   ]
+  },
+  "5584": {
+   "name": "Nacional Asunción",
+   "file": "assets/crests/clubs/5584.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "sudamericana"
+   ]
+  },
+  "6037": {
+   "name": "Carabobo",
+   "file": "assets/crests/clubs/6037.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "libertadores",
+    "sudamericana"
+   ]
+  },
+  "6041": {
+   "name": "Monagas SC",
+   "file": "assets/crests/clubs/6041.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "sudamericana"
+   ]
+  },
+  "6047": {
+   "name": "Blooming",
+   "file": "assets/crests/clubs/6047.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "sudamericana"
+   ]
+  },
+  "6072": {
+   "name": "O'Higgins",
+   "file": "assets/crests/clubs/6072.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "libertadores",
+    "sudamericana"
+   ]
+  },
+  "6079": {
+   "name": "Red Bull Bragantino",
+   "file": "assets/crests/clubs/6079.png",
+   "source": "ESPN",
+   "appCode": "BRA",
+   "competitions": [
+    "copaDoBrasil",
+    "sudamericana"
+   ]
+  },
+  "6086": {
+   "name": "Botafogo",
+   "file": "assets/crests/clubs/6086.png",
+   "source": "ESPN",
+   "appCode": "BOT",
+   "competitions": [
+    "copaDoBrasil",
+    "libertadores",
+    "sudamericana"
+   ]
+  },
+  "6097": {
+   "name": "2 de Mayo",
+   "file": "assets/crests/clubs/6097.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "libertadores"
+   ]
+  },
+  "6137": {
+   "name": "Atlético Bucaramanga",
+   "file": "assets/crests/clubs/6137.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "sudamericana"
+   ]
+  },
+  "6270": {
+   "name": "Juventude",
+   "file": "assets/crests/clubs/6270.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "copaDoBrasil"
+   ]
+  },
+  "6272": {
+   "name": "Fortaleza",
+   "file": "assets/crests/clubs/6272.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "copaDoBrasil"
+   ]
+  },
+  "6273": {
+   "name": "Grêmio",
+   "file": "assets/crests/clubs/6273.png",
+   "source": "ESPN",
+   "appCode": "GRE",
+   "competitions": [
+    "copaDoBrasil",
+    "sudamericana"
+   ]
+  },
+  "7312": {
+   "name": "Melgar",
+   "file": "assets/crests/clubs/7312.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "sudamericana"
+   ]
+  },
+  "7385": {
+   "name": "Guaraní",
+   "file": "assets/crests/clubs/7385.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "libertadores"
+   ]
+  },
+  "7466": {
+   "name": "Sportivo Trinidense",
+   "file": "assets/crests/clubs/7466.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "sudamericana"
+   ]
+  },
+  "7632": {
+   "name": "Atlético-MG",
+   "file": "assets/crests/clubs/7632.png",
+   "source": "ESPN",
+   "appCode": "CAM",
+   "competitions": [
+    "copaDoBrasil",
+    "sudamericana"
+   ]
+  },
+  "7764": {
+   "name": "Platense",
+   "file": "assets/crests/clubs/7764.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "libertadores"
+   ]
+  },
+  "7767": {
+   "name": "Tigre",
+   "file": "assets/crests/clubs/7767.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "sudamericana"
+   ]
+  },
+  "8109": {
+   "name": "América de Cali",
+   "file": "assets/crests/clubs/8109.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "sudamericana"
+   ]
+  },
+  "8186": {
+   "name": "Coquimbo Unido",
+   "file": "assets/crests/clubs/8186.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "libertadores"
+   ]
+  },
+  "8416": {
+   "name": "Juventud",
+   "file": "assets/crests/clubs/8416.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "libertadores",
+    "sudamericana"
+   ]
+  },
+  "9169": {
+   "name": "Mirassol",
+   "file": "assets/crests/clubs/9169.png",
+   "source": "ESPN",
+   "appCode": "MIR",
+   "competitions": [
+    "copaDoBrasil",
+    "libertadores"
+   ]
+  },
+  "9283": {
+   "name": "Universidad Católica (Quito)",
+   "file": "assets/crests/clubs/9283.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "libertadores"
+   ]
+  },
+  "9318": {
+   "name": "Chapecoense",
+   "file": "assets/crests/clubs/9318.png",
+   "source": "ESPN",
+   "appCode": "CHA",
+   "competitions": [
+    "copaDoBrasil"
+   ]
+  },
+  "9497": {
+   "name": "Guabirá",
+   "file": "assets/crests/clubs/9497.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "sudamericana"
+   ]
+  },
+  "9744": {
+   "name": "Independiente Rivadavia",
+   "file": "assets/crests/clubs/9744.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "libertadores"
+   ]
+  },
+  "9903": {
+   "name": "Racing (Montevideo)",
+   "file": "assets/crests/clubs/9903.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "sudamericana"
+   ]
+  },
+  "9967": {
+   "name": "Bahia",
+   "file": "assets/crests/clubs/9967.png",
+   "source": "ESPN",
+   "appCode": "BAH",
+   "competitions": [
+    "copaDoBrasil",
+    "libertadores"
+   ]
+  },
+  "9969": {
+   "name": "Ceará",
+   "file": "assets/crests/clubs/9969.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "copaDoBrasil"
+   ]
+  },
+  "9970": {
+   "name": "CRB",
+   "file": "assets/crests/clubs/9970.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "copaDoBrasil"
+   ]
+  },
+  "9999": {
+   "name": "Boston River",
+   "file": "assets/crests/clubs/9999.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "sudamericana"
+   ]
+  },
+  "10060": {
+   "name": "Barracas Central",
+   "file": "assets/crests/clubs/10060.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "sudamericana"
+   ]
+  },
+  "10094": {
+   "name": "UCV FC",
+   "file": "assets/crests/clubs/10094.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "libertadores",
+    "sudamericana"
+   ]
+  },
+  "10311": {
+   "name": "Nacional Potosí",
+   "file": "assets/crests/clubs/10311.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "libertadores"
+   ]
+  },
+  "10357": {
+   "name": "Atlético Goianiense",
+   "file": "assets/crests/clubs/10357.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "copaDoBrasil"
+   ]
+  },
+  "11995": {
+   "name": "Cusco FC",
+   "file": "assets/crests/clubs/11995.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "libertadores"
+   ]
+  },
+  "13481": {
+   "name": "Metropolitanos",
+   "file": "assets/crests/clubs/13481.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "sudamericana"
+   ]
+  },
+  "15424": {
+   "name": "Paysandu",
+   "file": "assets/crests/clubs/15424.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "copaDoBrasil"
+   ]
+  },
+  "17086": {
+   "name": "Independiente del Valle",
+   "file": "assets/crests/clubs/17086.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "libertadores"
+   ]
+  },
+  "17090": {
+   "name": "Deportivo La Guaira",
+   "file": "assets/crests/clubs/17090.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "libertadores"
+   ]
+  },
+  "17702": {
+   "name": "Deportivo Riestra",
+   "file": "assets/crests/clubs/17702.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "sudamericana"
+   ]
+  },
+  "17713": {
+   "name": "Jacuipense",
+   "file": "assets/crests/clubs/17713.png",
+   "source": "TheSportsDB",
+   "appCode": null,
+   "competitions": [
+    "copaDoBrasil"
+   ]
+  },
+  "18187": {
+   "name": "Operário PR",
+   "file": "assets/crests/clubs/18187.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "copaDoBrasil"
+   ]
+  },
+  "18439": {
+   "name": "Macará",
+   "file": "assets/crests/clubs/18439.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "sudamericana"
+   ]
+  },
+  "18995": {
+   "name": "Academia Puerto Cabello",
+   "file": "assets/crests/clubs/18995.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "sudamericana"
+   ]
+  },
+  "19002": {
+   "name": "Montevideo City Torque",
+   "file": "assets/crests/clubs/19002.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "sudamericana"
+   ]
+  },
+  "19425": {
+   "name": "Always Ready",
+   "file": "assets/crests/clubs/19425.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "libertadores"
+   ]
+  },
+  "20695": {
+   "name": "Orense",
+   "file": "assets/crests/clubs/20695.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "sudamericana"
+   ]
+  },
+  "20851": {
+   "name": "Athletic",
+   "file": "assets/crests/clubs/20851.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "copaDoBrasil"
+   ]
+  },
+  "20889": {
+   "name": "Independiente Petrolero",
+   "file": "assets/crests/clubs/20889.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "sudamericana"
+   ]
+  },
+  "21819": {
+   "name": "Deportivo Garcilaso",
+   "file": "assets/crests/clubs/21819.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "sudamericana"
+   ]
+  },
+  "21843": {
+   "name": "Libertad (Ecuador)",
+   "file": "assets/crests/clubs/21843.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "sudamericana"
+   ]
+  },
+  "22137": {
+   "name": "San Antonio Bulo Bulo",
+   "file": "assets/crests/clubs/22137.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "sudamericana"
+   ]
+  },
+  "22517": {
+   "name": "Deportivo Recoleta",
+   "file": "assets/crests/clubs/22517.png",
+   "source": "ESPN",
+   "appCode": null,
+   "competitions": [
+    "sudamericana"
+   ]
+  },
+  "131708": {
+   "name": "Barra FC",
+   "file": "assets/crests/clubs/131708.png",
+   "source": "TheSportsDB",
+   "appCode": null,
+   "competitions": [
+    "copaDoBrasil"
+   ]
+  }
+ },
+ "competitions": {
+  "libertadores": {
+   "file": "assets/crests/competitions/libertadores.png",
+   "source": "TheSportsDB"
+  },
+  "sudamericana": {
+   "file": "assets/crests/competitions/sudamericana.png",
+   "source": "TheSportsDB"
+  },
+  "copaDoBrasil": {
+   "file": "assets/crests/competitions/copaDoBrasil.png",
+   "source": "TheSportsDB"
+  }
+ }
+}

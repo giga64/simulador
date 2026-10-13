@@ -1,0 +1,4 @@
+{
+  "note": "Ajuste manual de força, em pontos de Elo, somado à nota calculada (data/club-ratings-2026.json). Chave = id do clube na ESPN (veja assets/crests/map.json). Ex.: { \"2029\": -40 } tira 40 pontos do Palmeiras. Cada visitante também pode ajustar a força no próprio navegador, na aba Copas.",
+  "adjustments": {}
+}

@@ -1847,3 +1847,219 @@ form label {
 .club-progress-chart .chart-line {
   stroke: var(--ac);
 }
+
+/* ---------- Copas: tema de cada competição ---------- */
+:root[data-cup='libertadores'] {
+  --ac: #d9b44a;
+  --ac-ink: #171103;
+  --cup-a: #d9b44a;
+  --cup-b: #7a5c12;
+  --hl: rgba(217, 180, 74, 0.12);
+}
+:root[data-cup='sudamericana'] {
+  --ac: #4cb4ff;
+  --ac-ink: #031422;
+  --cup-a: #4cb4ff;
+  --cup-b: #1d4fa3;
+  --hl: rgba(76, 180, 255, 0.12);
+}
+:root[data-cup='copaDoBrasil'] {
+  --ac: #f2cf2e;
+  --ac-ink: #10200f;
+  --cup-a: #2fbf6a;
+  --cup-b: #f2cf2e;
+  --hl: rgba(47, 191, 106, 0.13);
+}
+@media (prefers-color-scheme: light) {
+  :root[data-cup='libertadores'] {
+    --ac: #8f6a0c;
+    --ac-ink: #ffffff;
+  }
+  :root[data-cup='sudamericana'] {
+    --ac: #1667c9;
+    --ac-ink: #ffffff;
+  }
+  :root[data-cup='copaDoBrasil'] {
+    --ac: #12844a;
+    --ac-ink: #ffffff;
+  }
+}
+:root[data-cup] .topbar {
+  border-bottom-color: color-mix(in srgb, var(--cup-a) 35%, var(--ln));
+}
+.cup-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.cup-switch button {
+  gap: 8px;
+  padding: 6px 14px 6px 8px;
+}
+.cup-switch button img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+.cup-switch button.on {
+  background: var(--hl);
+  border-color: color-mix(in srgb, var(--ac) 55%, transparent);
+}
+.cup-hero {
+  display: grid;
+  gap: 18px;
+  background:
+    radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--cup-a, var(--ac)) 16%, transparent), transparent 60%),
+    radial-gradient(
+      120% 140% at 100% 100%,
+      color-mix(in srgb, var(--cup-b, var(--ac)) 12%, transparent),
+      transparent 60%
+    ),
+    var(--s1);
+}
+.cup-hero h2 {
+  font-size: 1.35rem;
+  margin: 2px 0 6px;
+}
+.cup-leaders .chance-row {
+  grid-template-columns: 26px minmax(0, 1fr) auto;
+}
+.crest {
+  display: inline-block;
+  object-fit: contain;
+  flex: none;
+  vertical-align: middle;
+}
+.crest-empty {
+  border-radius: 50%;
+  background: var(--s3);
+}
+.cup-team {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+.bracket {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(220px, 1fr));
+  gap: 14px;
+  min-width: calc(var(--cols) * 232px);
+}
+.bracket-col h3 {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--mu);
+  margin-bottom: 10px;
+}
+.bracket-ties {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  gap: 10px;
+  height: calc(100% - 28px);
+}
+.tie {
+  background: var(--s2);
+  border: 1px solid var(--ln);
+  border-radius: 12px;
+  padding: 8px 10px;
+}
+.tie.is-live {
+  border-color: color-mix(in srgb, var(--live) 45%, transparent);
+}
+.tie-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 0.86rem;
+}
+.tie-row .cup-team-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tie-row.won {
+  font-weight: 700;
+}
+.tie-row.won .tie-agg {
+  color: var(--ac);
+}
+.tie-row.lost {
+  opacity: 0.55;
+}
+.tie-agg {
+  min-width: 18px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.tie-legs {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 6px 0 0;
+  border-top: 1px solid var(--ln);
+  display: grid;
+  gap: 2px;
+  font-size: 0.76rem;
+}
+.tie-legs li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.tie-foot {
+  margin-top: 6px;
+}
+.live-tag {
+  color: var(--live);
+}
+.group-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr));
+}
+.group-card {
+  background: var(--s2);
+  border: 1px solid var(--ln);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+.group-card h3 {
+  margin-bottom: 4px;
+}
+.group-card tr.qualified td:first-child {
+  box-shadow: inset 3px 0 0 var(--cup-a, var(--g));
+}
+.group-card tr.to-sud td:first-child {
+  box-shadow: inset 3px 0 0 var(--b);
+}
+.elo-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.sm-btn {
+  width: 26px;
+  min-width: 26px;
+  min-height: 26px;
+  font-size: 0.9rem;
+  border-radius: 8px;
+}
+.rules {
+  padding-left: 18px;
+  margin: 0 0 12px;
+  display: grid;
+  gap: 8px;
+  font-size: 0.88rem;
+}
+@media (min-width: 900px) {
+  .cup-hero {
+    grid-template-columns: 1.1fr 1fr;
+    align-items: center;
+  }
+}

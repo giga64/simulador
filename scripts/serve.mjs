@@ -9,6 +9,7 @@ import { createLiveHistoryStore } from '../src/live-history.js';
 import { createGeLiveSource } from '../src/live-sources/ge.js';
 import { createMatchModel, DEFAULT_SETTINGS, openFixturesFrom } from '../src/model/season-model.js';
 import { createRequestHandler } from '../src/server/app.js';
+import { createCompetitionService } from '../src/server/competitions.js';
 import { createJsonStore } from '../src/server/json-store.js';
 import { createOddsTracker } from '../src/server/odds.js';
 import { createOgRenderer } from '../src/server/og-image.js';
@@ -102,6 +103,7 @@ const handler = createRequestHandler({
   sharedScenarios,
   renderScenarioImage: createOgRenderer({ root }),
   oddsTracker,
+  competitionService: createCompetitionService(),
 });
 
 const server = createServer(handler);

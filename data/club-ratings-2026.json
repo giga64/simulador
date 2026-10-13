@@ -1,0 +1,2548 @@
+{
+ "version": 1,
+ "generatedAt": "2026-10-13T01:43:37.524Z",
+ "method": "Elo (K 30 em copas, 20 em ligas, mando medido por liga e, nas copas contra estrangeiros, por país, 20% de regressão à média por temporada, duas passadas) com resultados ESPN; gols por Poisson com base e mando do histórico openfootball (CC0) e inclinação ajustada nos jogos de copa de 2024–2026.",
+ "sources": {
+  "elo": "ESPN: copas 2021–2026 e ligas 2025, 2026 (8493 jogos)",
+  "prior": "openfootball/south-america, licença CC0 1.0 (domínio público)"
+ },
+ "model": {
+  "base": 0.17983866377236968,
+  "home": 0.23206769043865172,
+  "slope": 0.86,
+  "sampleMatches": 1318,
+  "referenceHomeAdvantage": 70,
+  "homeAdvantageByLeague": {
+   "bra.1": 88,
+   "arg.1": 50,
+   "col.1": 72,
+   "chi.1": 67,
+   "uru.1": 31,
+   "ecu.1": 52,
+   "per.1": 84,
+   "par.1": 28,
+   "bol.1": 99,
+   "ven.1": 60
+  },
+  "cupHomeAdvantageByLeague": {
+   "bra.1": {
+    "elo": 142,
+    "games": 337
+   },
+   "arg.1": {
+    "elo": 113,
+    "games": 269
+   },
+   "col.1": {
+    "elo": 71,
+    "games": 120
+   },
+   "chi.1": {
+    "elo": 57,
+    "games": 114
+   },
+   "uru.1": {
+    "elo": 76,
+    "games": 105
+   },
+   "ecu.1": {
+    "elo": 100,
+    "games": 135
+   },
+   "per.1": {
+    "elo": 44,
+    "games": 102
+   },
+   "par.1": {
+    "elo": 37,
+    "games": 113
+   },
+   "bol.1": {
+    "elo": 95,
+    "games": 101
+   },
+   "ven.1": {
+    "elo": -20,
+    "games": 90
+   }
+  }
+ },
+ "prior": {
+  "matches": 3750,
+  "seasons": "2012–2025",
+  "meanHomeGoals": 1.5096930533117932,
+  "meanAwayGoals": 0.9491114701130856,
+  "drawRate": 0.2501333333333333,
+  "shootouts": 160,
+  "shootoutHomeWinRate": 0.5,
+  "finals": 36
+ },
+ "teams": {
+  "3": {
+   "name": "Argentinos Juniors",
+   "elo": 1618,
+   "games": 91,
+   "league": "arg.1"
+  },
+  "4": {
+   "name": "Belgrano (Córdoba)",
+   "elo": 1615,
+   "games": 72,
+   "league": "arg.1"
+  },
+  "5": {
+   "name": "Boca Juniors",
+   "elo": 1673,
+   "games": 121,
+   "league": "arg.1"
+  },
+  "7": {
+   "name": "Colón (Santa Fe)",
+   "elo": 1498,
+   "games": 8,
+   "league": null
+  },
+  "8": {
+   "name": "Estudiantes de La Plata",
+   "elo": 1620,
+   "games": 118,
+   "league": "arg.1"
+  },
+  "9": {
+   "name": "Gimnasia La Plata",
+   "elo": 1551,
+   "games": 71,
+   "league": "arg.1"
+  },
+  "10": {
+   "name": "Huracán",
+   "elo": 1552,
+   "games": 84,
+   "league": "arg.1"
+  },
+  "11": {
+   "name": "Independiente",
+   "elo": 1555,
+   "games": 85,
+   "league": "arg.1"
+  },
+  "12": {
+   "name": "Lanús",
+   "elo": 1575,
+   "games": 113,
+   "league": "arg.1"
+  },
+  "14": {
+   "name": "Newell's Old Boys",
+   "elo": 1505,
+   "games": 74,
+   "league": "arg.1"
+  },
+  "15": {
+   "name": "Racing Club",
+   "elo": 1535,
+   "games": 122,
+   "league": "arg.1"
+  },
+  "16": {
+   "name": "River Plate",
+   "elo": 1625,
+   "games": 124,
+   "league": "arg.1"
+  },
+  "17": {
+   "name": "Rosario Central",
+   "elo": 1650,
+   "games": 94,
+   "league": "arg.1"
+  },
+  "18": {
+   "name": "San Lorenzo",
+   "elo": 1503,
+   "games": 99,
+   "league": "arg.1"
+  },
+  "19": {
+   "name": "Talleres (Córdoba)",
+   "elo": 1475,
+   "games": 92,
+   "league": "arg.1"
+  },
+  "20": {
+   "name": "Unión (Santa Fe)",
+   "elo": 1487,
+   "games": 77,
+   "league": "arg.1"
+  },
+  "21": {
+   "name": "Vélez Sarsfield",
+   "elo": 1580,
+   "games": 94,
+   "league": "arg.1"
+  },
+  "235": {
+   "name": "Banfield",
+   "elo": 1473,
+   "games": 66,
+   "league": "arg.1"
+  },
+  "819": {
+   "name": "Flamengo",
+   "elo": 1816,
+   "games": 179,
+   "league": "bra.1"
+  },
+  "874": {
+   "name": "Corinthians",
+   "elo": 1552,
+   "games": 176,
+   "league": "bra.1"
+  },
+  "882": {
+   "name": "El Nacional",
+   "elo": 1434,
+   "games": 50,
+   "league": "ecu.1"
+  },
+  "885": {
+   "name": "Universidad Católica",
+   "elo": 1620,
+   "games": 80,
+   "league": "chi.1"
+  },
+  "900": {
+   "name": "Boavista",
+   "elo": 1469,
+   "games": 6,
+   "league": null
+  },
+  "1007": {
+   "name": "Defensor Sporting",
+   "elo": 1444,
+   "games": 75,
+   "league": "uru.1"
+  },
+  "1011": {
+   "name": "Delfín",
+   "elo": 1423,
+   "games": 82,
+   "league": "ecu.1"
+  },
+  "1361": {
+   "name": "Salgueiro",
+   "elo": 1477,
+   "games": 2,
+   "league": null
+  },
+  "1936": {
+   "name": "Internacional",
+   "elo": 1549,
+   "games": 135,
+   "league": "bra.1"
+  },
+  "2022": {
+   "name": "Cruzeiro",
+   "elo": 1679,
+   "games": 123,
+   "league": "bra.1"
+  },
+  "2026": {
+   "name": "São Paulo",
+   "elo": 1580,
+   "games": 169,
+   "league": "bra.1"
+  },
+  "2029": {
+   "name": "Palmeiras",
+   "elo": 1757,
+   "games": 167,
+   "league": "bra.1"
+  },
+  "2635": {
+   "name": "Arsenal Sarandi",
+   "elo": 1510,
+   "games": 8,
+   "league": null
+  },
+  "2668": {
+   "name": "Emelec",
+   "elo": 1471,
+   "games": 99,
+   "league": "ecu.1"
+  },
+  "2670": {
+   "name": "Libertad",
+   "elo": 1534,
+   "games": 140,
+   "league": "par.1"
+  },
+  "2671": {
+   "name": "Cerro Porteño",
+   "elo": 1602,
+   "games": 134,
+   "league": "par.1"
+  },
+  "2672": {
+   "name": "Deportivo Cali",
+   "elo": 1564,
+   "games": 82,
+   "league": "col.1"
+  },
+  "2673": {
+   "name": "Sporting Cristal",
+   "elo": 1540,
+   "games": 116,
+   "league": "per.1"
+  },
+  "2674": {
+   "name": "Santos",
+   "elo": 1656,
+   "games": 137,
+   "league": "bra.1"
+  },
+  "2675": {
+   "name": "Club Olimpia",
+   "elo": 1633,
+   "games": 130,
+   "league": "par.1"
+  },
+  "2677": {
+   "name": "12 de Octubre",
+   "elo": 1493,
+   "games": 8,
+   "league": null
+  },
+  "2680": {
+   "name": "Alianza Lima",
+   "elo": 1631,
+   "games": 103,
+   "league": "per.1"
+  },
+  "2681": {
+   "name": "Bolívar",
+   "elo": 1672,
+   "games": 105,
+   "league": "bol.1"
+  },
+  "2682": {
+   "name": "Oriente Petrolero",
+   "elo": 1470,
+   "games": 66,
+   "league": "bol.1"
+  },
+  "2683": {
+   "name": "Peñarol",
+   "elo": 1639,
+   "games": 127,
+   "league": "uru.1"
+  },
+  "2684": {
+   "name": "Nacional",
+   "elo": 1592,
+   "games": 124,
+   "league": "uru.1"
+  },
+  "2685": {
+   "name": "Universitario",
+   "elo": 1601,
+   "games": 100,
+   "league": "per.1"
+  },
+  "2686": {
+   "name": "Barcelona SC",
+   "elo": 1522,
+   "games": 131,
+   "league": "ecu.1"
+  },
+  "2687": {
+   "name": "The Strongest",
+   "elo": 1591,
+   "games": 87,
+   "league": "bol.1"
+  },
+  "2688": {
+   "name": "Colo Colo",
+   "elo": 1615,
+   "games": 89,
+   "league": "chi.1"
+  },
+  "2689": {
+   "name": "Fénix ",
+   "elo": 1492,
+   "games": 2,
+   "league": null
+  },
+  "2690": {
+   "name": "Independiente Medellín",
+   "elo": 1571,
+   "games": 129,
+   "league": "col.1"
+  },
+  "2919": {
+   "name": "Once Caldas",
+   "elo": 1537,
+   "games": 92,
+   "league": "col.1"
+  },
+  "2975": {
+   "name": "Instituto (Córdoba)",
+   "elo": 1569,
+   "games": 61,
+   "league": "arg.1"
+  },
+  "3372": {
+   "name": "Cienciano del Cusco",
+   "elo": 1547,
+   "games": 88,
+   "league": "per.1"
+  },
+  "3395": {
+   "name": "Goiás",
+   "elo": 1542,
+   "games": 26,
+   "league": null
+  },
+  "3445": {
+   "name": "Fluminense",
+   "elo": 1646,
+   "games": 167,
+   "league": "bra.1"
+  },
+  "3448": {
+   "name": "Guarani",
+   "elo": 1502,
+   "games": 3,
+   "league": null
+  },
+  "3453": {
+   "name": "Paraná",
+   "elo": 1487,
+   "games": 2,
+   "league": null
+  },
+  "3454": {
+   "name": "Vasco da Gama",
+   "elo": 1670,
+   "games": 125,
+   "league": "bra.1"
+  },
+  "3456": {
+   "name": "Coritiba",
+   "elo": 1522,
+   "games": 46,
+   "league": "bra.1"
+  },
+  "3457": {
+   "name": "Vitória",
+   "elo": 1522,
+   "games": 95,
+   "league": "bra.1"
+  },
+  "3458": {
+   "name": "Athletico-PR",
+   "elo": 1655,
+   "games": 116,
+   "league": "bra.1"
+  },
+  "3459": {
+   "name": "Ponte Preta",
+   "elo": 1504,
+   "games": 8,
+   "league": null
+  },
+  "3461": {
+   "name": "Figueirense",
+   "elo": 1521,
+   "games": 6,
+   "league": null
+  },
+  "4129": {
+   "name": "Everton CD",
+   "elo": 1535,
+   "games": 66,
+   "league": "chi.1"
+  },
+  "4132": {
+   "name": "Unión Española",
+   "elo": 1407,
+   "games": 41,
+   "league": "chi.1"
+  },
+  "4133": {
+   "name": "Cobresal",
+   "elo": 1436,
+   "games": 64,
+   "league": "chi.1"
+  },
+  "4134": {
+   "name": "Huachipato",
+   "elo": 1476,
+   "games": 74,
+   "league": "chi.1"
+  },
+  "4137": {
+   "name": "La Serena",
+   "elo": 1453,
+   "games": 54,
+   "league": "chi.1"
+  },
+  "4138": {
+   "name": "Audax Italiano",
+   "elo": 1506,
+   "games": 71,
+   "league": "chi.1"
+  },
+  "4139": {
+   "name": "Universidad de Chile",
+   "elo": 1620,
+   "games": 70,
+   "league": "chi.1"
+  },
+  "4422": {
+   "name": "Palestino",
+   "elo": 1508,
+   "games": 99,
+   "league": "chi.1"
+  },
+  "4773": {
+   "name": "Portuguesa",
+   "elo": 1496,
+   "games": 4,
+   "league": null
+  },
+  "4774": {
+   "name": "Ituano",
+   "elo": 1493,
+   "games": 5,
+   "league": null
+  },
+  "4782": {
+   "name": "Marília AC",
+   "elo": 1481,
+   "games": 2,
+   "league": null
+  },
+  "4785": {
+   "name": "Portuguesa Santista",
+   "elo": 1487,
+   "games": 1,
+   "league": null
+  },
+  "4786": {
+   "name": "Madureira",
+   "elo": 1519,
+   "games": 4,
+   "league": null
+  },
+  "4787": {
+   "name": "Olaria",
+   "elo": 1484,
+   "games": 3,
+   "league": null
+  },
+  "4806": {
+   "name": "Volta Redonda",
+   "elo": 1523,
+   "games": 11,
+   "league": null
+  },
+  "4811": {
+   "name": "Caracas FC",
+   "elo": 1464,
+   "games": 90,
+   "league": "ven.1"
+  },
+  "4812": {
+   "name": "Deportivo Cuenca",
+   "elo": 1447,
+   "games": 81,
+   "league": "ecu.1"
+  },
+  "4815": {
+   "name": "Atlético Junior",
+   "elo": 1539,
+   "games": 127,
+   "league": "col.1"
+  },
+  "4816": {
+   "name": "Liga de Quito",
+   "elo": 1637,
+   "games": 136,
+   "league": "ecu.1"
+  },
+  "4817": {
+   "name": "Danubio",
+   "elo": 1436,
+   "games": 84,
+   "league": "uru.1"
+  },
+  "4818": {
+   "name": "Deportivo Táchira",
+   "elo": 1597,
+   "games": 104,
+   "league": "ven.1"
+  },
+  "4820": {
+   "name": "Tacuary",
+   "elo": 1475,
+   "games": 7,
+   "league": null
+  },
+  "4873": {
+   "name": "Sampaio Corrêa",
+   "elo": 1464,
+   "games": 9,
+   "league": null
+  },
+  "4874": {
+   "name": "Sergipe SE",
+   "elo": 1467,
+   "games": 4,
+   "league": null
+  },
+  "4875": {
+   "name": "Confiança",
+   "elo": 1497,
+   "games": 8,
+   "league": null
+  },
+  "4881": {
+   "name": "União Rondonópolis-MT",
+   "elo": 1440,
+   "games": 5,
+   "league": null
+  },
+  "4902": {
+   "name": "Treze",
+   "elo": 1492,
+   "games": 2,
+   "league": null
+  },
+  "4904": {
+   "name": "Esportivo-RS",
+   "elo": 1490,
+   "games": 1,
+   "league": null
+  },
+  "4908": {
+   "name": "Moto Club",
+   "elo": 1474,
+   "games": 4,
+   "league": null
+  },
+  "4909": {
+   "name": "Cianorte",
+   "elo": 1460,
+   "games": 6,
+   "league": null
+  },
+  "4910": {
+   "name": "Villa Nova-MG",
+   "elo": 1489,
+   "games": 2,
+   "league": null
+  },
+  "4928": {
+   "name": "Fortaleza CEIF",
+   "elo": 1449,
+   "games": 78,
+   "league": "col.1"
+  },
+  "4929": {
+   "name": "Santa Cruz",
+   "elo": 1499,
+   "games": 5,
+   "league": null
+  },
+  "4935": {
+   "name": "Ypiranga",
+   "elo": 1507,
+   "games": 12,
+   "league": null
+  },
+  "4936": {
+   "name": "Remo",
+   "elo": 1509,
+   "games": 46,
+   "league": "bra.1"
+  },
+  "5264": {
+   "name": "Atlético Nacional",
+   "elo": 1658,
+   "games": 119,
+   "league": "col.1"
+  },
+  "5267": {
+   "name": "Alianza Atlético",
+   "elo": 1528,
+   "games": 71,
+   "league": "per.1"
+  },
+  "5268": {
+   "name": "Trujillanos",
+   "elo": 1358,
+   "games": 25,
+   "league": "ven.1"
+  },
+  "5362": {
+   "name": "Universidad de Concepción",
+   "elo": 1404,
+   "games": 24,
+   "league": "chi.1"
+  },
+  "5480": {
+   "name": "Boyacá Chicó FC",
+   "elo": 1415,
+   "games": 71,
+   "league": "col.1"
+  },
+  "5481": {
+   "name": "Envigado FC",
+   "elo": 1442,
+   "games": 40,
+   "league": "col.1"
+  },
+  "5484": {
+   "name": "Millonarios",
+   "elo": 1592,
+   "games": 105,
+   "league": "col.1"
+  },
+  "5485": {
+   "name": "Deportivo Pasto",
+   "elo": 1450,
+   "games": 75,
+   "league": "col.1"
+  },
+  "5486": {
+   "name": "Deportivo Pereira",
+   "elo": 1368,
+   "games": 81,
+   "league": "col.1"
+  },
+  "5488": {
+   "name": "Independiente Santa Fe",
+   "elo": 1626,
+   "games": 116,
+   "league": "col.1"
+  },
+  "5489": {
+   "name": "Deportes Tolima",
+   "elo": 1556,
+   "games": 129,
+   "league": "col.1"
+  },
+  "5490": {
+   "name": "Cerro",
+   "elo": 1462,
+   "games": 69,
+   "league": "uru.1"
+  },
+  "5492": {
+   "name": "Liverpool",
+   "elo": 1564,
+   "games": 88,
+   "league": "uru.1"
+  },
+  "5493": {
+   "name": "Miramar Misiones",
+   "elo": 1411,
+   "games": 37,
+   "league": "uru.1"
+  },
+  "5495": {
+   "name": "Plaza Colonia",
+   "elo": 1416,
+   "games": 39,
+   "league": "uru.1"
+  },
+  "5497": {
+   "name": "Rentistas",
+   "elo": 1481,
+   "games": 6,
+   "league": null
+  },
+  "5498": {
+   "name": "River Plate",
+   "elo": 1426,
+   "games": 46,
+   "league": "uru.1"
+  },
+  "5501": {
+   "name": "Montevideo Wanderers",
+   "elo": 1496,
+   "games": 82,
+   "league": "uru.1"
+  },
+  "5567": {
+   "name": "César Vallejo",
+   "elo": 1454,
+   "games": 18,
+   "league": null
+  },
+  "5570": {
+   "name": "Sport Boys",
+   "elo": 1479,
+   "games": 65,
+   "league": "per.1"
+  },
+  "5583": {
+   "name": "Sportivo Luqueño",
+   "elo": 1390,
+   "games": 94,
+   "league": "par.1"
+  },
+  "5584": {
+   "name": "Nacional Asunción",
+   "elo": 1615,
+   "games": 103,
+   "league": "par.1"
+  },
+  "6017": {
+   "name": "Aucas",
+   "elo": 1539,
+   "games": 89,
+   "league": "ecu.1"
+  },
+  "6036": {
+   "name": "Aragua",
+   "elo": 1471,
+   "games": 8,
+   "league": null
+  },
+  "6037": {
+   "name": "Carabobo",
+   "elo": 1603,
+   "games": 92,
+   "league": "ven.1"
+  },
+  "6038": {
+   "name": "Estudiantes de Mérida",
+   "elo": 1433,
+   "games": 66,
+   "league": "ven.1"
+  },
+  "6041": {
+   "name": "Monagas SC",
+   "elo": 1444,
+   "games": 70,
+   "league": "ven.1"
+  },
+  "6046": {
+   "name": "Aurora",
+   "elo": 1479,
+   "games": 56,
+   "league": "bol.1"
+  },
+  "6047": {
+   "name": "Blooming",
+   "elo": 1422,
+   "games": 67,
+   "league": "bol.1"
+  },
+  "6051": {
+   "name": "Real Potosí",
+   "elo": 1546,
+   "games": 21,
+   "league": "bol.1"
+  },
+  "6054": {
+   "name": "Wilstermann",
+   "elo": 1368,
+   "games": 47,
+   "league": "bol.1"
+  },
+  "6071": {
+   "name": "Antofagasta",
+   "elo": 1484,
+   "games": 10,
+   "league": null
+  },
+  "6072": {
+   "name": "O'Higgins",
+   "elo": 1494,
+   "games": 66,
+   "league": "chi.1"
+  },
+  "6079": {
+   "name": "Red Bull Bragantino",
+   "elo": 1567,
+   "games": 138,
+   "league": "bra.1"
+  },
+  "6086": {
+   "name": "Botafogo",
+   "elo": 1578,
+   "games": 141,
+   "league": "bra.1"
+  },
+  "6087": {
+   "name": "Nova Iguaçu",
+   "elo": 1527,
+   "games": 12,
+   "league": null
+  },
+  "6097": {
+   "name": "2 de Mayo",
+   "elo": 1527,
+   "games": 85,
+   "league": "par.1"
+  },
+  "6101": {
+   "name": "Cúcuta Deportivo",
+   "elo": 1459,
+   "games": 32,
+   "league": "col.1"
+  },
+  "6137": {
+   "name": "Atlético Bucaramanga",
+   "elo": 1588,
+   "games": 85,
+   "league": "col.1"
+  },
+  "6154": {
+   "name": "América Mineiro",
+   "elo": 1512,
+   "games": 44,
+   "league": null
+  },
+  "6195": {
+   "name": "Sociedade Imperatriz de Desportos",
+   "elo": 1466,
+   "games": 1,
+   "league": null
+  },
+  "6196": {
+   "name": "ASA",
+   "elo": 1455,
+   "games": 5,
+   "league": null
+  },
+  "6214": {
+   "name": "Itabaiana",
+   "elo": 1466,
+   "games": 2,
+   "league": null
+  },
+  "6219": {
+   "name": "Ceilândia",
+   "elo": 1485,
+   "games": 8,
+   "league": null
+  },
+  "6270": {
+   "name": "Juventude",
+   "elo": 1543,
+   "games": 61,
+   "league": "bra.1"
+  },
+  "6272": {
+   "name": "Fortaleza",
+   "elo": 1602,
+   "games": 113,
+   "league": "bra.1"
+  },
+  "6273": {
+   "name": "Grêmio",
+   "elo": 1573,
+   "games": 137,
+   "league": "bra.1"
+  },
+  "6277": {
+   "name": "SE Gama",
+   "elo": 1510,
+   "games": 3,
+   "league": null
+  },
+  "6358": {
+   "name": "Sao Raimundo AM",
+   "elo": 1492,
+   "games": 1,
+   "league": null
+  },
+  "6756": {
+   "name": "Godoy Cruz Antonio Tomba",
+   "elo": 1467,
+   "games": 42,
+   "league": "arg.1"
+  },
+  "6762": {
+   "name": "Portuguesa",
+   "elo": 1491,
+   "games": 65,
+   "league": "ven.1"
+  },
+  "6763": {
+   "name": "Zamora FC",
+   "elo": 1394,
+   "games": 58,
+   "league": "ven.1"
+  },
+  "6866": {
+   "name": "Progreso",
+   "elo": 1410,
+   "games": 69,
+   "league": "uru.1"
+  },
+  "7312": {
+   "name": "Melgar",
+   "elo": 1574,
+   "games": 104,
+   "league": "per.1"
+  },
+  "7385": {
+   "name": "Guaraní",
+   "elo": 1556,
+   "games": 107,
+   "league": "par.1"
+  },
+  "7387": {
+   "name": "Guarany",
+   "elo": 1488,
+   "games": 1,
+   "league": null
+  },
+  "7389": {
+   "name": "São José-RS",
+   "elo": 1529,
+   "games": 2,
+   "league": null
+  },
+  "7391": {
+   "name": "São Luiz-RS",
+   "elo": 1474,
+   "games": 5,
+   "league": null
+  },
+  "7427": {
+   "name": "Ñublense",
+   "elo": 1457,
+   "games": 68,
+   "league": "chi.1"
+  },
+  "7445": {
+   "name": "Internacional de Bogotá",
+   "elo": 1435,
+   "games": 85,
+   "league": "col.1"
+  },
+  "7465": {
+   "name": "Sol de América",
+   "elo": 1480,
+   "games": 2,
+   "league": null
+  },
+  "7466": {
+   "name": "Sportivo Trinidense",
+   "elo": 1566,
+   "games": 91,
+   "league": "par.1"
+  },
+  "7506": {
+   "name": "Parnahyba",
+   "elo": 1465,
+   "games": 2,
+   "league": null
+  },
+  "7509": {
+   "name": "Campinense PB",
+   "elo": 1475,
+   "games": 3,
+   "league": null
+  },
+  "7531": {
+   "name": "CSA",
+   "elo": 1532,
+   "games": 17,
+   "league": null
+  },
+  "7632": {
+   "name": "Atlético-MG",
+   "elo": 1669,
+   "games": 182,
+   "league": "bra.1"
+  },
+  "7633": {
+   "name": "Náutico",
+   "elo": 1541,
+   "games": 9,
+   "league": null
+  },
+  "7634": {
+   "name": "América-RN",
+   "elo": 1517,
+   "games": 10,
+   "league": null
+  },
+  "7635": {
+   "name": "Sport",
+   "elo": 1387,
+   "games": 52,
+   "league": "bra.1"
+  },
+  "7764": {
+   "name": "Platense",
+   "elo": 1495,
+   "games": 74,
+   "league": "arg.1"
+  },
+  "7767": {
+   "name": "Tigre",
+   "elo": 1514,
+   "games": 81,
+   "league": "arg.1"
+  },
+  "7845": {
+   "name": "San Martín (San Juan)",
+   "elo": 1453,
+   "games": 32,
+   "league": "arg.1"
+  },
+  "7915": {
+   "name": "Llaneros FC",
+   "elo": 1458,
+   "games": 72,
+   "league": "col.1"
+  },
+  "8109": {
+   "name": "América de Cali",
+   "elo": 1615,
+   "games": 115,
+   "league": "col.1"
+  },
+  "8110": {
+   "name": "Deportes Concepcion",
+   "elo": 1514,
+   "games": 24,
+   "league": "chi.1"
+  },
+  "8186": {
+   "name": "Coquimbo Unido",
+   "elo": 1573,
+   "games": 71,
+   "league": "chi.1"
+  },
+  "8407": {
+   "name": "Penarol",
+   "elo": 1499,
+   "games": 1,
+   "league": null
+  },
+  "8416": {
+   "name": "Juventud",
+   "elo": 1538,
+   "games": 81,
+   "league": "uru.1"
+  },
+  "8950": {
+   "name": "Defensa y Justicia",
+   "elo": 1544,
+   "games": 101,
+   "league": "arg.1"
+  },
+  "9169": {
+   "name": "Mirassol",
+   "elo": 1593,
+   "games": 83,
+   "league": "bra.1"
+  },
+  "9177": {
+   "name": "Resende",
+   "elo": 1490,
+   "games": 1,
+   "league": null
+  },
+  "9283": {
+   "name": "Universidad Católica (Quito)",
+   "elo": 1586,
+   "games": 108,
+   "league": "ecu.1"
+  },
+  "9292": {
+   "name": "Técnico Universitario",
+   "elo": 1395,
+   "games": 69,
+   "league": "ecu.1"
+  },
+  "9300": {
+   "name": "Aguia Negra Rio Brilhante",
+   "elo": 1493,
+   "games": 1,
+   "league": null
+  },
+  "9303": {
+   "name": "Maranhao",
+   "elo": 1474,
+   "games": 4,
+   "league": null
+  },
+  "9318": {
+   "name": "Chapecoense",
+   "elo": 1425,
+   "games": 37,
+   "league": "bra.1"
+  },
+  "9460": {
+   "name": "Uberlândia",
+   "elo": 1509,
+   "games": 3,
+   "league": null
+  },
+  "9497": {
+   "name": "Guabirá",
+   "elo": 1472,
+   "games": 63,
+   "league": "bol.1"
+  },
+  "9596": {
+   "name": "Palmas",
+   "elo": 1493,
+   "games": 1,
+   "league": null
+  },
+  "9739": {
+   "name": "Aldosivi",
+   "elo": 1396,
+   "games": 60,
+   "league": "arg.1"
+  },
+  "9744": {
+   "name": "Independiente Rivadavia",
+   "elo": 1629,
+   "games": 70,
+   "league": "arg.1"
+  },
+  "9761": {
+   "name": "Alianza FC",
+   "elo": 1431,
+   "games": 79,
+   "league": "col.1"
+  },
+  "9762": {
+   "name": "Águilas Doradas",
+   "elo": 1492,
+   "games": 74,
+   "league": "col.1"
+  },
+  "9785": {
+   "name": "Atlético Tucumán",
+   "elo": 1466,
+   "games": 60,
+   "league": "arg.1"
+  },
+  "9902": {
+   "name": "Cerro Largo",
+   "elo": 1444,
+   "games": 83,
+   "league": "uru.1"
+  },
+  "9903": {
+   "name": "Racing (Montevideo)",
+   "elo": 1520,
+   "games": 86,
+   "league": "uru.1"
+  },
+  "9965": {
+   "name": "ABC",
+   "elo": 1494,
+   "games": 16,
+   "league": null
+  },
+  "9966": {
+   "name": "Avaí",
+   "elo": 1522,
+   "games": 9,
+   "league": null
+  },
+  "9967": {
+   "name": "Bahia",
+   "elo": 1601,
+   "games": 122,
+   "league": "bra.1"
+  },
+  "9968": {
+   "name": "Brasiliense",
+   "elo": 1495,
+   "games": 10,
+   "league": null
+  },
+  "9969": {
+   "name": "Ceará",
+   "elo": 1559,
+   "games": 75,
+   "league": "bra.1"
+  },
+  "9970": {
+   "name": "CRB",
+   "elo": 1581,
+   "games": 26,
+   "league": null
+  },
+  "9971": {
+   "name": "Criciúma",
+   "elo": 1525,
+   "games": 18,
+   "league": null
+  },
+  "9973": {
+   "name": "Vila Nova",
+   "elo": 1483,
+   "games": 17,
+   "league": null
+  },
+  "9999": {
+   "name": "Boston River",
+   "elo": 1450,
+   "games": 90,
+   "league": "uru.1"
+  },
+  "10000": {
+   "name": "Deportivo Maldonado",
+   "elo": 1605,
+   "games": 34,
+   "league": "uru.1"
+  },
+  "10060": {
+   "name": "Barracas Central",
+   "elo": 1505,
+   "games": 69,
+   "league": "arg.1"
+  },
+  "10080": {
+   "name": "Rubio Ñú",
+   "elo": 1439,
+   "games": 36,
+   "league": "par.1"
+  },
+  "10094": {
+   "name": "UCV FC",
+   "elo": 1488,
+   "games": 76,
+   "league": "ven.1"
+  },
+  "10096": {
+   "name": "Yaracuyanos",
+   "elo": 1402,
+   "games": 26,
+   "league": "ven.1"
+  },
+  "10116": {
+   "name": "Ayacucho FC",
+   "elo": 1414,
+   "games": 44,
+   "league": "per.1"
+  },
+  "10122": {
+   "name": "UTC",
+   "elo": 1337,
+   "games": 66,
+   "league": "per.1"
+  },
+  "10142": {
+   "name": "Deportes Iquique",
+   "elo": 1404,
+   "games": 40,
+   "league": "chi.1"
+  },
+  "10144": {
+   "name": "Unión La Calera",
+   "elo": 1377,
+   "games": 75,
+   "league": "chi.1"
+  },
+  "10158": {
+   "name": "Sarmiento (Junín)",
+   "elo": 1511,
+   "games": 59,
+   "league": "arg.1"
+  },
+  "10263": {
+   "name": "Oeste",
+   "elo": 1491,
+   "games": 1,
+   "league": null
+  },
+  "10281": {
+   "name": "Botafogo-SP",
+   "elo": 1512,
+   "games": 9,
+   "league": null
+  },
+  "10307": {
+   "name": "Manta F.C.",
+   "elo": 1406,
+   "games": 68,
+   "league": "ecu.1"
+  },
+  "10309": {
+   "name": "Jaguares de Córdoba",
+   "elo": 1416,
+   "games": 31,
+   "league": "col.1"
+  },
+  "10311": {
+   "name": "Nacional Potosí",
+   "elo": 1490,
+   "games": 71,
+   "league": "bol.1"
+  },
+  "10318": {
+   "name": "Sport Huancayo",
+   "elo": 1489,
+   "games": 74,
+   "league": "per.1"
+  },
+  "10357": {
+   "name": "Atlético Goianiense",
+   "elo": 1605,
+   "games": 47,
+   "league": null
+  },
+  "10374": {
+   "name": "Patronato",
+   "elo": 1482,
+   "games": 8,
+   "league": null
+  },
+  "10983": {
+   "name": "Icasa",
+   "elo": 1498,
+   "games": 1,
+   "league": null
+  },
+  "11124": {
+   "name": "Guayaquil City FC",
+   "elo": 1506,
+   "games": 34,
+   "league": "ecu.1"
+  },
+  "11268": {
+   "name": "São Bernardo",
+   "elo": 1526,
+   "games": 6,
+   "league": null
+  },
+  "11972": {
+   "name": "Gimnasia (Mendoza)",
+   "elo": 1526,
+   "games": 28,
+   "league": "arg.1"
+  },
+  "11989": {
+   "name": "Central Córdoba (Santiago del Estero)",
+   "elo": 1467,
+   "games": 72,
+   "league": "arg.1"
+  },
+  "11995": {
+   "name": "Cusco FC",
+   "elo": 1530,
+   "games": 73,
+   "league": "per.1"
+  },
+  "13143": {
+   "name": "Joinville",
+   "elo": 1496,
+   "games": 4,
+   "league": null
+  },
+  "13481": {
+   "name": "Metropolitanos",
+   "elo": 1585,
+   "games": 100,
+   "league": "ven.1"
+  },
+  "13783": {
+   "name": "Anzoátegui FC",
+   "elo": 1337,
+   "games": 56,
+   "league": "ven.1"
+  },
+  "15424": {
+   "name": "Paysandu",
+   "elo": 1486,
+   "games": 14,
+   "league": null
+  },
+  "15502": {
+   "name": "Audax Rio",
+   "elo": 1498,
+   "games": 1,
+   "league": null
+  },
+  "15557": {
+   "name": "Oratorio",
+   "elo": 1480,
+   "games": 2,
+   "league": null
+  },
+  "15559": {
+   "name": "Mixto",
+   "elo": 1465,
+   "games": 2,
+   "league": null
+  },
+  "15561": {
+   "name": "Sousa EC",
+   "elo": 1485,
+   "games": 8,
+   "league": null
+  },
+  "15562": {
+   "name": "Aguia de Maraba",
+   "elo": 1489,
+   "games": 12,
+   "league": null
+  },
+  "15576": {
+   "name": "Luverdense",
+   "elo": 1495,
+   "games": 2,
+   "league": null
+  },
+  "17086": {
+   "name": "Independiente del Valle",
+   "elo": 1743,
+   "games": 136,
+   "league": "ecu.1"
+  },
+  "17090": {
+   "name": "Deportivo La Guaira",
+   "elo": 1522,
+   "games": 91,
+   "league": "ven.1"
+  },
+  "17092": {
+   "name": "Deportivo Lara",
+   "elo": 1482,
+   "games": 4,
+   "league": null
+  },
+  "17093": {
+   "name": "Mineros de Guayana",
+   "elo": 1499,
+   "games": 2,
+   "league": null
+  },
+  "17131": {
+   "name": "Caxias do Sul",
+   "elo": 1499,
+   "games": 6,
+   "league": null
+  },
+  "17134": {
+   "name": "Brasil de Pelotas",
+   "elo": 1518,
+   "games": 5,
+   "league": null
+  },
+  "17176": {
+   "name": "Mushuc Runa",
+   "elo": 1479,
+   "games": 79,
+   "league": "ecu.1"
+  },
+  "17312": {
+   "name": "Bahia de Feira",
+   "elo": 1485,
+   "games": 2,
+   "league": null
+  },
+  "17313": {
+   "name": "Cuiabá",
+   "elo": 1538,
+   "games": 27,
+   "league": null
+  },
+  "17317": {
+   "name": "Botafogo PB",
+   "elo": 1505,
+   "games": 6,
+   "league": null
+  },
+  "17318": {
+   "name": "Caldense",
+   "elo": 1488,
+   "games": 2,
+   "league": null
+  },
+  "17319": {
+   "name": "Rio Branco FC",
+   "elo": 1493,
+   "games": 3,
+   "league": null
+  },
+  "17325": {
+   "name": "Nacional de Manaus",
+   "elo": 1476,
+   "games": 1,
+   "league": null
+  },
+  "17326": {
+   "name": "Ferroviaria",
+   "elo": 1496,
+   "games": 2,
+   "league": null
+  },
+  "17329": {
+   "name": "Goianesia",
+   "elo": 1494,
+   "games": 1,
+   "league": null
+  },
+  "17332": {
+   "name": "Lagarto",
+   "elo": 1503,
+   "games": 2,
+   "league": null
+  },
+  "17333": {
+   "name": "Londrina",
+   "elo": 1483,
+   "games": 5,
+   "league": null
+  },
+  "17336": {
+   "name": "Princesa do Solimoes",
+   "elo": 1498,
+   "games": 1,
+   "league": null
+  },
+  "17339": {
+   "name": "Tombense",
+   "elo": 1478,
+   "games": 15,
+   "league": null
+  },
+  "17363": {
+   "name": "Magallanes",
+   "elo": 1496,
+   "games": 10,
+   "league": null
+  },
+  "17365": {
+   "name": "Curicó Unido",
+   "elo": 1483,
+   "games": 2,
+   "league": null
+  },
+  "17374": {
+   "name": "Unión Magdalena",
+   "elo": 1437,
+   "games": 39,
+   "league": "col.1"
+  },
+  "17671": {
+   "name": "Sportivo San Lorenzo",
+   "elo": 1343,
+   "games": 36,
+   "league": "par.1"
+  },
+  "17702": {
+   "name": "Deportivo Riestra",
+   "elo": 1452,
+   "games": 68,
+   "league": "arg.1"
+  },
+  "17709": {
+   "name": "Ríver AC",
+   "elo": 1497,
+   "games": 1,
+   "league": null
+  },
+  "17710": {
+   "name": "Piauí Teresina",
+   "elo": 1486,
+   "games": 1,
+   "league": null
+  },
+  "17712": {
+   "name": "Globo",
+   "elo": 1507,
+   "games": 2,
+   "league": null
+  },
+  "17713": {
+   "name": "Jacuipense",
+   "elo": 1479,
+   "games": 7,
+   "league": null
+  },
+  "17715": {
+   "name": "Maringá",
+   "elo": 1545,
+   "games": 13,
+   "league": null
+  },
+  "17722": {
+   "name": "Murici",
+   "elo": 1501,
+   "games": 3,
+   "league": null
+  },
+  "17723": {
+   "name": "São Raimundo-RR",
+   "elo": 1478,
+   "games": 6,
+   "league": null
+  },
+  "17751": {
+   "name": "Real Noroeste",
+   "elo": 1475,
+   "games": 4,
+   "league": null
+  },
+  "17817": {
+   "name": "Atlético Acreano",
+   "elo": 1496,
+   "games": 1,
+   "league": null
+  },
+  "18126": {
+   "name": "Ferroviária",
+   "elo": 1493,
+   "games": 1,
+   "league": null
+  },
+  "18127": {
+   "name": "Novorizontino",
+   "elo": 1567,
+   "games": 8,
+   "league": null
+  },
+  "18128": {
+   "name": "Água Santa",
+   "elo": 1512,
+   "games": 2,
+   "league": null
+  },
+  "18134": {
+   "name": "Portuguesa-RJ",
+   "elo": 1496,
+   "games": 9,
+   "league": null
+  },
+  "18135": {
+   "name": "GE Gloria",
+   "elo": 1498,
+   "games": 2,
+   "league": null
+  },
+  "18136": {
+   "name": "River Plate (Asunción)",
+   "elo": 1512,
+   "games": 8,
+   "league": null
+  },
+  "18153": {
+   "name": "Comerciantes Unidos",
+   "elo": 1445,
+   "games": 62,
+   "league": "per.1"
+  },
+  "18187": {
+   "name": "Operário PR",
+   "elo": 1582,
+   "games": 16,
+   "league": null
+  },
+  "18188": {
+   "name": "Aparecidense",
+   "elo": 1494,
+   "games": 5,
+   "league": null
+  },
+  "18190": {
+   "name": "Galvez",
+   "elo": 1488,
+   "games": 2,
+   "league": null
+  },
+  "18191": {
+   "name": "Juazeirense",
+   "elo": 1500,
+   "games": 11,
+   "league": null
+  },
+  "18192": {
+   "name": "Tocantinopolis",
+   "elo": 1451,
+   "games": 8,
+   "league": null
+  },
+  "18195": {
+   "name": "Ivinhema",
+   "elo": 1482,
+   "games": 2,
+   "league": null
+  },
+  "18198": {
+   "name": "Rio Branco (ES)",
+   "elo": 1478,
+   "games": 3,
+   "league": null
+  },
+  "18396": {
+   "name": "Democrata GV",
+   "elo": 1499,
+   "games": 1,
+   "league": null
+  },
+  "18399": {
+   "name": "URT",
+   "elo": 1499,
+   "games": 1,
+   "league": null
+  },
+  "18424": {
+   "name": "Anápolis",
+   "elo": 1517,
+   "games": 4,
+   "league": null
+  },
+  "18428": {
+   "name": "Brusque",
+   "elo": 1532,
+   "games": 11,
+   "league": null
+  },
+  "18433": {
+   "name": "Altos",
+   "elo": 1464,
+   "games": 6,
+   "league": null
+  },
+  "18439": {
+   "name": "Macará",
+   "elo": 1624,
+   "games": 83,
+   "league": "ecu.1"
+  },
+  "18520": {
+   "name": "Votuporanguense S20",
+   "elo": 1483,
+   "games": 1,
+   "league": null
+  },
+  "18959": {
+   "name": "Manaus",
+   "elo": 1492,
+   "games": 9,
+   "league": null
+  },
+  "18960": {
+   "name": "Real Ariquemes",
+   "elo": 1482,
+   "games": 1,
+   "league": null
+  },
+  "18961": {
+   "name": "Cordino",
+   "elo": 1484,
+   "games": 1,
+   "league": null
+  },
+  "18963": {
+   "name": "Inter de Limeira",
+   "elo": 1497,
+   "games": 1,
+   "league": null
+  },
+  "18984": {
+   "name": "Royal Pari",
+   "elo": 1476,
+   "games": 4,
+   "league": null
+  },
+  "18985": {
+   "name": "Deportivo Binacional",
+   "elo": 1442,
+   "games": 24,
+   "league": "per.1"
+  },
+  "18995": {
+   "name": "Academia Puerto Cabello",
+   "elo": 1543,
+   "games": 97,
+   "league": "ven.1"
+  },
+  "19002": {
+   "name": "Montevideo City Torque",
+   "elo": 1626,
+   "games": 90,
+   "league": "uru.1"
+  },
+  "19195": {
+   "name": "Deportes Limache",
+   "elo": 1490,
+   "games": 54,
+   "league": "chi.1"
+  },
+  "19398": {
+   "name": "Bragantino PA",
+   "elo": 1486,
+   "games": 1,
+   "league": null
+  },
+  "19400": {
+   "name": "Operário MS",
+   "elo": 1497,
+   "games": 7,
+   "league": null
+  },
+  "19401": {
+   "name": "Ypiranga AP",
+   "elo": 1488,
+   "games": 1,
+   "league": null
+  },
+  "19425": {
+   "name": "Always Ready",
+   "elo": 1649,
+   "games": 83,
+   "league": "bol.1"
+  },
+  "19432": {
+   "name": "Alianza Universidad",
+   "elo": 1415,
+   "games": 35,
+   "league": "per.1"
+  },
+  "19433": {
+   "name": "Carlos A. Mannucci",
+   "elo": 1490,
+   "games": 2,
+   "league": null
+  },
+  "19685": {
+   "name": "Estudiantes de Río Cuarto",
+   "elo": 1359,
+   "games": 28,
+   "league": "arg.1"
+  },
+  "19961": {
+   "name": "Santa Cruz de Natal",
+   "elo": 1471,
+   "games": 1,
+   "league": null
+  },
+  "19962": {
+   "name": "Castanhal U20",
+   "elo": 1450,
+   "games": 4,
+   "league": null
+  },
+  "20291": {
+   "name": "Caucaia",
+   "elo": 1498,
+   "games": 1,
+   "league": null
+  },
+  "20292": {
+   "name": "Guaireña",
+   "elo": 1510,
+   "games": 10,
+   "league": null
+  },
+  "20293": {
+   "name": "Atlético Grau",
+   "elo": 1452,
+   "games": 70,
+   "league": "per.1"
+  },
+  "20654": {
+   "name": "Atlético Palmaflor",
+   "elo": 1476,
+   "games": 3,
+   "league": null
+  },
+  "20695": {
+   "name": "Orense",
+   "elo": 1447,
+   "games": 74,
+   "league": "ecu.1"
+  },
+  "20699": {
+   "name": "CEOV Operário",
+   "elo": 1471,
+   "games": 5,
+   "league": null
+  },
+  "20851": {
+   "name": "Athletic",
+   "elo": 1525,
+   "games": 10,
+   "league": null
+  },
+  "20852": {
+   "name": "Pouso Alegre",
+   "elo": 1490,
+   "games": 3,
+   "league": null
+  },
+  "20855": {
+   "name": "Sampaio Correa RJ",
+   "elo": 1497,
+   "games": 1,
+   "league": null
+  },
+  "20859": {
+   "name": "9 de Octubre",
+   "elo": 1485,
+   "games": 8,
+   "league": null
+  },
+  "20867": {
+   "name": "4 de Julho Piripiri",
+   "elo": 1500,
+   "games": 4,
+   "league": null
+  },
+  "20887": {
+   "name": "Inter de Barinas",
+   "elo": 1496,
+   "games": 2,
+   "league": null
+  },
+  "20889": {
+   "name": "Independiente Petrolero",
+   "elo": 1384,
+   "games": 64,
+   "league": "bol.1"
+  },
+  "20890": {
+   "name": "Real Tomayapo",
+   "elo": 1372,
+   "games": 58,
+   "league": "bol.1"
+  },
+  "20893": {
+   "name": "Rio Branco (Venda Nova)",
+   "elo": 1474,
+   "games": 3,
+   "league": null
+  },
+  "20894": {
+   "name": "Real Brasília",
+   "elo": 1484,
+   "games": 3,
+   "league": null
+  },
+  "20895": {
+   "name": "Picos",
+   "elo": 1498,
+   "games": 2,
+   "league": null
+  },
+  "20896": {
+   "name": "Retró",
+   "elo": 1516,
+   "games": 13,
+   "league": null
+  },
+  "20897": {
+   "name": "Porto Velho",
+   "elo": 1457,
+   "games": 8,
+   "league": null
+  },
+  "20898": {
+   "name": "Cascavel",
+   "elo": 1489,
+   "games": 7,
+   "league": null
+  },
+  "20899": {
+   "name": "Santa Cruz (RS)",
+   "elo": 1499,
+   "games": 1,
+   "league": null
+  },
+  "20900": {
+   "name": "Jaraguá",
+   "elo": 1488,
+   "games": 1,
+   "league": null
+  },
+  "20901": {
+   "name": "Juventude-MA",
+   "elo": 1491,
+   "games": 1,
+   "league": null
+  },
+  "20902": {
+   "name": "Nova Mutum",
+   "elo": 1497,
+   "games": 3,
+   "league": null
+  },
+  "21313": {
+   "name": "Sportivo Ameliano",
+   "elo": 1504,
+   "games": 91,
+   "league": "par.1"
+  },
+  "21314": {
+   "name": "ADT",
+   "elo": 1412,
+   "games": 65,
+   "league": "per.1"
+  },
+  "21316": {
+   "name": "General Caballero JLM",
+   "elo": 1444,
+   "games": 53,
+   "league": "par.1"
+  },
+  "21369": {
+   "name": "Guarany de Bagé",
+   "elo": 1508,
+   "games": 4,
+   "league": null
+  },
+  "21379": {
+   "name": "Universitario de Vinto",
+   "elo": 1347,
+   "games": 53,
+   "league": "bol.1"
+  },
+  "21383": {
+   "name": "Costa Rica EC",
+   "elo": 1473,
+   "games": 2,
+   "league": null
+  },
+  "21384": {
+   "name": "Azuriz",
+   "elo": 1499,
+   "games": 5,
+   "league": null
+  },
+  "21385": {
+   "name": "Humaita",
+   "elo": 1465,
+   "games": 4,
+   "league": null
+  },
+  "21386": {
+   "name": "Nova Venécia",
+   "elo": 1488,
+   "games": 3,
+   "league": null
+  },
+  "21387": {
+   "name": "Maricá",
+   "elo": 1492,
+   "games": 1,
+   "league": null
+  },
+  "21388": {
+   "name": "Gremio Anapolis",
+   "elo": 1499,
+   "games": 1,
+   "league": null
+  },
+  "21389": {
+   "name": "Tuna Luso",
+   "elo": 1501,
+   "games": 7,
+   "league": null
+  },
+  "21390": {
+   "name": "Tuntum",
+   "elo": 1478,
+   "games": 3,
+   "league": null
+  },
+  "21401": {
+   "name": "Fluminense PI",
+   "elo": 1456,
+   "games": 6,
+   "league": null
+  },
+  "21403": {
+   "name": "Albion FC",
+   "elo": 1466,
+   "games": 32,
+   "league": "uru.1"
+  },
+  "21550": {
+   "name": "Atletico Alagoinhas",
+   "elo": 1470,
+   "games": 4,
+   "league": null
+  },
+  "21553": {
+   "name": "Trem",
+   "elo": 1428,
+   "games": 5,
+   "league": null
+  },
+  "21819": {
+   "name": "Deportivo Garcilaso",
+   "elo": 1559,
+   "games": 71,
+   "league": "per.1"
+  },
+  "21843": {
+   "name": "Libertad (Ecuador)",
+   "elo": 1545,
+   "games": 73,
+   "league": "ecu.1"
+  },
+  "21850": {
+   "name": "Rayo Zuliano",
+   "elo": 1383,
+   "games": 58,
+   "league": "ven.1"
+  },
+  "21863": {
+   "name": "São Francisco AC",
+   "elo": 1498,
+   "games": 1,
+   "league": null
+  },
+  "21864": {
+   "name": "Marcílio Dias",
+   "elo": 1480,
+   "games": 3,
+   "league": null
+  },
+  "21865": {
+   "name": "Iguatu",
+   "elo": 1497,
+   "games": 3,
+   "league": null
+  },
+  "21866": {
+   "name": "Camboriu",
+   "elo": 1498,
+   "games": 2,
+   "league": null
+  },
+  "21867": {
+   "name": "Falcon",
+   "elo": 1485,
+   "games": 1,
+   "league": null
+  },
+  "21888": {
+   "name": "Amazonas",
+   "elo": 1528,
+   "games": 7,
+   "league": null
+  },
+  "21901": {
+   "name": "Ferroviário",
+   "elo": 1504,
+   "games": 8,
+   "league": null
+  },
+  "22137": {
+   "name": "San Antonio Bulo Bulo",
+   "elo": 1392,
+   "games": 60,
+   "league": "bol.1"
+  },
+  "22168": {
+   "name": "Los Chankas",
+   "elo": 1468,
+   "games": 63,
+   "league": "per.1"
+  },
+  "22174": {
+   "name": "GV San José",
+   "elo": 1398,
+   "games": 58,
+   "league": "bol.1"
+  },
+  "22189": {
+   "name": "GA Sampaio",
+   "elo": 1438,
+   "games": 3,
+   "league": null
+  },
+  "22190": {
+   "name": "Capital",
+   "elo": 1489,
+   "games": 3,
+   "league": null
+  },
+  "22191": {
+   "name": "Ji-Paraná FC",
+   "elo": 1497,
+   "games": 3,
+   "league": null
+  },
+  "22192": {
+   "name": "Itabuna",
+   "elo": 1470,
+   "games": 1,
+   "league": null
+  },
+  "22193": {
+   "name": "Independente AP",
+   "elo": 1474,
+   "games": 2,
+   "league": null
+  },
+  "22194": {
+   "name": "Manauara",
+   "elo": 1489,
+   "games": 3,
+   "league": null
+  },
+  "22275": {
+   "name": "aPetrolina",
+   "elo": 1500,
+   "games": 2,
+   "league": null
+  },
+  "22487": {
+   "name": "AE Velo Clube",
+   "elo": 1499,
+   "games": 2,
+   "league": null
+  },
+  "22489": {
+   "name": "Betim FC",
+   "elo": 1485,
+   "games": 2,
+   "league": null
+  },
+  "22517": {
+   "name": "Deportivo Recoleta",
+   "elo": 1415,
+   "games": 89,
+   "league": "par.1"
+  },
+  "22518": {
+   "name": "Club Atlético Tembetary",
+   "elo": 1407,
+   "games": 44,
+   "league": "par.1"
+  },
+  "22523": {
+   "name": "Real Oruro",
+   "elo": 1410,
+   "games": 51,
+   "league": "bol.1"
+  },
+  "22534": {
+   "name": "Juan Pablo II",
+   "elo": 1449,
+   "games": 64,
+   "league": "per.1"
+  },
+  "22535": {
+   "name": "Vinotinto",
+   "elo": 1418,
+   "games": 36,
+   "league": "ecu.1"
+  },
+  "22556": {
+   "name": "Barcelona RO",
+   "elo": 1473,
+   "games": 1,
+   "league": null
+  },
+  "22557": {
+   "name": "Capital CF",
+   "elo": 1502,
+   "games": 6,
+   "league": null
+  },
+  "22558": {
+   "name": "Dourados Atlético",
+   "elo": 1476,
+   "games": 1,
+   "league": null
+  },
+  "22559": {
+   "name": "Independência",
+   "elo": 1475,
+   "games": 2,
+   "league": null
+  },
+  "22560": {
+   "name": "Jequié",
+   "elo": 1485,
+   "games": 1,
+   "league": null
+  },
+  "22561": {
+   "name": "Maracanã",
+   "elo": 1467,
+   "games": 5,
+   "league": null
+  },
+  "22562": {
+   "name": "Barcelona BA",
+   "elo": 1484,
+   "games": 1,
+   "league": null
+  },
+  "130864": {
+   "name": "CSE",
+   "elo": 1475,
+   "games": 1,
+   "league": null
+  },
+  "130868": {
+   "name": "Concordia",
+   "elo": 1490,
+   "games": 2,
+   "league": null
+  },
+  "130873": {
+   "name": "Uniáo TO",
+   "elo": 1502,
+   "games": 2,
+   "league": null
+  },
+  "130875": {
+   "name": "ABB",
+   "elo": 1363,
+   "games": 51,
+   "league": "bol.1"
+  },
+  "131564": {
+   "name": "Primavera SP",
+   "elo": 1522,
+   "games": 2,
+   "league": null
+  },
+  "131654": {
+   "name": "Deportivo Moquegua",
+   "elo": 1400,
+   "games": 28,
+   "league": "per.1"
+  },
+  "131655": {
+   "name": "FC Cajamarca",
+   "elo": 1436,
+   "games": 28,
+   "league": "per.1"
+  },
+  "131670": {
+   "name": "Araguaiana",
+   "elo": 1465,
+   "games": 1,
+   "league": null
+  },
+  "131671": {
+   "name": "Bare",
+   "elo": 1464,
+   "games": 1,
+   "league": null
+  },
+  "131672": {
+   "name": "Clube Laguna",
+   "elo": 1486,
+   "games": 1,
+   "league": null
+  },
+  "131673": {
+   "name": "Porta BA",
+   "elo": 1487,
+   "games": 2,
+   "league": null
+  },
+  "131674": {
+   "name": "Guapore",
+   "elo": 1477,
+   "games": 2,
+   "league": null
+  },
+  "131676": {
+   "name": "Santa Catarina",
+   "elo": 1496,
+   "games": 3,
+   "league": null
+  },
+  "131677": {
+   "name": "América SE",
+   "elo": 1497,
+   "games": 1,
+   "league": null
+  },
+  "131678": {
+   "name": "Tirol",
+   "elo": 1507,
+   "games": 2,
+   "league": null
+  },
+  "131679": {
+   "name": "Primavera MG",
+   "elo": 1503,
+   "games": 2,
+   "league": null
+  },
+  "131680": {
+   "name": "Serra Branca",
+   "elo": 1486,
+   "games": 1,
+   "league": null
+  },
+  "131681": {
+   "name": "Maguary PE",
+   "elo": 1502,
+   "games": 2,
+   "league": null
+  },
+  "131682": {
+   "name": "Monte Roraima",
+   "elo": 1479,
+   "games": 1,
+   "league": null
+  },
+  "131683": {
+   "name": "Vasco da Gama AC",
+   "elo": 1497,
+   "games": 1,
+   "league": null
+  },
+  "131684": {
+   "name": "IAPE",
+   "elo": 1480,
+   "games": 1,
+   "league": null
+  },
+  "131685": {
+   "name": "Pantanal Corumba",
+   "elo": 1480,
+   "games": 1,
+   "league": null
+  },
+  "131686": {
+   "name": "SC Penedense",
+   "elo": 1486,
+   "games": 1,
+   "league": null
+  },
+  "131687": {
+   "name": "Porto Vitória FC",
+   "elo": 1476,
+   "games": 1,
+   "league": null
+  },
+  "131688": {
+   "name": "Central Español Fútbol Club",
+   "elo": 1445,
+   "games": 32,
+   "league": "uru.1"
+  },
+  "131702": {
+   "name": "Leones",
+   "elo": 1492,
+   "games": 32,
+   "league": "ecu.1"
+  },
+  "131708": {
+   "name": "Barra FC",
+   "elo": 1481,
+   "games": 4,
+   "league": null
+  }
+ }
+}
