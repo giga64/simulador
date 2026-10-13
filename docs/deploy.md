@@ -9,6 +9,19 @@ Uma única instância Node com um volume persistente é a configuração mais
 simples. Em produção, defina `NODE_ENV=production`: o servidor escuta em
 `0.0.0.0:$PORT`, envia `Strict-Transport-Security` e força HTTPS no conteúdo.
 
+## Build
+
+No Render (ou equivalente):
+
+- **Build command:** `npm ci && npm run build`
+- **Start command:** `npm start`, com `NODE_ENV=production`
+
+Com `NODE_ENV=production` e a pasta `dist/` presente, o servidor entrega o build:
+JavaScript e CSS minificados com hash no nome, em cache por 1 ano, e
+compressão brotli/gzip. Sem `dist/`, ele avisa no log e entrega os arquivos de
+origem (mais lento, mas funciona). `SERVE_DIST=1` força o build fora de
+produção.
+
 ## Variáveis de ambiente
 
 | Variável                                       | Para quê                                                                                                                                                    |
@@ -21,6 +34,8 @@ simples. Em produção, defina `NODE_ENV=production`: o servidor escuta em
 | `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`     | Contas, palpites sincronizados, cenários salvos e favoritos.                                                                                                |
 | `SUPABASE_SERVICE_ROLE_KEY`                    | **Secreta**, só no servidor. Liga exclusão de conta, links curtos de cenário e notificações push.                                                           |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Notificações push. Gere com `npm run vapid`; `VAPID_SUBJECT` é `mailto:seu-email`.                                                                  |
+| `ALERT_WEBHOOK_URL`                            | Opcional. Webhook (https) do Discord ou do Slack para avisar quando o GE ou a ESPN ficam fora do ar por muito tempo e quando voltam. |
+| `SIMULABR_FIXTURES=1`                          | Só para testes: usa dados fixos de `test/fixtures` em vez do GE e da ESPN.                                                  |
 | `ODDS_API_KEY`                                 | Opcional. Chave da [the-odds-api.com](https://the-odds-api.com) para comparar o modelo com as casas de apostas (4 consultas por dia).                         |
 
 Ao iniciar, o servidor lista quais recursos ficaram ativos.
@@ -71,13 +86,33 @@ snapshot da temporada.
 - **Sessão:** o login usa Supabase Auth com sessão em `sessionStorage`; nenhuma
   senha passa pelo servidor do SimulaBR.
 
+## Monitoramento
+
+- **`/api/health`** responde 200 quando tudo está bem e **503** quando o GE ou
+  a ESPN estão falhando há mais tempo que o limite. Cadastre esse endereço num
+  monitor externo (UptimeRobot, Better Stack...) para ser avisado.
+- **Alerta de fonte:** se uma fonte falhar por mais de 30 minutos em dia de jogo
+  (2 horas nos outros dias), o servidor escreve `[alerta]` no log e, com
+  `ALERT_WEBHOOK_URL`, avisa no webhook. Avisa de novo quando a fonte volta.
+- **Erros dos visitantes:** erros de JavaScript no navegador vão para
+  `RUNTIME_DIR/client-errors.log` (JSON por linha, rotação a 1 MB), sem dados
+  pessoais e sem a query string, que pode ter o código do cenário.
+
+## Busca (Google)
+
+Cada tela tem endereço próprio (`/clube/flamengo`, `/chances/vagas`,
+`/copas/libertadores`, `/rodada/31`...). O servidor entrega cada um com título,
+descrição, canonical e imagem próprios, usando os números atuais. Há
+`/sitemap.xml` e `/robots.txt`. Defina `SITE_URL` para os endereços do sitemap
+e do canonical saírem absolutos, e cadastre o sitemap no Google Search Console.
+
 ## Cache e app instalável
 
-Arquivos estáticos são servidos com `ETag`. Imagens e fontes ficam em cache por
-um dia; HTML, JavaScript, CSS e JSON são revalidados a cada acesso, porque os
-nomes não têm hash. O service worker (`sw.js`) busca sempre na rede e usa o
-cache só sem conexão; para descartar o cache antigo nos navegadores, troque a
-constante `CACHE`. As notificações push também passam por ele.
+Em produção, os arquivos de `dist/assets/build/` (com hash no nome) ficam em
+cache por 1 ano; imagens e fontes por um dia; HTML, JSON e `sw.js` são
+revalidados a cada acesso (`ETag`). O service worker busca sempre na rede e usa
+o cache só sem conexão; o build gera a lista de arquivos e um nome de cache
+novo a cada versão. As notificações push também passam por ele.
 
 ## Notificações push
 

@@ -188,3 +188,59 @@ amostras pequenas não são evidência de desempenho futuro.
 Em telas estreitas, tabelas e relatórios rolam horizontalmente dentro de regiões
 identificadas. Os campos de placar e os controles principais têm alvos de toque
 maiores; as abas também aceitam navegação por setas, Home e End.
+
+## Copas
+
+### Fontes e licenças
+
+| Fonte | Uso | Licença |
+| ----- | --- | ------- |
+| ESPN (`site.api.espn.com`, slugs `conmebol.libertadores`, `conmebol.sudamericana`, `bra.copa_do_brazil`) | Jogos, grupos e chaveamento de 2026; resultados 2021–2026 das copas e das dez ligas nacionais para o Elo | API pública não oficial, sem licença aberta. Os dados brutos ficam só em `.runtime/` (fora do repositório); no repositório vão apenas as notas derivadas |
+| [openfootball/south-america](https://github.com/openfootball/south-america) | 3.750 jogos 2012–2025 (Libertadores, Sul-Americana, Copa do Brasil 2025) para média de gols, mando e pênaltis | CC0 1.0 (domínio público) |
+| TheSportsDB (chave pública `3`) | Logos das competições e escudos que a ESPN não tem | Uso conforme os termos do site; imagens baixadas, sem hotlink |
+| Imprensa sobre os regulamentos 2026 (El Gráfico, 24horas, O Imparcial, Band, NetVasco, Soccerway) | Regras de cada fase e vagas para 2027 | — |
+
+Não há dados abertos da Libertadores 2011 nem da Copa do Brasil antes de 2025
+no openfootball; a ESPN tem esses anos, mas sem licença de redistribuição, então
+eles entram só no Elo (como dado derivado).
+
+### Formato e regras (`src/competitions/formats.js`)
+
+Cada regra tem a fonte e um campo `confirmed`. Não confirmadas no texto
+oficial, e por isso configuráveis:
+
+- prorrogação antes dos pênaltis na final única da Copa do Brasil (padrão: não);
+- critérios de desempate da fase de grupos da Sul-Americana (assumidos iguais
+  aos da Libertadores 2026).
+
+### Força dos clubes (`npm run build:ratings`)
+
+- **Elo** de 411 clubes com 8.493 jogos: K 30 em copas e 20 em ligas, ganho
+  maior para goleadas, 20% de regressão à média por temporada e duas passadas
+  para estabilizar clubes com poucos jogos.
+- **Mando de campo medido**: por liga nos campeonatos nacionais e, nas copas
+  contra estrangeiros, por país, controlando a força dos times (o valor que
+  faz o resultado esperado bater com o real). Brasileiros e argentinos têm o
+  mando mais forte nas copas.
+- **Gols**: Poisson com `λ = exp(base + mando + inclinação × ΔElo/400)`; base e
+  mando vêm do histórico do openfootball, a inclinação é ajustada por máxima
+  verossimilhança nos jogos de copa de 2024–2026.
+- **Editável**: `data/club-ratings-overrides.json` (para todos) e os botões − e
+  + na aba Copas (só no navegador de cada visitante).
+
+### Simulação
+
+O mata-mata é simulado com o mesmo número de cenários e a mesma semente do
+Brasileirão (10.000). Jogos ao vivo partem do placar atual; empate no agregado
+vai à prorrogação só onde o regulamento manda e, depois, aos pênaltis (50%
+para cada lado, como no histórico de 2012–2025).
+
+### Vagas na Libertadores 2027
+
+Regra da CBF para 2026: 5 vagas pelo Brasileirão (1º–4º na fase de grupos, 5º na
+preliminar) e 2 pelos finalistas da Copa do Brasil (campeão nos grupos, vice na
+preliminar); campeões brasileiros da Libertadores e da Sul-Americana ganham
+vaga extra. Quando um classificado pelas copas já está no G5, a vaga desce na
+tabela. A aba **Chances › Vagas 2027** combina, simulação a simulação, o
+Brasileirão com as três copas. Não simula a exigência de o clube estar na Série
+A no ano da Libertadores.

@@ -3208,6 +3208,26 @@ import {
           'https://github.com/Lobobinho/Escudos-dos-Clubes-do-Brasileirao-2026',
           'Imagens dos escudos. As marcas pertencem aos respectivos clubes.',
         ],
+        [
+          'Copas 2026 · ESPN',
+          'https://www.espn.com.br/futebol/',
+          'Jogos, grupos e chaveamento da Libertadores, da Sul-Americana e da Copa do Brasil, e os resultados de 2021–2026 usados no Elo. API pública não oficial, sem licença aberta: o site mostra os dados com a fonte e guarda só as notas derivadas.',
+        ],
+        [
+          'Histórico das copas 2012–2025 · openfootball (licença CC0 1.0)',
+          'https://github.com/openfootball/south-america',
+          'Domínio público. 3.750 jogos da Libertadores e da Sul-Americana (2012–2025) e da Copa do Brasil (2025), usados para a média de gols, o mando e os pênaltis do modelo das copas. Não inclui a Libertadores 2011 nem a Copa do Brasil antes de 2025.',
+        ],
+        [
+          'Escudos e logos das copas · ESPN e TheSportsDB',
+          'https://www.thesportsdb.com/',
+          'Baixados para o próprio site (sem carregar imagens de terceiros). As marcas pertencem aos clubes e às competições.',
+        ],
+        [
+          'Regulamentos 2026 · CONMEBOL e CBF (pela imprensa)',
+          'https://www.conmebol.com/',
+          'Gol fora de casa abolido, prorrogação só na final, final única da Copa do Brasil e as 7 vagas do Brasil na Libertadores 2027. O PDF oficial não estava acessível; regras não confirmadas aparecem marcadas na aba Copas.',
+        ],
       ];
       const k = SET.k;
       $('#v-src').innerHTML =
