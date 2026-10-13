@@ -47,8 +47,29 @@
   --shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 10px 30px -18px rgba(0, 0, 0, 0.7);
   --font: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: #f4f6f5;
+  --s1: #ffffff;
+  --s2: #f4f7f5;
+  --s3: #eaf0ec;
+  --ln: rgba(16, 32, 24, 0.08);
+  --ln2: rgba(16, 32, 24, 0.15);
+  --tx: #111a16;
+  --mu: #5a6d64;
+  --mu2: #8a9b93;
+  --ac: #a37a0e;
+  --ac-ink: #ffffff;
+  --g: #14a463;
+  --b: #2f73cb;
+  --r: #d4473a;
+  --live: #e0362b;
+  --hl: rgba(163, 122, 14, 0.09);
+  --focus: rgba(163, 122, 14, 0.45);
+  --shadow: 0 1px 2px rgba(16, 32, 24, 0.04), 0 8px 24px -16px rgba(16, 32, 24, 0.18);
+}
 @media (prefers-color-scheme: light) {
-  :root {
+  :root:not([data-theme='dark']) {
     color-scheme: light;
     --bg: #f4f6f5;
     --s1: #ffffff;
@@ -69,6 +90,9 @@
     --focus: rgba(163, 122, 14, 0.45);
     --shadow: 0 1px 2px rgba(16, 32, 24, 0.04), 0 8px 24px -16px rgba(16, 32, 24, 0.18);
   }
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
 }
 
 /* ---------- Base ---------- */
@@ -1870,16 +1894,28 @@ form label {
   --cup-b: #f2cf2e;
   --hl: rgba(47, 191, 106, 0.13);
 }
+:root[data-theme='light'][data-cup='libertadores'] {
+  --ac: #8f6a0c;
+  --ac-ink: #ffffff;
+}
+:root[data-theme='light'][data-cup='sudamericana'] {
+  --ac: #1667c9;
+  --ac-ink: #ffffff;
+}
+:root[data-theme='light'][data-cup='copaDoBrasil'] {
+  --ac: #12844a;
+  --ac-ink: #ffffff;
+}
 @media (prefers-color-scheme: light) {
-  :root[data-cup='libertadores'] {
+  :root:not([data-theme='dark'])[data-cup='libertadores'] {
     --ac: #8f6a0c;
     --ac-ink: #ffffff;
   }
-  :root[data-cup='sudamericana'] {
+  :root:not([data-theme='dark'])[data-cup='sudamericana'] {
     --ac: #1667c9;
     --ac-ink: #ffffff;
   }
-  :root[data-cup='copaDoBrasil'] {
+  :root:not([data-theme='dark'])[data-cup='copaDoBrasil'] {
     --ac: #12844a;
     --ac-ink: #ffffff;
   }
@@ -2062,4 +2098,24 @@ form label {
     grid-template-columns: 1.1fr 1fr;
     align-items: center;
   }
+}
+.math-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.math-list li {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--s2);
+  border: 1px solid var(--ln);
+  font-size: 0.88rem;
+}
+.math-list li.ok {
+  border-color: color-mix(in srgb, var(--g) 45%, transparent);
+}
+.math-list li.no {
+  color: var(--mu);
 }

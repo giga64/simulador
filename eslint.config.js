@@ -5,7 +5,7 @@ export default [
   { ignores: ['node_modules/', '.runtime/'] },
   js.configs.recommended,
   {
-    files: ['app.js', 'sw.js', 'src/client/**/*.js', 'src/model/**/*.js', 'src/*.js'],
+    files: ['app.js', 'sw.js', 'theme.js', 'src/client/**/*.js', 'src/model/**/*.js', 'src/*.js'],
     languageOptions: { ecmaVersion: 2024, sourceType: 'module', globals: { ...globals.browser } },
   },
   {

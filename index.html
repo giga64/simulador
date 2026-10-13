@@ -29,6 +29,7 @@
     <meta property="og:locale" content="pt_BR" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="/assets/og-image.png" />
+    <script src="theme.js"></script>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -49,6 +50,9 @@
         <div class="top-actions">
           <button id="statusPill" class="status-pill" type="button" data-act="show-view" data-view="src">
             <i aria-hidden="true"></i><span>Carregando…</span>
+          </button>
+          <button id="themeButton" class="icon-btn" type="button" data-act="toggle-theme" aria-label="Tema: automático">
+            <span data-i="theme"></span>
           </button>
           <button
             class="icon-btn"
@@ -75,6 +79,7 @@
             <p class="mu">Defina placares e veja a tabela e as chances mudarem na hora.</p>
           </div>
           <div class="row">
+            <button class="btn" type="button" data-act="open-compare"><span data-i="cols"></span>Comparar</button>
             <button class="btn" type="button" data-act="share"><span data-i="share"></span>Compartilhar</button>
           </div>
         </div>

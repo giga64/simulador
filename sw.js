@@ -6,6 +6,7 @@ const PRECACHE = [
   '/index.html',
   '/app.js',
   '/styles.css',
+  '/theme.js',
   '/manifest.webmanifest',
   '/assets/logos.json',
   '/assets/simulabr-logo.webp',

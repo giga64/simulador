@@ -18,6 +18,7 @@ import { libertadoresSlots } from './src/competitions/qualification.js';
 import { createStrength, simulateKnockout } from './src/competitions/simulate.js';
 import { backtestModel } from './src/model/backtest.js';
 import { buildSplitTable, SPLIT_MODES } from './src/model/standings-splits.js';
+import { clinchSafety, clinchTopN, describeGoal } from './src/model/math-scenarios.js';
 import {
   decodeScenarioPayload,
   encodeScenarioPayload,
@@ -849,6 +850,15 @@ import {
       accountDialog.hidden = true;
       document.querySelector('#accountButton')?.focus();
     }
+    function updateThemeButton() {
+      const button = $('#themeButton');
+      if (!button) return;
+      const theme = document.documentElement.dataset.theme || 'auto';
+      button.innerHTML = ic({ auto: 'theme', light: 'sun', dark: 'moon' }[theme]);
+      const label = `Tema: ${{ auto: 'automático', light: 'claro', dark: 'escuro' }[theme]}. Clique para trocar.`;
+      button.setAttribute('aria-label', label);
+      button.title = label;
+    }
     function renderAccountButton() {
       const button = $('#accountButton');
       if (!button) return;
@@ -989,6 +999,9 @@ import {
       }
     }
     const IC = {
+      theme: '<circle cx="12" cy="12" r="8"/><path d="M12 4v16a8 8 0 000-16z" fill="currentColor"/>',
+      sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+      moon: '<path d="M20 14.5A8 8 0 019.5 4 8 8 0 1020 14.5z"/>',
       search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
       user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>',
       bell: '<path d="M6 8a6 6 0 0112 0c0 7 3 8 3 8H3s3-1 3-8M10 20a2 2 0 004 0"/>',
@@ -1129,13 +1142,14 @@ import {
     }
     // liveFromStart: simula os jogos ao vivo desde o início, para comparar a
     // chance "antes do jogo" com a chance com o placar atual.
-    function monteCarloInput({ liveFromStart = false } = {}) {
+    function monteCarloInput({ liveFromStart = false, scoresOverride = null } = {}) {
       const rounds = leverageRounds(),
-        scores = new Map();
-      M.forEach((m) => {
-        const score = val(m.k);
-        if (score) scores.set(m.k, score);
-      });
+        scores = scoresOverride || new Map();
+      if (!scoresOverride)
+        M.forEach((m) => {
+          const score = val(m.k);
+          if (score) scores.set(m.k, score);
+        });
       const { index, tracked, input } = buildSimulationInput({
         teams: T,
         base,
@@ -2321,6 +2335,128 @@ import {
           '',
         )}</tbody></table></div><p class="mu xs footnote">Regra da CBF para 2026 (fonte em Copas › Regras). Não simula a exigência de estar na Série A no ano da Libertadores. As copas usam a força Elo e os seus ajustes da aba Copas.</p></section>`;
     }
+    // ---- Contas matemáticas (aba Clubes) ----
+    function mathCard(code) {
+      const current = project({ includeScenario: false });
+      const stats = Object.fromEntries(T.map((club) => [club, { P: current[club].P, J: current[club].J }]));
+      const name = NM[code];
+      const goals = [
+        [{ verb: 'ser campeão', noun: 'o título' }, clinchTopN(stats, code, 1)],
+        [
+          { verb: `terminar no G${Q.libertadoresLeaguePositions}`, noun: `vaga no G${Q.libertadoresLeaguePositions}` },
+          clinchTopN(stats, code, Q.libertadoresLeaguePositions),
+        ],
+        [
+          {
+            verb: `terminar até o ${Q.sudamericanaLeagueEnd}º`,
+            noun: `vaga continental (até o ${Q.sudamericanaLeagueEnd}º)`,
+          },
+          clinchTopN(stats, code, Q.sudamericanaLeagueEnd),
+        ],
+        [
+          { verb: `escapar do Z${Q.relegationPlaces}`, noun: 'a permanência na Série A' },
+          clinchSafety(stats, code, Q.relegationPlaces),
+        ],
+      ];
+      return `<section class="cd"><h2>Contas matemáticas</h2><ul class="math-list">${goals
+        .map(
+          ([goal, result]) =>
+            `<li class="${result.clinched ? 'ok' : result.impossible ? 'no' : ''}">${escapeHtml(describeGoal(result, { ...goal, teamName: name }))}</li>`,
+        )
+        .join(
+          '',
+        )}</ul><p class="mu xs footnote">Conta garantida: supõe que todos os rivais vencem tudo o que falta e pede 1 ponto a mais para não depender de desempate. Quando os rivais ainda se enfrentam, o número exato pode ser menor. Jogos ao vivo não entram.</p></section>`;
+    }
+
+    // ---- Comparar cenários ----
+    const runComparison = createSimulationRunner(new URL('./src/model/monte-carlo.worker.js', import.meta.url));
+    function summaryOf(result, index) {
+      return Object.fromEntries(
+        T.map((code) => {
+          const counts = result.PC[index[code]],
+            share = (first, last) => {
+              let total = 0;
+              for (let position = first; position <= last; position++) total += counts[position];
+              return (total / result.N) * 100;
+            };
+          let mean = 0;
+          result.PH[index[code]].forEach((count, points) => (mean += count * points));
+          return [
+            code,
+            {
+              points: mean / result.N,
+              title: share(0, 0),
+              lib: share(0, Q.libertadoresLeaguePositions - 1),
+              z: share(T.length - Q.relegationPlaces, T.length - 1),
+            },
+          ];
+        }),
+      );
+    }
+    function scoresOf(payload) {
+      const scores = new Map();
+      for (const m of M) {
+        if (isLive(m.k)) continue;
+        const value = payload?.scores?.[m.k];
+        if (value && value[0] !== '' && value[1] !== '') scores.set(m.k, [Number(value[0]), Number(value[1])]);
+      }
+      return scores;
+    }
+    function openCompare() {
+      modalReturnFocus = document.activeElement;
+      const saved = savedScenarios
+        .map((item) => `<option value="saved:${escapeHtml(item.id)}">Salvo: ${escapeHtml(item.name)}</option>`)
+        .join('');
+      $('#mb').innerHTML =
+        `<div class="card-head"><h2 id="compare-title">Comparar cenários</h2><button class="ic" data-act="close-modal" aria-label="Fechar">${ic('x')}</button></div><p class="mu sm">Compare o seu cenário atual (A) com outro (B), nas mesmas ${SIMULATIONS_LABEL} simulações.</p><label for="compareWith">Cenário B</label><select id="compareWith" data-change="compare-with"><option value="base">Tabela atual, sem palpites</option>${saved}<option value="code">Colar código ou link</option></select><div id="compareCode" hidden><label for="compareCodeInput">Código B28 ou link compartilhado</label><textarea id="compareCodeInput" placeholder="Cole aqui o código ou o link"></textarea></div><div class="row" style="margin-top:10px"><button class="p" data-act="run-compare">Comparar</button></div><div id="compareResult" role="status" aria-live="polite"></div>`;
+      $('#mod').setAttribute('aria-labelledby', 'compare-title');
+      $('#mod').hidden = false;
+      $('#compareWith').focus();
+    }
+    async function runCompare() {
+      const choice = $('#compareWith').value,
+        output = $('#compareResult');
+      let payload = null,
+        label = 'sem palpites';
+      try {
+        if (choice.startsWith('saved:')) {
+          const saved = savedScenarios.find((item) => item.id === choice.slice(6));
+          if (!saved) throw new Error('Cenário salvo não encontrado.');
+          payload = saved.scenario;
+          label = saved.name;
+        } else if (choice === 'code') {
+          const raw = $('#compareCodeInput').value.trim();
+          const fromLink = /[?&]scenario=([A-Za-z0-9_-]+)/.exec(raw)?.[1];
+          payload = payloadFromCode(fromLink ? `B28:${fromLink}` : raw);
+          label = 'cenário colado';
+        }
+      } catch (error) {
+        output.innerHTML = `<p class="warn sm">${escapeHtml(error.message)}</p>`;
+        return;
+      }
+      output.innerHTML = '<p class="mu sm">Simulando…</p>';
+      const mine = monteCarloInput({ scoresOverride: scoresOf(payloadFromState()) });
+      const other = monteCarloInput({ scoresOverride: scoresOf(payload) });
+      const [resultA, resultB] = [await runComparison(mine.input), await runComparison(other.input)];
+      if (!resultA || !resultB) return;
+      const a = summaryOf(resultA, mine.idx),
+        b = summaryOf(resultB, other.idx);
+      const rows = T.slice().sort((x, y) => b[y].points - b[x].points);
+      const diff = (value, invert = false) => {
+        const good = invert ? -value : value;
+        return Math.abs(value) < 0.5
+          ? '<span class="mu">=</span>'
+          : `<span class="delta ${good > 0 ? 'up' : 'dn'}">${signed(value)}</span>`;
+      };
+      output.innerHTML = `<div class="sc" style="margin-top:12px"><table><thead><tr><th class="l">Clube</th><th>Pontos A</th><th>Pontos B</th><th>Título A / B</th><th>G${Q.libertadoresLeaguePositions} A / B</th><th>Z${Q.relegationPlaces} A / B</th></tr></thead><tbody>${rows
+        .map(
+          (code) =>
+            `<tr><td class="l"><span class="tn">${lg(code)}${ab(code)}</span></td><td>${Math.round(a[code].points)}</td><td>${Math.round(b[code].points)} ${diff(b[code].points - a[code].points)}</td><td>${pc(a[code].title)} / ${pc(b[code].title)}</td><td>${pc(a[code].lib)} / ${pc(b[code].lib)}</td><td>${pc(a[code].z)} / ${pc(b[code].z)} ${diff(b[code].z - a[code].z, true)}</td></tr>`,
+        )
+        .join(
+          '',
+        )}</tbody></table></div><p class="mu xs">A = seu cenário atual · B = ${escapeHtml(label)}. Diferenças em pontos e em pontos percentuais.</p>`;
+    }
     function renderClubProfile() {
       const code = statsTeam || T[0],
         entry = LIVE_STANDINGS?.get(code),
@@ -2480,7 +2616,7 @@ import {
       if (profile)
         profile.insertAdjacentHTML(
           'afterend',
-          clubChanceCard(statsTeam || T[0]) + renderClubProgress(statsTeam || T[0]),
+          mathCard(statsTeam || T[0]) + clubChanceCard(statsTeam || T[0]) + renderClubProgress(statsTeam || T[0]),
         );
     }
     function renderRoundHistory() {
@@ -3610,6 +3746,28 @@ import {
     function runAction(button) {
       const { act } = button.dataset;
       switch (act) {
+        case 'toggle-theme': {
+          const order = ['auto', 'light', 'dark'];
+          const current = document.documentElement.dataset.theme || 'auto';
+          const next = order[(order.indexOf(current) + 1) % order.length];
+          if (next === 'auto') delete document.documentElement.dataset.theme;
+          else document.documentElement.dataset.theme = next;
+          try {
+            if (next === 'auto') localStorage.removeItem('br26-theme');
+            else localStorage.setItem('br26-theme', next);
+          } catch {
+            // vale só nesta visita
+          }
+          updateThemeButton();
+          notify(`Tema: ${{ auto: 'automático (segue o sistema)', light: 'claro', dark: 'escuro' }[next]}.`);
+          break;
+        }
+        case 'open-compare':
+          openCompare();
+          break;
+        case 'run-compare':
+          runCompare();
+          break;
         case 'cup-select':
           if (!COMPETITION_IDS.includes(button.dataset.cup)) throw new Error('Competição inválida.');
           CUPS.active = button.dataset.cup;
@@ -3904,6 +4062,8 @@ import {
       } else if (action === 'history-round') {
         selectedHistoryRound = Number(input.value);
         renderStats();
+      } else if (action === 'compare-with') {
+        $('#compareCode').hidden = input.value !== 'code';
       } else if (action === 'trend-metric') {
         trendMetric = input.value;
         trendClubs = null;
@@ -4023,6 +4183,7 @@ import {
       else openAccountDialog();
     });
     updateSourceStatus();
+    updateThemeButton();
     $('#leg-lib').textContent = `1º–${Q.libertadoresLeaguePositions}º Libertadores`;
     $('#leg-sud').textContent = `${Q.sudamericanaLeagueStart}º–${Q.sudamericanaLeagueEnd}º Sul-Americana`;
     $('#leg-releg').textContent = `${T.length - Q.relegationPlaces + 1}º–${T.length}º rebaixamento`;
