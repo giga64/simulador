@@ -66,7 +66,7 @@ export function createPushNotifier({ vapid, adminClient, teamNames, logger = con
         const payload = JSON.stringify({
           ...pushMessage(event, teamNames),
           tag: `jogo-${event.fixtureId}`,
-          url: '/?view=live',
+          url: '/ao-vivo',
         });
         let subscriptions = [];
         try {

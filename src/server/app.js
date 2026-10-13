@@ -3,6 +3,7 @@
 import { createHash } from 'node:crypto';
 import { createReadStream, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
+import { brotliCompressSync, constants as zlibConstants, gzipSync } from 'node:zlib';
 import { decodeScenarioPayload, pruneCompletedScenarioScores, validateScenarioPayload } from '../scenario.js';
 import { isPublicPath } from '../static-paths.js';
 import { clientIp, createRateLimiter, readJsonBody, securityHeaders, sendJson, sendText } from './http.js';
@@ -25,11 +26,19 @@ const MIME_TYPES = new Map([
   ['.txt', 'text/plain; charset=utf-8'],
 ]);
 const LONG_CACHE = new Set(['.webp', '.png', '.svg', '.ico', '.woff2']);
+const COMPRESSIBLE = new Set(['.js', '.css', '.json', '.html', '.svg', '.webmanifest', '.txt', '.map']);
+function pickEncoding(request) {
+  const accepted = String(request.headers['accept-encoding'] || '');
+  if (/\bbr\b/.test(accepted)) return 'br';
+  if (/\bgzip\b/.test(accepted)) return 'gzip';
+  return null;
+}
 const SHARE_ID = /^[A-Za-z0-9_-]{10}$/;
 const MAX_SCENARIO_CODE = 30_000;
 
 export function createRequestHandler({
   root,
+  staticRoot = root,
   production = false,
   trustProxy = false,
   siteUrl = '',
@@ -56,7 +65,21 @@ export function createRequestHandler({
   // Consulta forçada à fonte no máximo a cada 20 s, para todos os visitantes juntos.
   let lastForcedRefresh = 0;
   const imageCache = new Map();
-  const indexHtml = () => readFileSync(path.join(root, 'index.html'), 'utf8');
+  // Com build (dist/), entrega tudo o que está lá: a pasta só tem arquivos públicos.
+  const distMode = staticRoot !== root;
+  // Lê de novo só quando o arquivo muda (um build novo nunca fica preso no antigo).
+  let cachedIndex = { mtime: 0, html: '' };
+  const indexHtml = () => {
+    const file = path.join(staticRoot, 'index.html');
+    const { mtimeMs } = statSync(file);
+    if (mtimeMs !== cachedIndex.mtime) cachedIndex = { mtime: mtimeMs, html: readFileSync(file, 'utf8') };
+    return cachedIndex.html;
+  };
+  const isServable = (relative) =>
+    distMode
+      ? relative.split(/[\\/]/).every((segment) => segment && !segment.startsWith('.')) && relative !== 'build.json'
+      : isPublicPath(relative);
+  const compressedCache = new Map();
   const absolute = (pathname) => (siteUrl ? new URL(pathname, siteUrl).href : pathname);
 
   const tooMany = (response, retryAfter) =>
@@ -123,13 +146,17 @@ export function createRequestHandler({
       url: siteUrl ? absolute(path) : null,
       image: imagePath ? absolute(imagePath) : siteUrl ? absolute('/assets/og-image.png') : null,
     });
+    const encoding = pickEncoding(response.req);
+    const body = encoding === 'br' ? brotliCompressSync(html) : encoding === 'gzip' ? gzipSync(html) : html;
     response
       .writeHead(200, {
         'Cache-Control': 'no-cache',
         'Content-Type': 'text/html; charset=utf-8',
+        Vary: 'Accept-Encoding',
+        ...(encoding ? { 'Content-Encoding': encoding } : {}),
         ...securityHeaders({ production, html: true }),
       })
-      .end(html);
+      .end(body);
   }
 
   // Endereço base para o sitemap: SITE_URL ou o Host da requisição (validado).
@@ -142,9 +169,9 @@ export function createRequestHandler({
   }
 
   function serveStatic(request, response, relative) {
-    if (!isPublicPath(relative)) return sendText(response, 404, 'Not found', securityHeaders({ production }));
-    const filePath = path.resolve(root, relative);
-    if (!filePath.startsWith(`${root}${path.sep}`)) return sendText(response, 403, 'Forbidden');
+    if (!isServable(relative)) return sendText(response, 404, 'Not found', securityHeaders({ production }));
+    const filePath = path.resolve(staticRoot, relative);
+    if (!filePath.startsWith(`${staticRoot}${path.sep}`)) return sendText(response, 403, 'Forbidden');
     let stats;
     try {
       stats = statSync(filePath);
@@ -154,10 +181,17 @@ export function createRequestHandler({
     }
     const extension = path.extname(filePath).toLowerCase();
     const etag = `W/"${stats.size.toString(16)}-${Math.floor(stats.mtimeMs).toString(16)}"`;
+    // Arquivos do build têm hash no nome: podem ficar em cache por 1 ano.
+    const hashed = distMode && /^assets\/build\//.test(relative.replace(/\\/g, '/'));
     const headers = {
-      'Cache-Control': LONG_CACHE.has(extension) ? 'public, max-age=86400' : 'no-cache',
+      'Cache-Control': hashed
+        ? 'public, max-age=31536000, immutable'
+        : LONG_CACHE.has(extension)
+          ? 'public, max-age=86400'
+          : 'no-cache',
       'Content-Type': MIME_TYPES.get(extension) || 'application/octet-stream',
       ETag: etag,
+      Vary: 'Accept-Encoding',
       ...securityHeaders({
         production,
         html: extension === '.html',
@@ -165,6 +199,24 @@ export function createRequestHandler({
       }),
     };
     if (request.headers['if-none-match'] === etag) return response.writeHead(304, headers).end();
+    // Texto comprimido (brotli ou gzip), guardado em memória por versão do arquivo.
+    const encoding = COMPRESSIBLE.has(extension) && stats.size > 1024 ? pickEncoding(request) : null;
+    if (encoding) {
+      const key = `${filePath}|${etag}|${encoding}`;
+      if (!compressedCache.has(key)) {
+        const raw = readFileSync(filePath);
+        compressedCache.set(
+          key,
+          encoding === 'br'
+            ? brotliCompressSync(raw, { params: { [zlibConstants.BROTLI_PARAM_QUALITY]: 9 } })
+            : gzipSync(raw, { level: 9 }),
+        );
+        if (compressedCache.size > 300) compressedCache.delete(compressedCache.keys().next().value);
+      }
+      const body = compressedCache.get(key);
+      response.writeHead(200, { ...headers, 'Content-Encoding': encoding, 'Content-Length': body.length });
+      return response.end(request.method === 'HEAD' ? undefined : body);
+    }
     response.writeHead(200, headers);
     if (request.method === 'HEAD') response.end();
     else createReadStream(filePath).pipe(response);

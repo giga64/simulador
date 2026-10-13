@@ -2,7 +2,7 @@ import js from '@eslint/js';
 import globals from 'globals';
 
 export default [
-  { ignores: ['node_modules/', '.runtime/'] },
+  { ignores: ['node_modules/', '.runtime/', 'dist/'] },
   js.configs.recommended,
   {
     files: ['app.js', 'sw.js', 'theme.js', 'src/client/**/*.js', 'src/model/**/*.js', 'src/*.js'],

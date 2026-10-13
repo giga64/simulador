@@ -1202,7 +1202,11 @@ import {
       });
       return { idx: index, tracked, input };
     }
-    const runSimulation = createSimulationRunner(new URL('./src/model/monte-carlo.worker.js', import.meta.url));
+    // No build de produção o worker tem hash no nome; o endereço vem de uma metatag.
+    const WORKER_URL =
+      document.querySelector('meta[name="simulabr-worker"]')?.content ||
+      new URL('./src/model/monte-carlo.worker.js', import.meta.url);
+    const runSimulation = createSimulationRunner(WORKER_URL);
     const pct = histogramQuantile;
     function od(c) {
       if (!MCR) return null;
@@ -2405,7 +2409,7 @@ import {
     }
 
     // ---- Comparar cenários ----
-    const runComparison = createSimulationRunner(new URL('./src/model/monte-carlo.worker.js', import.meta.url));
+    const runComparison = createSimulationRunner(WORKER_URL);
     function summaryOf(result, index) {
       return Object.fromEntries(
         T.map((code) => {
@@ -4289,7 +4293,10 @@ import {
     const params = new URLSearchParams(location.search);
     const sharedCode = params.get('scenario');
     const shortId = /^\/c\/([A-Za-z0-9_-]{10})$/.exec(location.pathname)?.[1];
-    const initialRoute = routeFromPath(location.pathname, NM);
+    // ?view= (links antigos) vale em "/"; nos outros endereços manda o caminho.
+    const legacyView = TABS.some(([key]) => key === params.get('view')) ? params.get('view') : null;
+    const initialRoute =
+      legacyView && location.pathname === '/' ? { view: legacyView } : routeFromPath(location.pathname, NM);
     if (initialRoute) applyRoute(initialRoute);
     let initialView =
       initialRoute?.view || (TABS.some(([key]) => key === params.get('view')) ? params.get('view') : 'home');

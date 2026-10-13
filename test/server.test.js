@@ -283,3 +283,30 @@ test('endereços próprios, sitemap e robots', async () => {
     await server.close();
   }
 });
+
+test('modo build (dist/): cache de 1 ano nos arquivos com hash, compressão e nada oculto', async () => {
+  const { mkdtemp, mkdir, writeFile } = await import('node:fs/promises');
+  const { tmpdir } = await import('node:os');
+  const dist = await mkdtemp(path.join(tmpdir(), 'simulabr-dist-'));
+  await mkdir(path.join(dist, 'assets', 'build'), { recursive: true });
+  await writeFile(path.join(dist, 'index.html'), await readFile(path.join(root, 'index.html'), 'utf8'));
+  await writeFile(
+    path.join(dist, 'assets', 'build', 'app-ABC123.js'),
+    `console.log(${JSON.stringify('x'.repeat(5000))});`,
+  );
+  await writeFile(path.join(dist, 'build.json'), '{}');
+  await writeFile(path.join(dist, '.env'), 'SEGREDO=1');
+  const server = await startServer({ staticRoot: dist });
+  try {
+    const asset = await fetch(`${server.base}/assets/build/app-ABC123.js`, { headers: { 'Accept-Encoding': 'gzip' } });
+    assert.equal(asset.status, 200);
+    assert.equal(asset.headers.get('cache-control'), 'public, max-age=31536000, immutable');
+    assert.equal(asset.headers.get('content-encoding'), 'gzip');
+    assert.match(await asset.text(), /console\.log/, 'o fetch descomprime e o conteúdo bate');
+    assert.equal((await fetch(`${server.base}/.env`)).status, 404);
+    assert.equal((await fetch(`${server.base}/build.json`)).status, 404);
+    assert.equal((await fetch(`${server.base}/src/model/poisson.js`)).status, 404, 'fora de dist/ não existe');
+  } finally {
+    await server.close();
+  }
+});

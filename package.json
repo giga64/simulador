@@ -10,12 +10,13 @@
     "validate:data": "node scripts/validate-season.mjs",
     "import:results": "node scripts/import-verified-results.mjs",
     "start": "node scripts/serve.mjs",
-    "check": "npm run lint && npm run format:check && npm test && npm run validate:data",
+    "check": "npm run lint && npm run format:check && npm test && npm run validate:data && npm run build",
     "backtest": "node scripts/backtest-model.mjs",
     "build:history": "node scripts/build-probability-history.mjs",
     "vapid": "web-push generate-vapid-keys",
     "crests": "node scripts/download-crests.mjs",
-    "build:ratings": "node scripts/build-ratings.mjs"
+    "build:ratings": "node scripts/build-ratings.mjs",
+    "build": "node scripts/build.mjs"
   },
   "dependencies": {
     "@resvg/resvg-js": "^2.6.2",
@@ -25,6 +26,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
+    "esbuild": "^0.25.12",
     "eslint": "^9.39.5",
     "globals": "^15.15.0",
     "prettier": "^3.9.10"

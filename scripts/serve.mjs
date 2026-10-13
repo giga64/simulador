@@ -1,5 +1,6 @@
 // Servidor do SimulaBR: liga o feed ao vivo, o estado da temporada, as
 // notificações, o histórico de chances e as rotas (src/server/app.js).
+import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import path from 'node:path';
@@ -105,8 +106,13 @@ const readLiveFeed = createLiveFeedCache(async () => {
 });
 
 const sharedScenarios = createSharedScenarioStore(adminClient);
+// Com NODE_ENV=production (ou SERVE_DIST=1) e um build em dist/, entrega o build.
+const distIndex = path.join(root, 'dist', 'index.html');
+const useDist = (production || env.SERVE_DIST === '1') && existsSync(distIndex);
+if ((production || env.SERVE_DIST === '1') && !useDist) console.warn('Sem dist/: rode npm run build. Servindo os arquivos de origem.');
 const handler = createRequestHandler({
   root,
+  staticRoot: useDist ? path.join(root, 'dist') : root,
   production,
   trustProxy: env.TRUST_PROXY === '1',
   siteUrl,
