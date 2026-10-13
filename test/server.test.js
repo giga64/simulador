@@ -264,3 +264,22 @@ test('saúde e erros do navegador', async () => {
     await server.close();
   }
 });
+
+test('endereços próprios, sitemap e robots', async () => {
+  const server = await startServer();
+  try {
+    const club = await fetch(`${server.base}/clube/palmeiras`);
+    assert.equal(club.status, 200);
+    const html = await club.text();
+    assert.match(html, /<title>Palmeiras: chances no Brasileirão 2026/);
+    assert.equal((await fetch(`${server.base}/clube/nao-existe`)).status, 404);
+    const sitemap = await (await fetch(`${server.base}/sitemap.xml`)).text();
+    assert.match(sitemap, /\/clube\/sao-paulo<\/loc>/);
+    assert.match(sitemap, /\/copas\/libertadores<\/loc>/);
+    const robots = await (await fetch(`${server.base}/robots.txt`)).text();
+    assert.match(robots, /Disallow: \/api\//);
+    assert.match(robots, /Sitemap: http:\/\/127\.0\.0\.1:\d+\/sitemap\.xml/);
+  } finally {
+    await server.close();
+  }
+});

@@ -393,6 +393,7 @@ input[type='checkbox'] {
 .nav::-webkit-scrollbar {
   display: none;
 }
+.nav a,
 .nav button {
   border: 0;
   background: none;
@@ -403,10 +404,12 @@ input[type='checkbox'] {
   flex: none;
   position: relative;
 }
+.nav a:hover,
 .nav button:hover {
   color: var(--tx);
   background: var(--s2);
 }
+.nav a.on,
 .nav button.on {
   color: var(--tx);
   background: var(--s2);
@@ -2118,4 +2121,13 @@ form label {
 }
 .math-list li.no {
   color: var(--mu);
+}
+.nav a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: 999px;
+  font-size: 0.86rem;
+  text-decoration: none;
+  white-space: nowrap;
 }

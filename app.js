@@ -6,6 +6,7 @@ import { buildSimulationInput, createMatchModel, DEFAULT_SETTINGS } from './src/
 import { collectLiveMatches, standingsWithoutLiveMatches } from './src/model/live-matches.js';
 import { createSimulationRunner } from './src/client/simulation-runner.js';
 import { lineChart, meter, positionMap, safeUrl, segmented, signed } from './src/client/ui.js';
+import { pathFor, routeFromPath } from './src/client/routes.js';
 import {
   bracket as cupBracket,
   chanceTable as cupChanceTable,
@@ -2835,7 +2836,7 @@ import {
         }
       $('#nav').innerHTML = TABS.map(
         ([k, t]) =>
-          `<button role="tab" id="tab-${k}" aria-controls="v-${k}" aria-selected="${view == k}" tabindex="${view == k ? '0' : '-1'}" class="${view == k ? 'on' : ''}" data-act="show-view" data-view="${k}">${t}${k === 'live' && LIVE_MATCHES.length ? '<i class="dot" aria-hidden="true"></i><span class="sr-only"> (jogos em andamento)</span>' : ''}</button>`,
+          `<a role="tab" id="tab-${k}" href="${pathFor({ view: k, sub: subView[k] }, NM)}" aria-controls="v-${k}" aria-selected="${view == k}" tabindex="${view == k ? '0' : '-1'}" class="${view == k ? 'on' : ''}" data-act="show-view" data-view="${k}">${t}${k === 'live' && LIVE_MATCHES.length ? '<i class="dot" aria-hidden="true"></i><span class="sr-only"> (jogos em andamento)</span>' : ''}</a>`,
       ).join('');
     }
     function renderView(v) {
@@ -2862,7 +2863,47 @@ import {
       if (v == 'guide') renderGuide();
       if (v == 'account') renderAccountWorkspace();
     }
-    function show(v, { focus = true } = {}) {
+    // Endereço atual da tela (sem recarregar a página).
+    function updateUrl({ push = false } = {}) {
+      const path = pathFor(
+        {
+          view,
+          sub: subView[view],
+          team: view === 'clubs' ? statsTeam : null,
+          round: selectedHistoryRound,
+          cup: CUPS.active,
+        },
+        NM,
+      );
+      const names = {
+        home: 'Brasileirão 2026: tabela, chances e simulador',
+        live: 'Ao vivo',
+        sim: 'Simulador',
+        cor: 'Chances',
+        copas: COMPETITIONS[CUPS.active]?.name || 'Copas',
+        clubs: NM[statsTeam] || 'Clubes',
+        est: subView.est === 'rounds' ? `${selectedHistoryRound}ª rodada` : 'Estatísticas',
+        perf: 'Palpites',
+        src: 'Fontes e método',
+        guide: 'Ajuda',
+        search: 'Buscar',
+        account: 'Minha conta',
+      };
+      document.title = `${names[view] || 'Brasileirão 2026'} · SimulaBR`;
+      if (path === location.pathname) return;
+      try {
+        history[push ? 'pushState' : 'replaceState']({ path }, '', path);
+      } catch {
+        // file:// ou navegador antigo: segue sem mudar o endereço
+      }
+    }
+    function applyRoute(route) {
+      if (route.sub && route.view in subView) subView[route.view] = route.sub;
+      if (route.team) statsTeam = route.team;
+      if (route.round) selectedHistoryRound = route.round;
+      if (route.cup) CUPS.active = route.cup;
+    }
+    function show(v, { focus = true, push = true } = {}) {
       if (v === 'history') {
         subView.est = 'rounds';
         v = 'est';
@@ -2875,6 +2916,7 @@ import {
       nav();
       applyCupTheme();
       renderView(v);
+      updateUrl({ push });
       scrollTo(0, 0);
       if (focus) ($('#tab-' + v) || $('#main'))?.focus({ preventScroll: true });
     }
@@ -3807,6 +3849,7 @@ import {
           if (!COMPETITION_IDS.includes(button.dataset.cup)) throw new Error('Competição inválida.');
           CUPS.active = button.dataset.cup;
           renderCups();
+          updateUrl();
           ensureCups([CUPS.active]).then(() => view === 'copas' && renderCups());
           break;
         case 'cup-adjust': {
@@ -3838,6 +3881,8 @@ import {
           if (!(button.dataset.group in subView)) throw new Error('Visão inválida.');
           subView[button.dataset.group] = button.dataset.value;
           renderView(view);
+          nav();
+          updateUrl();
           break;
         case 'trend-club': {
           const code = button.dataset.team;
@@ -4047,6 +4092,10 @@ import {
       }
       const button = event.target.closest('[data-act]');
       if (!button) return;
+      if (button.tagName === 'A') {
+        if (event.ctrlKey || event.metaKey || event.shiftKey || event.button !== 0) return;
+        event.preventDefault();
+      }
       try {
         Promise.resolve(runAction(button)).catch((error) => {
           notify(`N\u00e3o foi poss\u00edvel concluir a a\u00e7\u00e3o: ${error.message}`);
@@ -4094,9 +4143,11 @@ import {
       } else if (action === 'club-profile') {
         statsTeam = input.value;
         renderClubPage();
+        updateUrl();
       } else if (action === 'history-round') {
         selectedHistoryRound = Number(input.value);
         renderStats();
+        updateUrl();
       } else if (action === 'compare-with') {
         $('#compareCode').hidden = input.value !== 'code';
       } else if (action === 'trend-metric') {
@@ -4207,7 +4258,6 @@ import {
       show(TABS[next][0]);
     });
     document.querySelectorAll('[data-i]').forEach((e) => (e.innerHTML = ic(e.dataset.i)));
-    document.title = 'SimulaBR · Simulador do Brasileirão 2026';
     const updatedLabel = new Intl.DateTimeFormat('pt-BR', {
       dateStyle: 'short',
       timeStyle: 'short',
@@ -4239,7 +4289,10 @@ import {
     const params = new URLSearchParams(location.search);
     const sharedCode = params.get('scenario');
     const shortId = /^\/c\/([A-Za-z0-9_-]{10})$/.exec(location.pathname)?.[1];
-    let initialView = TABS.some(([key]) => key === params.get('view')) ? params.get('view') : 'home';
+    const initialRoute = routeFromPath(location.pathname, NM);
+    if (initialRoute) applyRoute(initialRoute);
+    let initialView =
+      initialRoute?.view || (TABS.some(([key]) => key === params.get('view')) ? params.get('view') : 'home');
     if (sharedCode) {
       try {
         adoptSharedPayload(payloadFromCode(`B28:${sharedCode}`));
@@ -4260,7 +4313,13 @@ import {
       }
     }
     nav();
-    show(initialView, { focus: false });
+    show(initialView, { focus: false, push: false });
+    addEventListener('popstate', () => {
+      const route = routeFromPath(location.pathname, NM);
+      if (!route) return;
+      applyRoute(route);
+      show(route.view, { focus: false, push: false });
+    });
     if (initialView !== 'sim') sched();
     loadProbabilityHistory();
     await initializeAccount();

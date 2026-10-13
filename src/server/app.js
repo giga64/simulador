@@ -8,6 +8,8 @@ import { isPublicPath } from '../static-paths.js';
 import { clientIp, createRateLimiter, readJsonBody, securityHeaders, sendJson, sendText } from './http.js';
 import { projectScenarioTable } from './og-image.js';
 import { normalizeClientError } from './monitor.js';
+import { applyMeta, describeRoute, escapeAttribute } from './seo.js';
+import { allPaths, routeFromPath } from '../client/routes.js';
 
 const MIME_TYPES = new Map([
   ['.css', 'text/css; charset=utf-8'],
@@ -105,20 +107,22 @@ export function createRequestHandler({
     return png;
   }
 
-  function sendIndex(response, { imagePath, title, url }) {
-    let html = indexHtml();
-    if (imagePath) {
-      html = html
-        .replaceAll('content="/assets/og-image.png"', `content="${absolute(imagePath)}"`)
-        .replace(/<meta property="og:title" content="[^"]*"\s*\/?>/, `<meta property="og:title" content="${title}" />`);
-    } else if (siteUrl) {
-      html = html.replaceAll('content="/assets/og-image.png"', `content="${absolute('/assets/og-image.png')}"`);
+  // index.html com título, descrição, canonical e imagem de cada endereço.
+  async function sendIndex(response, { route = null, path = '/', imagePath = null, title = null, description = null }) {
+    let meta = { title, description };
+    if (!title) {
+      const history = await seasonService.probabilityHistory().catch(() => []);
+      meta = describeRoute(route, {
+        teams: seasonService.state.seasonData.teams,
+        chances: history.at(-1)?.chances || null,
+        round: seasonService.state.round?.number,
+      });
     }
-    if (url)
-      html = html.replace(
-        '<meta property="og:type"',
-        `<meta property="og:url" content="${absolute(url)}" />\n    <meta property="og:type"`,
-      );
+    const html = applyMeta(indexHtml(), {
+      ...meta,
+      url: siteUrl ? absolute(path) : null,
+      image: imagePath ? absolute(imagePath) : siteUrl ? absolute('/assets/og-image.png') : null,
+    });
     response
       .writeHead(200, {
         'Cache-Control': 'no-cache',
@@ -126,6 +130,15 @@ export function createRequestHandler({
         ...securityHeaders({ production, html: true }),
       })
       .end(html);
+  }
+
+  // Endereço base para o sitemap: SITE_URL ou o Host da requisição (validado).
+  function baseUrl(request) {
+    if (siteUrl) return siteUrl;
+    const host = String(request.headers.host || '');
+    if (!/^[a-z0-9.-]+(:\d{1,5})?$/i.test(host)) return null;
+    const proto = trustProxy && request.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
+    return `${proto}://${host}`;
   }
 
   function serveStatic(request, response, relative) {
@@ -340,7 +353,8 @@ export function createRequestHandler({
       return sendIndex(response, {
         imagePath: `/api/og/c/${shortLink[1]}.png`,
         title: 'Meu cenário do Brasileirão 2026 · SimulaBR',
-        url: `/c/${shortLink[1]}`,
+        description: 'Veja a classificação e o campeão do meu cenário do Brasileirão 2026 e monte o seu no SimulaBR.',
+        path: `/c/${shortLink[1]}`,
       });
     }
 
@@ -352,10 +366,34 @@ export function createRequestHandler({
         return sendIndex(response, {
           imagePath: `/api/og/scenario.png?s=${code}`,
           title: 'Meu cenário do Brasileirão 2026 · SimulaBR',
+          description: 'Veja a classificação e o campeão do meu cenário do Brasileirão 2026 e monte o seu no SimulaBR.',
         });
       }
-      return sendIndex(response, {});
+      return sendIndex(response, { route: { view: 'home' }, path: '/' });
     }
+    if (pathname === '/robots.txt') {
+      const base = baseUrl(request);
+      return sendText(
+        response,
+        200,
+        `User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /c/\n${base ? `Sitemap: ${base}/sitemap.xml\n` : ''}`,
+        { 'Cache-Control': 'public, max-age=3600' },
+      );
+    }
+    if (pathname === '/sitemap.xml') {
+      const base = baseUrl(request);
+      if (!base) return sendText(response, 400, 'Bad request');
+      const urls = allPaths(seasonService.state.seasonData.teams)
+        .map((path) => `<url><loc>${escapeAttribute(base + path)}</loc></url>`)
+        .join('');
+      return response
+        .writeHead(200, { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=3600' })
+        .end(
+          `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`,
+        );
+    }
+    const route = routeFromPath(pathname, seasonService.state.seasonData.teams);
+    if (route) return sendIndex(response, { route, path: pathname.replace(/\/+$/, '') });
     return serveStatic(request, response, pathname.replace(/^[/\\]+/, ''));
   }
 
