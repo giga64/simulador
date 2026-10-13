@@ -212,3 +212,55 @@ test('detectLiveEvents identifica início, gol e fim de jogo', () => {
   ]);
   assert.deepEqual([end[0].type, end[0].homeGoals, end[0].awayGoals], ['end', 1, 1]);
 });
+
+test('saúde e erros do navegador', async () => {
+  const { createSourceMonitor, normalizeClientError } = await import('../src/server/monitor.js');
+  let now = 0;
+  const alerts = [];
+  const monitor = createSourceMonitor({
+    clock: () => now,
+    isMatchDay: () => true,
+    logger: { error: (message) => alerts.push(message) },
+  });
+  monitor.success('GE');
+  monitor.failure('GE', new Error('timeout'));
+  assert.equal(monitor.status().status, 'ok', 'falha recente ainda não derruba a saúde');
+  now = 31 * 60_000;
+  monitor.failure('GE', new Error('timeout'));
+  assert.equal(monitor.status().status, 'degraded');
+  assert.equal(alerts.length, 1, 'alerta enviado uma vez após 30 min em dia de jogo');
+  monitor.failure('GE', new Error('timeout'));
+  assert.equal(alerts.length, 1, 'sem repetir o alerta');
+  monitor.success('GE');
+  assert.equal(alerts.length, 2, 'avisa quando volta');
+  assert.equal(monitor.status().status, 'ok');
+
+  const entry = normalizeClientError({
+    message: 'x is not defined',
+    source: 'https://site/app.js?v=1',
+    line: 10,
+    url: 'https://site/?scenario=SEGREDO',
+    stack: 'a'.repeat(5000),
+  });
+  assert.equal(entry.page, '/', 'sem a query string, que pode ter o código do cenário');
+  assert.equal(entry.source, 'https://site/app.js');
+  assert.equal(entry.stack.length, 1200);
+  assert.equal(normalizeClientError({}), null);
+
+  const recorded = [];
+  const server = await startServer({ monitor, recordClientError: (item) => recorded.push(item) });
+  try {
+    const health = await fetch(`${server.base}/api/health`);
+    assert.equal(health.status, 200);
+    assert.equal((await health.json()).sources.GE.ok, true);
+    const posted = await fetch(`${server.base}/api/client-errors`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: 'boom', url: 'https://x/' }),
+    });
+    assert.equal(posted.status, 204);
+    assert.equal(recorded.length, 1);
+  } finally {
+    await server.close();
+  }
+});

@@ -10,6 +10,7 @@ import { createGeLiveSource } from '../src/live-sources/ge.js';
 import { createMatchModel, DEFAULT_SETTINGS, openFixturesFrom } from '../src/model/season-model.js';
 import { createRequestHandler } from '../src/server/app.js';
 import { createCompetitionService } from '../src/server/competitions.js';
+import { createClientErrorLog, createSourceMonitor } from '../src/server/monitor.js';
 import { createJsonStore } from '../src/server/json-store.js';
 import { createOddsTracker } from '../src/server/odds.js';
 import { createOgRenderer } from '../src/server/og-image.js';
@@ -68,10 +69,32 @@ const oddsTracker = createOddsTracker({
   resolveTeam: seasonService.resolveTeam,
 });
 
+// Dia de jogo: algum jogo do Brasileirão marcado para hoje (horário de Brasília) ou em andamento.
+const todayInBrazil = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date());
+const monitor = createSourceMonitor({
+  webhookUrl: env.ALERT_WEBHOOK_URL,
+  isMatchDay: () =>
+    seasonService.state.live.size > 0 ||
+    seasonService.state.seasonData.fixtures.some(
+      (fixture) =>
+        fixture.kickoff &&
+        new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date(fixture.kickoff)) ===
+          todayInBrazil(),
+    ),
+});
+const recordClientError = createClientErrorLog(path.join(runtimeDir, 'client-errors.log'));
+
 const addToHistory = createLiveHistoryStore(env.LIVE_HISTORY_PATH || path.join(runtimeDir, 'live-results-2026.json'));
 const loadLiveFeed = createGeLiveSource();
 const readLiveFeed = createLiveFeedCache(async () => {
-  const feed = await loadLiveFeed();
+  let feed;
+  try {
+    feed = await loadLiveFeed();
+    monitor.success('GE');
+  } catch (error) {
+    monitor.failure('GE', error);
+    throw error;
+  }
   const enriched = { ...feed, ...(await addToHistory(feed)) };
   // Eventos (gol, início, fim) disparam notificações sem atrasar a resposta.
   seasonService
@@ -103,7 +126,9 @@ const handler = createRequestHandler({
   sharedScenarios,
   renderScenarioImage: createOgRenderer({ root }),
   oddsTracker,
-  competitionService: createCompetitionService(),
+  competitionService: createCompetitionService({ monitor }),
+  monitor,
+  recordClientError,
 });
 
 const server = createServer(handler);

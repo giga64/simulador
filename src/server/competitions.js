@@ -19,6 +19,7 @@ export function createCompetitionService({
   clock = Date.now,
   season = 2026,
   logger = console,
+  monitor = null,
 } = {}) {
   const cache = new Map();
   const pending = new Map();
@@ -59,10 +60,12 @@ export function createCompetitionService({
           id,
           load(id)
             .then((value) => {
+              monitor?.success(`ESPN ${id}`);
               cache.set(id, { value, savedAt: clock() });
               return { ...value, stale: false };
             })
             .catch((error) => {
+              monitor?.failure(`ESPN ${id}`, error);
               logger.error(`Copa ${id}: ${error.message}`);
               if (entry && clock() - entry.savedAt < STALE_MS) return { ...entry.value, stale: true };
               throw error;

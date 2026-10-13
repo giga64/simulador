@@ -7,6 +7,7 @@ import { decodeScenarioPayload, pruneCompletedScenarioScores, validateScenarioPa
 import { isPublicPath } from '../static-paths.js';
 import { clientIp, createRateLimiter, readJsonBody, securityHeaders, sendJson, sendText } from './http.js';
 import { projectScenarioTable } from './og-image.js';
+import { normalizeClientError } from './monitor.js';
 
 const MIME_TYPES = new Map([
   ['.css', 'text/css; charset=utf-8'],
@@ -38,6 +39,8 @@ export function createRequestHandler({
   renderScenarioImage,
   oddsTracker,
   competitionService = null,
+  monitor = null,
+  recordClientError = null,
   logger = console,
 }) {
   const limits = {
@@ -45,6 +48,7 @@ export function createRequestHandler({
     forceRefresh: createRateLimiter({ windowMs: 60_000, max: 4 }),
     account: createRateLimiter({ windowMs: 10 * 60_000, max: 5 }),
     share: createRateLimiter({ windowMs: 60_000, max: 10 }),
+    clientErrors: createRateLimiter({ windowMs: 60_000, max: 10 }),
     image: createRateLimiter({ windowMs: 60_000, max: 30 }),
   };
   // Consulta forçada à fonte no máximo a cada 20 s, para todos os visitantes juntos.
@@ -193,6 +197,29 @@ export function createRequestHandler({
       } catch (error) {
         logger.error(`Feed ao vivo indisponível: ${error.message}`);
         return sendJson(response, 502, { error: 'Não foi possível consultar a fonte GE neste momento.' });
+      }
+    }
+
+    // Para monitores externos (UptimeRobot etc.): 503 quando alguma fonte está fora do ar.
+    if (pathname === '/api/health') {
+      if (onlyGet()) return;
+      const health = monitor ? monitor.status() : { status: 'ok', sources: {} };
+      return sendJson(response, health.status === 'ok' ? 200 : 503, {
+        ...health,
+        uptimeSeconds: Math.round(process.uptime()),
+      });
+    }
+
+    if (pathname === '/api/client-errors') {
+      if (method !== 'POST') return sendText(response, 405, 'Method not allowed', { Allow: 'POST' });
+      const { allowed, retryAfter } = limits.clientErrors(ip);
+      if (!allowed) return tooMany(response, retryAfter);
+      try {
+        const entry = normalizeClientError(await readJsonBody(request, { limit: 4096 }));
+        if (entry && recordClientError) recordClientError(entry);
+        return response.writeHead(204).end();
+      } catch (error) {
+        return sendJson(response, error.status || 400, { error: error.message });
       }
     }
 

@@ -38,6 +38,41 @@ import {
   validatePredictionHistory,
 } from './src/prediction-performance.js';
 
+// Erros de JavaScript dos visitantes vão para o servidor (sem dados pessoais,
+// no máximo 5 por visita, sem repetir a mesma mensagem).
+(() => {
+  const sent = new Set();
+  const report = (details) => {
+    const message = String(details.message || '').slice(0, 300);
+    if (!message || sent.has(message) || sent.size >= 5) return;
+    sent.add(message);
+    const body = JSON.stringify({
+      ...details,
+      message,
+      url: location.href,
+      view: document.querySelector('[role="tab"][aria-selected="true"]')?.dataset.view || '',
+    });
+    fetch('/api/client-errors', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+      keepalive: true,
+    }).catch(() => {});
+  };
+  addEventListener('error', (event) =>
+    report({
+      message: event.message,
+      source: event.filename,
+      line: event.lineno,
+      column: event.colno,
+      stack: event.error?.stack,
+    }),
+  );
+  addEventListener('unhandledrejection', (event) =>
+    report({ message: `Promessa rejeitada: ${event.reason?.message || event.reason}`, stack: event.reason?.stack }),
+  );
+})();
+
 (async () => {
   let validationWarnings = [];
   const LIVE_FEED_CACHE_KEY = 'br26-last-good-live-feed';
