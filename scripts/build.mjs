@@ -37,7 +37,10 @@ const result = await build({
 const outputs = {};
 for (const [file, info] of Object.entries(result.metafile.outputs)) {
   if (file.endsWith('.map') || !info.entryPoint) continue;
-  const name = path.basename(info.entryPoint).replace(/\.(js|css)$/, '').replace('monte-carlo.worker', 'worker');
+  const name = path
+    .basename(info.entryPoint)
+    .replace(/\.(js|css)$/, '')
+    .replace('monte-carlo.worker', 'worker');
   outputs[name] = `/${path.relative(dist, path.join(root, file)).replace(/\\/g, '/')}`;
 }
 for (const name of ['app', 'worker', 'theme', 'styles']) {
@@ -61,11 +64,11 @@ const swap = (from, to) => {
 };
 swap('<script src="theme.js"></script>', `<script src="${outputs.theme}"></script>`);
 swap('<link rel="stylesheet" href="styles.css" />', `<link rel="stylesheet" href="${outputs.styles}" />`);
+swap('<script type="module" src="app.js"></script>', `<script type="module" src="${outputs.app}"></script>`);
 swap(
-  '<script type="module" src="app.js"></script>',
-  `<script type="module" src="${outputs.app}"></script>`,
+  '<meta charset="utf-8" />',
+  `<meta charset="utf-8" />\n    <meta name="simulabr-worker" content="${outputs.worker}" />`,
 );
-swap('<meta charset="utf-8" />', `<meta charset="utf-8" />\n    <meta name="simulabr-worker" content="${outputs.worker}" />`);
 await writeFile(path.join(dist, 'index.html'), html);
 
 // Service worker com a lista desta versão; o nome do cache muda a cada build.
@@ -92,7 +95,10 @@ sw = sw
   .replace(/const CACHE = '[^']*';/, `const CACHE = 'simulabr-${version}';`)
   .replace(/const PRECACHE = \[[\s\S]*?\];/, `const PRECACHE = ${JSON.stringify(precache, null, 2)};`);
 await writeFile(path.join(dist, 'sw.js'), sw);
-await writeFile(path.join(dist, 'build.json'), `${JSON.stringify({ version, builtAt: new Date().toISOString(), outputs }, null, 2)}\n`);
+await writeFile(
+  path.join(dist, 'build.json'),
+  `${JSON.stringify({ version, builtAt: new Date().toISOString(), outputs }, null, 2)}\n`,
+);
 
 const sizes = Object.entries(result.metafile.outputs)
   .filter(([file]) => !file.endsWith('.map'))
