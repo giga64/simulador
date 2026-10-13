@@ -16,7 +16,8 @@
     "vapid": "web-push generate-vapid-keys",
     "crests": "node scripts/download-crests.mjs",
     "build:ratings": "node scripts/build-ratings.mjs",
-    "build": "node scripts/build.mjs"
+    "build": "node scripts/build.mjs",
+    "test:e2e": "npm run build && playwright test"
   },
   "dependencies": {
     "@resvg/resvg-js": "^2.6.2",
@@ -25,7 +26,9 @@
     "web-push": "^3.6.7"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@eslint/js": "^9.39.5",
+    "@playwright/test": "^1.64.0",
     "esbuild": "^0.25.12",
     "eslint": "^9.39.5",
     "globals": "^15.15.0",

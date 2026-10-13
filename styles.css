@@ -58,11 +58,11 @@
   --tx: #111a16;
   --mu: #5a6d64;
   --mu2: #8a9b93;
-  --ac: #a37a0e;
+  --ac: #7a5a06;
   --ac-ink: #ffffff;
-  --g: #14a463;
-  --b: #2f73cb;
-  --r: #d4473a;
+  --g: #0a7342;
+  --b: #235fb0;
+  --r: #b3261e;
   --live: #e0362b;
   --hl: rgba(163, 122, 14, 0.09);
   --focus: rgba(163, 122, 14, 0.45);
@@ -80,11 +80,11 @@
     --tx: #111a16;
     --mu: #5a6d64;
     --mu2: #8a9b93;
-    --ac: #a37a0e;
+    --ac: #7a5a06;
     --ac-ink: #ffffff;
-    --g: #14a463;
-    --b: #2f73cb;
-    --r: #d4473a;
+    --g: #0a7342;
+    --b: #235fb0;
+    --r: #b3261e;
     --live: #e0362b;
     --hl: rgba(163, 122, 14, 0.09);
     --focus: rgba(163, 122, 14, 0.45);
@@ -667,8 +667,9 @@ td.n {
 tr.hl td {
   background: var(--hl) !important;
 }
-.dim {
-  opacity: 0.45;
+.dim,
+.dim b {
+  color: var(--mu);
 }
 .so .sort-button {
   min-height: 0;
@@ -1898,28 +1899,28 @@ form label {
   --hl: rgba(47, 191, 106, 0.13);
 }
 :root[data-theme='light'][data-cup='libertadores'] {
-  --ac: #8f6a0c;
+  --ac: #7a5a06;
   --ac-ink: #ffffff;
 }
 :root[data-theme='light'][data-cup='sudamericana'] {
-  --ac: #1667c9;
+  --ac: #1459b0;
   --ac-ink: #ffffff;
 }
 :root[data-theme='light'][data-cup='copaDoBrasil'] {
-  --ac: #12844a;
+  --ac: #0b6e3c;
   --ac-ink: #ffffff;
 }
 @media (prefers-color-scheme: light) {
   :root:not([data-theme='dark'])[data-cup='libertadores'] {
-    --ac: #8f6a0c;
+    --ac: #7a5a06;
     --ac-ink: #ffffff;
   }
   :root:not([data-theme='dark'])[data-cup='sudamericana'] {
-    --ac: #1667c9;
+    --ac: #1459b0;
     --ac-ink: #ffffff;
   }
   :root:not([data-theme='dark'])[data-cup='copaDoBrasil'] {
-    --ac: #12844a;
+    --ac: #0b6e3c;
     --ac-ink: #ffffff;
   }
 }
@@ -2030,7 +2031,10 @@ form label {
   color: var(--ac);
 }
 .tie-row.lost {
-  opacity: 0.55;
+  color: var(--mu);
+}
+.tie-row.lost .crest {
+  opacity: 0.6;
 }
 .tie-agg {
   min-width: 18px;

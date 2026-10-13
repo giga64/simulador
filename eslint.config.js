@@ -2,10 +2,18 @@ import js from '@eslint/js';
 import globals from 'globals';
 
 export default [
-  { ignores: ['node_modules/', '.runtime/', 'dist/'] },
+  { ignores: ['node_modules/', '.runtime/', 'dist/', 'test-results/', 'playwright-report/'] },
   js.configs.recommended,
   {
-    files: ['app.js', 'sw.js', 'theme.js', 'src/client/**/*.js', 'src/model/**/*.js', 'src/*.js'],
+    files: [
+      'app.js',
+      'sw.js',
+      'theme.js',
+      'src/client/**/*.js',
+      'src/model/**/*.js',
+      'src/competitions/**/*.js',
+      'src/*.js',
+    ],
     languageOptions: { ecmaVersion: 2024, sourceType: 'module', globals: { ...globals.browser } },
   },
   {
@@ -22,9 +30,16 @@ export default [
       'src/server/**/*.js',
       'src/supabase-config.js',
       'test/**/*.js',
+      'e2e/**/*.js',
+      'playwright.config.js',
       'eslint.config.js',
     ],
     languageOptions: { ecmaVersion: 2024, sourceType: 'module', globals: { ...globals.node } },
+  },
+  {
+    // Callbacks de page.evaluate rodam no navegador.
+    files: ['e2e/**/*.js'],
+    languageOptions: { globals: { ...globals.browser } },
   },
   {
     rules: {

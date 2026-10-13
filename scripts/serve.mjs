@@ -86,7 +86,18 @@ const monitor = createSourceMonitor({
 const recordClientError = createClientErrorLog(path.join(runtimeDir, 'client-errors.log'));
 
 const addToHistory = createLiveHistoryStore(env.LIVE_HISTORY_PATH || path.join(runtimeDir, 'live-results-2026.json'));
-const loadLiveFeed = createGeLiveSource();
+// SIMULABR_FIXTURES=1: dados fixos de test/fixtures (testes de navegador na CI,
+// sem depender do GE e da ESPN estarem no ar).
+const useFixtures = env.SIMULABR_FIXTURES === '1';
+const loadLiveFeed = useFixtures
+  ? async () => ({ ...(await readJson('test/fixtures/live-feed.json')), fetchedAt: new Date().toISOString() })
+  : createGeLiveSource();
+const fixtureFetch = async (url) => {
+  const slug = /soccer\/([a-z.0-9_]+)\//.exec(String(url))?.[1];
+  const kind = String(url).includes('/standings') ? 'standings' : '2026';
+  const body = await readJson(`test/fixtures/competitions/espn-${slug}-${kind}.json`);
+  return { ok: true, json: async () => body };
+};
 const readLiveFeed = createLiveFeedCache(async () => {
   let feed;
   try {
@@ -133,7 +144,7 @@ const handler = createRequestHandler({
   sharedScenarios,
   renderScenarioImage: createOgRenderer({ root }),
   oddsTracker,
-  competitionService: createCompetitionService({ monitor }),
+  competitionService: createCompetitionService({ monitor, ...(useFixtures ? { fetchImpl: fixtureFetch } : {}) }),
   monitor,
   recordClientError,
 });

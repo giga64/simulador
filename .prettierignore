@@ -6,3 +6,5 @@ assets/
 supabase/
 *.md
 dist/
+test-results/
+playwright-report/

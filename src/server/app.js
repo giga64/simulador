@@ -55,7 +55,8 @@ export function createRequestHandler({
   logger = console,
 }) {
   const limits = {
-    api: createRateLimiter({ windowMs: 60_000, max: 60 }),
+    // Cada página faz 4–6 chamadas; vários visitantes podem dividir o mesmo IP (escola, operadora).
+    api: createRateLimiter({ windowMs: 60_000, max: 300 }),
     forceRefresh: createRateLimiter({ windowMs: 60_000, max: 4 }),
     account: createRateLimiter({ windowMs: 10 * 60_000, max: 5 }),
     share: createRateLimiter({ windowMs: 60_000, max: 10 }),

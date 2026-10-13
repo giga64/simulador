@@ -57,7 +57,7 @@ snapshot da temporada.
   iframes de terceiros), `X-Frame-Options: DENY`, `X-Content-Type-Options`,
   `Referrer-Policy`, `Permissions-Policy`, `Cross-Origin-Opener-Policy` e, em
   produção, HSTS.
-- **Limites por IP:** 60 requisições de API por minuto; consulta forçada à fonte
+- **Limites por IP:** 300 requisições de API por minuto (uma página faz de 4 a 6); consulta forçada à fonte
   no máximo 4 por minuto por IP e uma a cada 20 s no total; 10 links curtos por
   minuto; 30 imagens por minuto; 5 tentativas de exclusão de conta a cada 10
   minutos. Corpos de requisição têm tamanho máximo e tempo limite.

@@ -4319,6 +4319,17 @@ import {
         notify(`Cenário compartilhado indisponível: ${error.message}`);
       }
     }
+    // Tabelas com rolagem horizontal precisam receber foco pelo teclado.
+    const labelScrollRegions = () =>
+      document.querySelectorAll('.sc:not([tabindex])').forEach((region) => {
+        region.tabIndex = 0;
+        region.setAttribute('role', 'region');
+        region.setAttribute(
+          'aria-label',
+          region.closest('section, .cd, .box')?.querySelector('h2, h3')?.textContent?.trim() || 'Tabela',
+        );
+      });
+    new MutationObserver(labelScrollRegions).observe(document.body, { childList: true, subtree: true });
     nav();
     show(initialView, { focus: false, push: false });
     addEventListener('popstate', () => {
